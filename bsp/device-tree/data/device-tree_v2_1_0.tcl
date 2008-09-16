@@ -986,7 +986,7 @@ proc gen_ppc440 {tree hwproc_handle intc params} {
 	lappend proc_node [list compatible stringtuple [list "PowerPC,440" "ibm,ppc440"]]
 
 	# Get the clock frequency from the processor
-	set clk [get_clock_frequency $hwproc_handle "CPMC440CLOCK"]
+	set clk [get_clock_frequency $hwproc_handle "CPMC440CLK"]
 	if {$clk == ""} {
 		set proc_handle [xget_libgen_proc_handle]
 		set clk [xget_sw_parameter_value $proc_handle "CORE_CLOCK_FREQ_HZ"]
