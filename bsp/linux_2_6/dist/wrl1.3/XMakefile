@@ -1,0 +1,8 @@
+#
+# Xilinx Linux Makefile
+# Provides for updating .config based on the hardware design.
+#
+
+.config: xps_connected.cud
+	tclsh cow.tcl
+	make ARCH=ppc CROSS_COMPILE=powerpc-wrs-linux-gnu- oldconfig
