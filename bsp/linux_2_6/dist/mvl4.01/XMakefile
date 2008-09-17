@@ -1,8 +1,0 @@
-#
-# Xilinx Linux Makefile
-# Provides for updating .config based on the hardware design.
-#
-
-.config: xps_connected.cud
-	tclsh cow.tcl
-	make oldconfig
