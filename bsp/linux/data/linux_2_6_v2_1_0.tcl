@@ -96,7 +96,7 @@
 # Global MLD version
 #
 # ~v1.02a in EDK
-set MLD_version "linux_2_6"
+set MLD_version "linux_2_6_v0_00_a"
 set device_tree_MLD_version "device-tree_v1_00_a"
 
 #
