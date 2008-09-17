@@ -1,2 +1,0 @@
-make -f XMakefile .config
-make ARCH=ppc CROSS_COMPILE=powerpc-wrs-linux-gnu- $*
