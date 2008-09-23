@@ -30,8 +30,8 @@ OPTION SUPPORTED_PERIPHERALS = (microblaze ppc405 ppc405_virtex4 ppc440_virtex5)
 OPTION DESC = "Generate flat device tree";
 OPTION COMPILE_BSP = FALSE;
 
-PARAMETER name = bootargs, desc = "Booting arguments", type = string, default = "root=/dev/xsysace/disc0/part2";
+PARAMETER name = bootargs, desc = "Booting arguments", type = string, default = "root=/dev/ram";
 
-PARAMETER name = consoleip, desc = "Name of the IP core which is used for boot console", type = string, default = "";
+PARAMETER name = console device, desc = "Instance name of IP core for boot console (e.g. RS232_Uart_1, not xps_uart16550)", type = string, default = "";
 
 END OS
