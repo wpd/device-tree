@@ -37,11 +37,15 @@ lappend debug_level [list "ip"]
 
 
 # Globals variable
-set device_tree_generator_version "1.1"
+set device_tree_generator_version "1.2"
 set cpunumber 0
 set periphery_array ""
 set uartlite_count 0
 set mac_count 0
+
+set serial_count 0
+set ethernet_count 0
+set alias_node_list {}
 
 #
 # How to use generate_device_tree() from another MLD
@@ -211,7 +215,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			error "unsupported CPU"
 		}
 	}
-	
+
 	if {$consoleip != ""} {
 		set consolepath [get_pathname_for_label $toplevel $consoleip]
 		if {$consolepath != ""} {
@@ -228,6 +232,12 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 	lappend toplevel [list model string "testing"]
 	lappend toplevel [list chosen tree $chosen]
 
+	#
+	# Add the alias section to toplevel
+	#
+	variable alias_node_list
+	lappend toplevel [list alias tree $alias_node_list]
+	
 	set toplevel [gen_memories $toplevel $hwproc_handle]
 
 	set toplevel_file [open $filepath w]
@@ -510,6 +520,15 @@ proc slave_ll_temac_port {slave intc index} {
 	set baseaddr [expr $baseaddr + $index * 0x40]
 	set highaddr [expr $baseaddr + 0x3f]
 
+	#
+	# Add this temac channel to the alias list
+	#
+	variable ethernet_count
+	variable alias_node_list
+	set node [list ethernet$ethernet_count aliasref $name]
+	lappend alias_node_list $node
+	incr ethernet_count
+
 	set ip_tree [slaveip_basic $slave $intc "" [format_ip_name "ethernet" $baseaddr]]
 	set ip_tree [tree_append $ip_tree [list "device_type" string "network"]]
 	variable mac_count
@@ -670,6 +689,14 @@ proc gener_slave {node slave intc} {
 		}
 		"xps_uartlite" -
 		"opb_uartlite" {
+			#
+			# Add this uartlite device to the alias list
+			#
+			variable serial_count
+			variable alias_node_list
+			lappend alias_node_list [list serial$serial_count aliasref $name]
+			incr serial_count
+
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "serial" [default_parameters $slave] ]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
 			variable uartlite_count
@@ -687,6 +714,15 @@ proc gener_slave {node slave intc} {
 		"xps_uart16550" -
 		"plb_uart16550" -
 		"opb_uart16550" {
+			#
+			# Add this uart device to the alias list
+			#
+			variable serial_count
+			variable alias_node_list
+			set node [list serial$serial_count aliasref $name]
+			lappend alias_node_list $node
+			incr serial_count
+
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "serial" [default_parameters $slave] "" "" [list "ns16550"] ]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
 			set ip_tree [tree_append $ip_tree [list "current-speed" int "9600"]]
@@ -726,6 +762,15 @@ proc gener_slave {node slave intc} {
 		"opb_ethernetlite" -
 		"xps_ethernetlite" -
 		"plb_temac" {
+			#
+			# Add this temac channel to the alias list
+			#
+			variable ethernet_count
+			variable alias_node_list
+			set node [list ethernet$ethernet_count aliasref $name]
+			lappend alias_node_list $node
+			incr ethernet_count
+
 			# 'network' type
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "ethernet" [default_parameters $slave]]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "network"]]
@@ -1558,6 +1603,8 @@ proc write_value {file indent type value} {
 			puts -nonewline $file "\]"
 		} elseif {$type == "labelref"} {
 			puts -nonewline $file "= <&$value>"
+		} elseif {$type == "aliasref"} {
+			puts -nonewline $file "= &$value"
 		} elseif {$type == "string"} {
 			puts -nonewline $file "= \"$value\""
 		} elseif {$type == "stringtuple"} {
