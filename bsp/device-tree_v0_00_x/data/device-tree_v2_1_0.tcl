@@ -1096,7 +1096,11 @@ proc gen_microblaze {tree hwproc_handle params} {
 	set cpu_type [xget_hw_value $hwproc_handle]
 
 	set icache_size [scan_int_parameter_value $hwproc_handle "C_CACHE_BYTE_SIZE"]
+	set icache_base [scan_int_parameter_value $hwproc_handle "C_ICACHE_BASEADDR"]
+	set icache_high [scan_int_parameter_value $hwproc_handle "C_ICACHE_HIGHADDR"]
 	set dcache_size [scan_int_parameter_value $hwproc_handle "C_DCACHE_BYTE_SIZE"]
+	set dcache_base [scan_int_parameter_value $hwproc_handle "C_DCACHE_BASEADDR"]
+	set dcache_high [scan_int_parameter_value $hwproc_handle "C_DCACHE_HIGHADDR"]
 	# The Microblaze parameters are in *words*, while the device tree
 	# is in bytes.
 	set icache_line_size [expr 4*[scan_int_parameter_value $hwproc_handle "C_ICACHE_LINE_LEN"]]
@@ -1116,10 +1120,14 @@ proc gen_microblaze {tree hwproc_handle params} {
 	lappend proc_node [list timebase-frequency int $clk]
 	lappend proc_node [list reg int 0]
 	if { [llength $icache_size] != 0 } {
+		lappend proc_node [list i-cache-baseaddr hexint $icache_base]
+		lappend proc_node [list i-cache-highaddr hexint $icache_high]
 		lappend proc_node [list i-cache-size hexint $icache_size]
 		lappend proc_node [list i-cache-line-size hexint $icache_line_size]
 	}
 	if { [llength $dcache_size] != 0 } {
+		lappend proc_node [list d-cache-baseaddr hexint $dcache_base]
+		lappend proc_node [list d-cache-highaddr hexint $dcache_high]
 		lappend proc_node [list d-cache-size hexint $dcache_size]
 		lappend proc_node [list d-cache-line-size hexint $dcache_line_size]
 	}
