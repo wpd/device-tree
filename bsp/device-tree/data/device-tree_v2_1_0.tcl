@@ -398,7 +398,11 @@ proc slaveip_dcr_or_plb {slave intc devicetype params {baseaddr_prefix ""} {othe
 	# '1' indicates core connected on PLB bus directly
 	# '0' indicates core connected on DCR bus directly
 	if {$bus_name == "1"} {
-		return [slaveip $slave $intc $devicetype $params "PLB_" $other_compatibles]
+		if {[parameter_exists $slave "C_PLB_BASEADDR"] != 0} {
+			return [slaveip $slave $intc $devicetype $params "PLB_" $other_compatibles]
+		} else {
+			return [slaveip $slave $intc $devicetype $params "SPLB_" $other_compatibles]
+		}
 	} else {
 		# When the core is connected directly on the DCR bus
 		return [slaveip_dcr $slave $intc "tft" [default_parameters $slave] "DCR_" $other_compatibles]
@@ -417,8 +421,10 @@ proc slaveip_dcr {slave intc devicetype params {baseaddr_prefix ""} {other_compa
 	set tree [slaveip_basic $slave $intc $params [format_ip_name $devicetype $dcr_baseaddr $name] $other_compatibles]
 	set dcr_busif_handle [xget_hw_busif_handle $slave "SDCR"]
 	if {[llength $dcr_busif_handle] != 0} {
-		# Hmm.. looks like there's a dcr interface.
-		set tree [append_dcr_interface $tree $slave]
+		if {[bus_is_connected $slave "SDCR"] != 0} {
+			# Hmm.. looks like there's a dcr interface.
+			set tree [append_dcr_interface $tree $slave]
+		}
 	}
 
 	# Backward compatibility to not break older style tft driver
@@ -1371,7 +1377,6 @@ proc interrupt_list {ip_handle} {
 	set interrupt_ports {}
 	foreach port $port_handles {
 		set name [xget_value $port "NAME"]
-		set list [xget_hw_subproperty_handle $port "SIGIS"]
 		set sigis [xget_hw_subproperty_value $port "SIGIS"]
 		if {[string match $sigis "INTERRUPT"]} {
 			lappend interrupt_ports $name
@@ -1427,6 +1432,14 @@ proc default_parameters {ip_handle} {
 		}
 	}
 	return $params
+}
+
+proc parameter_exists {ip_handle name} {
+	set param_handle [xget_hw_parameter_handle $ip_handle $name]
+	if {$param_handle == ""} {
+		return 0
+	}
+	return 1
 }
 
 proc scan_int_parameter_value {ip_handle name} {
