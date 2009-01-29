@@ -421,10 +421,8 @@ proc slaveip_dcr {slave intc devicetype params {baseaddr_prefix ""} {other_compa
 	set tree [slaveip_basic $slave $intc $params [format_ip_name $devicetype $dcr_baseaddr $name] $other_compatibles]
 	set dcr_busif_handle [xget_hw_busif_handle $slave "SDCR"]
 	if {[llength $dcr_busif_handle] != 0} {
-		if {[bus_is_connected $slave "SDCR"] != 0} {
-			# Hmm.. looks like there's a dcr interface.
-			set tree [append_dcr_interface $tree $slave]
-		}
+		# Hmm.. looks like there's a dcr interface.
+		set tree [append_dcr_interface $tree $slave]
 	}
 
 	# Backward compatibility to not break older style tft driver
@@ -447,8 +445,10 @@ proc slaveip {slave intc devicetype params {baseaddr_prefix ""} {other_compatibl
 	set tree [slaveip_explicit_baseaddr $slave $intc $devicetype $params $baseaddr $highaddr $other_compatibles]
 	set dcr_busif_handle [xget_hw_busif_handle $slave "SDCR"]
 	if {[llength $dcr_busif_handle] != 0} {
-		# Hmm.. looks like there's a dcr interface.
-		set tree [append_dcr_interface $tree $slave]
+		if {[bus_is_connected $slave "SDCR"] != 0} {
+			# Hmm.. looks like there's a dcr interface.
+			set tree [append_dcr_interface $tree $slave]
+		}
 	}
 	return $tree
 }
