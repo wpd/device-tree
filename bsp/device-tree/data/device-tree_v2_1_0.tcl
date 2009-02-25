@@ -531,8 +531,8 @@ proc slave_ll_temac_port {slave intc index} {
 	#
 	variable ethernet_count
 	variable alias_node_list
-	set node [list ethernet$ethernet_count aliasref $name]
-	lappend alias_node_list $node
+	set alias_node [list ethernet$ethernet_count aliasref $name]
+	lappend alias_node_list $alias_node
 	incr ethernet_count
 
 	set ip_tree [slaveip_basic $slave $intc "" [format_ip_name "ethernet" $baseaddr]]
@@ -725,8 +725,7 @@ proc gener_slave {node slave intc} {
 			#
 			variable serial_count
 			variable alias_node_list
-			set node [list serial$serial_count aliasref $name]
-			lappend alias_node_list $node
+			lappend alias_node_list [list serial$serial_count aliasref $name]
 			incr serial_count
 
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "serial" [default_parameters $slave] "" "" [list "ns16550"] ]
@@ -773,8 +772,7 @@ proc gener_slave {node slave intc} {
 			#
 			variable ethernet_count
 			variable alias_node_list
-			set node [list ethernet$ethernet_count aliasref $name]
-			lappend alias_node_list $node
+			lappend alias_node_list [list ethernet$ethernet_count aliasref $name]
 			incr ethernet_count
 
 			# 'network' type
