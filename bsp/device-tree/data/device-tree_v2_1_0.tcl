@@ -1508,9 +1508,29 @@ proc gen_params {node_list handle params {trimprefix "C_"} } {
 }
 
 proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
+	array set compatible_list [ list \
+		{xps_ll_temac_2.00.a} {xps_ll_temac_1.00.a} \
+		{xps_intc_2.00.a} {xps_intc_1.00.a} \
+		{xps_uart16550_2.01.a} {xps_uart16550_2.00.a} \
+		{xps_uartlite_1.01.a} {xps_uartlite_1.00.a} \
+		{xps_spi_2.01.a} {xps_spi_2.00.a} \
+		{xps_ethernetlite_2.01.a} {xps_ethernetlite_1.00.a} \
+		{xps_ps2_1.01.a} {xps_ps2_1.00.a} \
+		{xps_iic_2.01.a} {xps_iic_2.00.a} \
+		{xps_gpio_2.00.a} {xps_gpio_1.00.a} \
+		{xps_hwicap_2.00.a} {xps_hwicap_1.00.a} \
+		{xps_sysace_1.01.a} {xps_sysace_1.00.a} \
+		{xps_bram_if_cntlr_1.00.b} {xps_bram_if_cntlr_1.00.a} \
+		{plb_v46_1.04.a} {plb_v46_1.00.a} \
+	]
+
 	if {$hw_ver != ""} {
 		set namewithver [format "%s_%s" $type $hw_ver]
 		set clist [list [format_xilinx_name "$namewithver"]]
+		if {[info exists compatible_list($namewithver)]} {
+			set add_clist [list [format_xilinx_name "$compatible_list($namewithver)"]]
+			set clist [concat $clist $add_clist]
+		}
 	} else {
 		set clist [list [format_xilinx_name "$type"]]
 	}
