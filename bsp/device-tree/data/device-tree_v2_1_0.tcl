@@ -1515,6 +1515,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{xps_uartlite_1.01.a} {xps_uartlite_1.00.a} \
 		{xps_spi_2.01.a} {xps_spi_2.00.a} \
 		{xps_ethernetlite_2.01.a} {xps_ethernetlite_1.00.a} \
+		{xps_ethernetlite_2.00.b} {xps_ethernetlite_1.00.a} \
 		{xps_ps2_1.01.a} {xps_ps2_1.00.a} \
 		{xps_iic_2.01.a} {xps_iic_2.00.a} \
 		{xps_gpio_2.00.a} {xps_gpio_1.00.a} \
