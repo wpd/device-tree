@@ -3,7 +3,7 @@
 #
 # (C) Copyright 2007-2008 Xilinx, Inc.
 # Based on original code:
-# (C) Copyright 2007-2008 Michal Simek
+# (C) Copyright 2007-2009 Michal Simek
 #
 # Michal SIMEK <monstr@monstr.eu>
 #
@@ -267,7 +267,7 @@ proc headerc {ufile generator_version} {
 	puts $ufile " * Device Tree Generator version: $generator_version"
 	puts $ufile " *"
 	puts $ufile " * (C) Copyright 2007-2008 Xilinx, Inc."
-	puts $ufile " * (C) Copyright 2007-2008 Michal Simek"
+	puts $ufile " * (C) Copyright 2007-2009 Michal Simek"
 	puts $ufile " *"
 	puts $ufile " * Michal SIMEK <monstr@monstr.eu>"
 	puts $ufile " *"
@@ -685,7 +685,7 @@ proc gener_slave {node slave intc} {
 		"opb_intc" -
 		"xps_intc" {
 			# Interrupt controllers
-			lappend node [gen_intc $slave $intc "interrupt-controller" "C_NUM_INTR_INPUTS"]
+			lappend node [gen_intc $slave $intc "interrupt-controller" "C_NUM_INTR_INPUTS C_KIND_OF_EDGE"]
 		}
 		"mdm" -
 		"opb_mdm" {
