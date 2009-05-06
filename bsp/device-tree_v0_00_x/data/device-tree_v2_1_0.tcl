@@ -685,7 +685,7 @@ proc gener_slave {node slave intc} {
 		"opb_intc" -
 		"xps_intc" {
 			# Interrupt controllers
-			lappend node [gen_intc $slave $intc "interrupt-controller" "C_NUM_INTR_INPUTS C_KIND_OF_EDGE"]
+			lappend node [gen_intc $slave $intc "interrupt-controller" "C_NUM_INTR_INPUTS C_KIND_OF_INTR"]
 		}
 		"mdm" -
 		"opb_mdm" {
