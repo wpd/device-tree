@@ -1281,6 +1281,7 @@ proc bus_bridge {slave intc_handle baseaddr face} {
 	set mhs_handle [xget_hw_parent_handle $slave]
 	set bus_handle [xget_hw_ipinst_handle $mhs_handle $bus_name]
 
+#FIXME remove compatible_list property and add simple-bus in  gen_compatible_property function
 	set compatible_list {}
 	if {[llength $bus_handle] == 0} {
 		debug handles "Bus handle $face connected directly..."
@@ -1512,13 +1513,28 @@ proc gen_params {node_list handle params {trimprefix "C_"} } {
 
 proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 	array set compatible_list [ list \
-		{xps_ll_temac_2.00.a} {xps_ll_temac_1.00.a} \
 		{xps_intc_2.00.a} {xps_intc_1.00.a} \
-		{xps_uart16550_2.01.a} {xps_uart16550_2.00.a} \
+		{xps_intc_2.00.a} {xps_intc_1.00.a} \
+		{opb_intc_1.00.c} {xps_intc_1.00.a} \
+		{opb_intc_1.00.b} {xps_intc_1.00.a} \
+		{opb_intc_1.00.a} {xps_intc_1.00.a} \
+		{opb_timer_1.00.b} {xps-timer-1.00.a} \
+		{opb_timer_1.00.a} {xps-timer-1.00.a} \
 		{xps_uartlite_1.01.a} {xps_uartlite_1.00.a} \
-		{xps_spi_2.01.a} {xps_spi_2.00.a} \
+		{xps_uart16550_2.01.a} {xps_uart16550_2.00.a} \
 		{xps_ethernetlite_2.01.a} {xps_ethernetlite_1.00.a} \
 		{xps_ethernetlite_2.00.b} {xps_ethernetlite_1.00.a} \
+		{xps_ethernetlite_2.01.a} {xps_ethernetlite_1.00.a} \
+		{xps_ethernetlite_2.00.b} {xps_ethernetlite_1.00.a} \
+		{xps_ethernetlite_2.00.a} {xps_ethernetlite_1.00.a} \
+		{opb_ethernetlite_1.01.b} {xps_ethernetlite_1.00.a} \
+		{opb_ethernetlite_1.01.a} {xps_ethernetlite_1.00.a} \
+		{xps_ll_temac_2.00.a} {xps_ll_temac_1.00.a} \
+		{xps_ll_temac_1.00.b} {xps_ll_temac_1.00.a} \
+		{xps_ll_temac_1.01.a} {xps_ll_temac_1.00.a} \
+		{xps_ll_temac_1.01.b} {xps_ll_temac_1.00.a} \
+		{xps_ll_temac_2.00.a} {xps_ll_temac_1.00.a} \
+		{xps_spi_2.01.a} {xps_spi_2.00.a} \
 		{xps_ps2_1.01.a} {xps_ps2_1.00.a} \
 		{xps_iic_2.01.a} {xps_iic_2.00.a} \
 		{xps_gpio_2.00.a} {xps_gpio_1.00.a} \
