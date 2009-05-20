@@ -842,7 +842,7 @@ proc gener_slave {node slave intc} {
 		}
 		"xps_usb_host" {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "usb" [default_parameters $slave] "SPLB_" "" [list "usb-ehci"]]
-        }
+		}
 		"plb_bram_if_cntlr" -
 		"opb_bram_if_cntlr" -
 		"opb_cypress_usb" -
