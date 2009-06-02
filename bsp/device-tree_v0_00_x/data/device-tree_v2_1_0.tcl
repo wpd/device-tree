@@ -1526,6 +1526,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{opb_intc_1.00.c} {xps_intc_1.00.a} \
 		{opb_intc_1.00.b} {xps_intc_1.00.a} \
 		{opb_intc_1.00.a} {xps_intc_1.00.a} \
+		{xps_timer_1.01.a} {xps-timer-1.00.a} \
 		{opb_timer_1.00.b} {xps-timer-1.00.a} \
 		{opb_timer_1.00.a} {xps-timer-1.00.a} \
 		{xps_uartlite_1.01.a} {xps_uartlite_1.00.a} \
