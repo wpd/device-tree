@@ -1513,21 +1513,21 @@ proc gen_params {node_list handle params {trimprefix "C_"} } {
 
 proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 	array set compatible_list [ list \
-		{opb_intc_1} {xps_intc_1.00.a} \
-		{opb_timer_1} {xps-timer-1.00.a} \
-		{plb_v46_1} {plb_v46_1.00.a} \
-		{xps_bram_if_cntlr_1} {xps_bram_if_cntlr_1.00.a} \
-		{xps_ethernetlite_2} {xps_ethernetlite_1.00.a} \
-		{xps_gpio_2} {xps_gpio_1.00.a} \
-		{xps_hwicap_2} {xps_hwicap_1.00.a} \
-		{xps_iic_2} {xps_iic_2.00.a} \
-		{xps_intc_2} {xps_intc_1.00.a} \
-		{xps_ll_temac_2} {xps_ll_temac_1.00.a} \
-		{xps_ps2_1} {xps_ps2_1.00.a} \
+		{opb_intc} {xps_intc_1.00.a} \
+		{opb_timer} {xps-timer-1.00.a} \
+		{plb_v46} {plb_v46_1.00.a} \
+		{xps_bram_if_cntlr} {xps_bram_if_cntlr_1.00.a} \
+		{xps_ethernetlite} {xps_ethernetlite_1.00.a} \
+		{xps_gpio} {xps_gpio_1.00.a} \
+		{xps_hwicap} {xps_hwicap_1.00.a} \
+		{xps_iic} {xps_iic_2.00.a} \
+		{xps_intc} {xps_intc_1.00.a} \
+		{xps_ll_temac} {xps_ll_temac_1.00.a} \
+		{xps_ps2} {xps_ps2_1.00.a} \
 		{xps_spi_2} {xps_spi_2.00.a} \
 		{xps_uart16550_2} {xps_uart16550_2.00.a} \
-		{xps_uartlite_1} {xps_uartlite_1.00.a} \
-		{xps_sysace_1} {xps_sysace_1.00.a} \
+		{xps_uartlite} {xps_uartlite_1.00.a} \
+		{xps_sysace} {xps_sysace_1.00.a} \
 	]
 
 	if {$hw_ver != ""} {
@@ -1538,8 +1538,11 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		if { [info exists compatible_list($namewithver)] } {              # Check exact match
 			set add_clist [list [format_xilinx_name "$compatible_list($namewithver)"]]
 			set clist [concat $clist $add_clist]
-		} elseif { [info exists compatible_list($namewithwildcard)] } {   # Check wildcard match
+		} elseif { [info exists compatible_list($namewithwildcard)] } {   # Check major wildcard match
 			set add_clist [list [format_xilinx_name "$compatible_list($namewithwildcard)"]]
+			set clist [concat $clist $add_clist]
+		} elseif { [info exists compatible_list($type)] } {               # Check type wildcard match
+			set add_clist [list [format_xilinx_name "$compatible_list($type)"]]
 			set clist [concat $clist $add_clist]
 		}
 	} else {
