@@ -1523,6 +1523,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 	array set compatible_list [ list \
 		{opb_intc} {xps_intc_1.00.a} \
 		{opb_timer} {xps-timer-1.00.a} \
+		{xps_timer} {xps-timer-1.00.a} \
 		{plb_v46} {plb_v46_1.00.a} \
 		{xps_bram_if_cntlr} {xps_bram_if_cntlr_1.00.a} \
 		{xps_ethernetlite} {xps_ethernetlite_1.00.a} \
