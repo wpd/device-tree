@@ -538,7 +538,7 @@ proc slave_ll_temac_port {slave intc index} {
 	set ip_tree [slaveip_basic $slave $intc "" [format_ip_name "ethernet" $baseaddr]]
 	set ip_tree [tree_append $ip_tree [list "device_type" string "network"]]
 	variable mac_count
-	set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 00 0A 35 00 00 $mac_count]]]
+	set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 0x00 0x00 $mac_count]]]
 	set mac_count [expr $mac_count + 1]
 
 	set ip_tree [tree_append $ip_tree [gen_reg_property $name $baseaddr $highaddr]]
@@ -779,7 +779,7 @@ proc gener_slave {node slave intc} {
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "ethernet" [default_parameters $slave]]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "network"]]
 			variable mac_count
-			set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 00 0A 35 00 00 $mac_count]]]
+			set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 0x00 0x00 $mac_count]]]
 			set mac_count [expr $mac_count + 1]
 
 			lappend node $ip_tree
