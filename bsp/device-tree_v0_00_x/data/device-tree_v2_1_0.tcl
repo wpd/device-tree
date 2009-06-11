@@ -236,7 +236,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 	# Add the alias section to toplevel
 	#
 	variable alias_node_list
-	lappend toplevel [list alias tree $alias_node_list]
+	lappend toplevel [list aliases tree $alias_node_list]
 	
 	set toplevel [gen_memories $toplevel $hwproc_handle]
 
