@@ -1544,7 +1544,9 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 			set clist [concat $clist $add_clist]
 		} elseif { [info exists compatible_list($type)] } {               # Check type wildcard match
 			set add_clist [list [format_xilinx_name "$compatible_list($type)"]]
-			set clist [concat $clist $add_clist]
+			if { ![string match $clist $add_clist] } {
+				set clist [concat $clist $add_clist]
+			}
 		}
 	} else {
 		set clist [list [format_xilinx_name "$type"]]
