@@ -236,7 +236,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 	# Add the alias section to toplevel
 	#
 	variable alias_node_list
-	lappend toplevel [list alias tree $alias_node_list]
+	lappend toplevel [list aliases tree $alias_node_list]
 	
 	set toplevel [gen_memories $toplevel $hwproc_handle]
 
@@ -538,7 +538,7 @@ proc slave_ll_temac_port {slave intc index} {
 	set ip_tree [slaveip_basic $slave $intc "" [format_ip_name "ethernet" $baseaddr]]
 	set ip_tree [tree_append $ip_tree [list "device_type" string "network"]]
 	variable mac_count
-	set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 02 00 00 00 00 $mac_count]]]
+	set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 0x00 0x00 $mac_count]]]
 	set mac_count [expr $mac_count + 1]
 
 	set ip_tree [tree_append $ip_tree [gen_reg_property $name $baseaddr $highaddr]]
@@ -779,7 +779,7 @@ proc gener_slave {node slave intc} {
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "ethernet" [default_parameters $slave]]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "network"]]
 			variable mac_count
-			set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 02 00 00 00 00 $mac_count]]]
+			set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 0x00 0x00 $mac_count]]]
 			set mac_count [expr $mac_count + 1]
 
 			lappend node $ip_tree
@@ -1518,43 +1518,40 @@ proc gen_params {node_list handle params {trimprefix "C_"} } {
 
 proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 	array set compatible_list [ list \
-		{xps_intc_2.00.a} {xps_intc_1.00.a} \
-		{xps_intc_2.00.a} {xps_intc_1.00.a} \
-		{opb_intc_1.00.c} {xps_intc_1.00.a} \
-		{opb_intc_1.00.b} {xps_intc_1.00.a} \
-		{opb_intc_1.00.a} {xps_intc_1.00.a} \
-		{opb_timer_1.00.b} {xps-timer-1.00.a} \
-		{opb_timer_1.00.a} {xps-timer-1.00.a} \
-		{xps_uartlite_1.01.a} {xps_uartlite_1.00.a} \
-		{xps_uart16550_2.01.a} {xps_uart16550_2.00.a} \
-		{xps_ethernetlite_2.01.a} {xps_ethernetlite_1.00.a} \
-		{xps_ethernetlite_2.00.b} {xps_ethernetlite_1.00.a} \
-		{xps_ethernetlite_2.01.a} {xps_ethernetlite_1.00.a} \
-		{xps_ethernetlite_2.00.b} {xps_ethernetlite_1.00.a} \
-		{xps_ethernetlite_2.00.a} {xps_ethernetlite_1.00.a} \
-		{opb_ethernetlite_1.01.b} {xps_ethernetlite_1.00.a} \
-		{opb_ethernetlite_1.01.a} {xps_ethernetlite_1.00.a} \
-		{xps_ll_temac_2.00.a} {xps_ll_temac_1.00.a} \
-		{xps_ll_temac_1.00.b} {xps_ll_temac_1.00.a} \
-		{xps_ll_temac_1.01.a} {xps_ll_temac_1.00.a} \
-		{xps_ll_temac_1.01.b} {xps_ll_temac_1.00.a} \
-		{xps_ll_temac_2.00.a} {xps_ll_temac_1.00.a} \
-		{xps_spi_2.01.a} {xps_spi_2.00.a} \
-		{xps_ps2_1.01.a} {xps_ps2_1.00.a} \
-		{xps_iic_2.01.a} {xps_iic_2.00.a} \
-		{xps_gpio_2.00.a} {xps_gpio_1.00.a} \
-		{xps_hwicap_2.00.a} {xps_hwicap_1.00.a} \
-		{xps_sysace_1.01.a} {xps_sysace_1.00.a} \
-		{xps_bram_if_cntlr_1.00.b} {xps_bram_if_cntlr_1.00.a} \
-		{plb_v46_1.04.a} {plb_v46_1.00.a} \
+		{opb_intc} {xps_intc_1.00.a} \
+		{opb_timer} {xps-timer-1.00.a} \
+		{xps_timer} {xps-timer-1.00.a} \
+		{plb_v46} {plb_v46_1.00.a} \
+		{xps_bram_if_cntlr} {xps_bram_if_cntlr_1.00.a} \
+		{xps_ethernetlite} {xps_ethernetlite_1.00.a} \
+		{xps_gpio} {xps_gpio_1.00.a} \
+		{xps_hwicap} {xps_hwicap_1.00.a} \
+		{xps_iic} {xps_iic_2.00.a} \
+		{xps_intc} {xps_intc_1.00.a} \
+		{xps_ll_temac} {xps_ll_temac_1.00.a} \
+		{xps_ps2} {xps_ps2_1.00.a} \
+		{xps_spi_2} {xps_spi_2.00.a} \
+		{xps_uart16550_2} {xps_uart16550_2.00.a} \
+		{xps_uartlite} {xps_uartlite_1.00.a} \
+		{xps_sysace} {xps_sysace_1.00.a} \
 	]
 
 	if {$hw_ver != ""} {
 		set namewithver [format "%s_%s" $type $hw_ver]
 		set clist [list [format_xilinx_name "$namewithver"]]
-		if {[info exists compatible_list($namewithver)]} {
+		regexp {([^\.]*)} $hw_ver hw_ver_wildcard
+		set namewithwildcard [format "%s_%s" $type $hw_ver_wildcard]
+		if { [info exists compatible_list($namewithver)] } {              # Check exact match
 			set add_clist [list [format_xilinx_name "$compatible_list($namewithver)"]]
 			set clist [concat $clist $add_clist]
+		} elseif { [info exists compatible_list($namewithwildcard)] } {   # Check major wildcard match
+			set add_clist [list [format_xilinx_name "$compatible_list($namewithwildcard)"]]
+			set clist [concat $clist $add_clist]
+		} elseif { [info exists compatible_list($type)] } {               # Check type wildcard match
+			set add_clist [list [format_xilinx_name "$compatible_list($type)"]]
+			if { ![string match $clist $add_clist] } {
+				set clist [concat $clist $add_clist]
+			}
 		}
 	} else {
 		set clist [list [format_xilinx_name "$type"]]
