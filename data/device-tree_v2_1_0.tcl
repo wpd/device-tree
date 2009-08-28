@@ -105,8 +105,6 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 	debug info "generating $filepath"
 
 	set toplevel {}
-	set chosen {}
-	lappend chosen [list bootargs string $bootargs]
 
 	set proc_handle [xget_libgen_proc_handle]
 	set hwproc_handle [xget_handle $proc_handle "IPINST"]
@@ -216,6 +214,42 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 		}
 	}
 
+	variable serial_count
+	variable alias_node_list
+	puts "$serial_count $alias_node_list"
+
+	if {[llength $bootargs] == 0} {
+		# default number for ttyULX or ttySX is 0
+		set serial_number 0
+		# find out which serial number is my choose uart - from aliases node - there is correct order
+		foreach node $alias_node_list {
+			if { "[lindex $node 2]" == "$consoleip" } {
+				regsub serial "[lindex $node 0]" "" x
+				set serial_number "$x"
+			}
+		}
+		# generate default string for uart16550 or uartlite
+		set uart_handle [xget_sw_ipinst_handle_from_processor [xget_libgen_proc_handle] $consoleip]
+		switch -exact [xget_value $uart_handle "VALUE"] {
+			"xps_uart16550" -
+			"plb_uart16550" -
+			"opb_uart16550" {
+				# for uart16550 is default string 115200
+				set bootargs "console=/dev/ttyS$serial_number,115200"
+			}
+			"xps_uartlite" -
+			"opb_uartlite" {
+				set bootargs "console=/dev/ttyUL$serial_number,[xget_sw_parameter_value $uart_handle "C_BAUDRATE"]"
+			}
+			default {
+				debug warning "WARNING: Unsupported console ip $consoleip. Can't generate bootargs."
+			}
+		}
+	}
+
+	set chosen {}
+	lappend chosen [list bootargs string $bootargs]
+
 	if {$consoleip != ""} {
 		set consolepath [get_pathname_for_label $toplevel $consoleip]
 		if {$consolepath != ""} {
@@ -235,7 +269,6 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 	#
 	# Add the alias section to toplevel
 	#
-	variable alias_node_list
 	lappend toplevel [list aliases tree $alias_node_list]
 	
 	set toplevel [gen_memories $toplevel $hwproc_handle]
