@@ -235,11 +235,11 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			"plb_uart16550" -
 			"opb_uart16550" {
 				# for uart16550 is default string 115200
-				set bootargs "console=/dev/ttyS$serial_number,115200"
+				set bootargs "console=ttyS$serial_number,115200"
 			}
 			"xps_uartlite" -
 			"opb_uartlite" {
-				set bootargs "console=/dev/ttyUL$serial_number,[xget_sw_parameter_value $uart_handle "C_BAUDRATE"]"
+				set bootargs "console=ttyUL$serial_number,[xget_sw_parameter_value $uart_handle "C_BAUDRATE"]"
 			}
 			default {
 				debug warning "WARNING: Unsupported console ip $consoleip. Can't generate bootargs."
