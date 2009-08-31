@@ -95,6 +95,8 @@ proc generate {os_handle} {
 	debug info "\#--------------------------------------"
 
 	set bootargs [xget_sw_parameter_value $os_handle "bootargs"]
+	while {[regsub {^([;]?[.]+)([;])} $bootargs {\1,} bootargs]} {}
+
 	set consoleip [xget_sw_parameter_value $os_handle "console device"]
 	generate_device_tree "xilinx.dts" $bootargs $consoleip
 }
