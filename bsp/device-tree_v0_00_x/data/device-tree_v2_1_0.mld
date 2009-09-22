@@ -27,7 +27,7 @@ BEGIN OS device-tree
 
 OPTION DRC = device_tree_drc;
 OPTION SUPPORTED_PERIPHERALS = (microblaze ppc405 ppc405_virtex4 ppc440_virtex5);
-OPTION DESC = "Generate flat device tree (WITH MICROBLAZE MMU SUPPORT)";
+OPTION DESC = "Generate flat device tree";
 OPTION COMPILE_BSP = FALSE;
 
 PARAMETER name = bootargs, desc = "Booting arguments", type = string, default = "console=ttyS0 root=/dev/ram";
