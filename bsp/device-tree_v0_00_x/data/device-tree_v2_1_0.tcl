@@ -3,7 +3,7 @@
 #
 # (C) Copyright 2007-2008 Xilinx, Inc.
 # Based on original code:
-# (C) Copyright 2007-2008 Michal Simek
+# (C) Copyright 2007-2009 Michal Simek
 #
 # Michal SIMEK <monstr@monstr.eu>
 #
@@ -95,6 +95,8 @@ proc generate {os_handle} {
 	debug info "\#--------------------------------------"
 
 	set bootargs [xget_sw_parameter_value $os_handle "bootargs"]
+	while {[regsub {^([;]?[.]+)([;])} $bootargs {\1,} bootargs]} {}
+
 	set consoleip [xget_sw_parameter_value $os_handle "console device"]
 	generate_device_tree "xilinx.dts" $bootargs $consoleip
 }
@@ -267,7 +269,7 @@ proc headerc {ufile generator_version} {
 	puts $ufile " * Device Tree Generator version: $generator_version"
 	puts $ufile " *"
 	puts $ufile " * (C) Copyright 2007-2008 Xilinx, Inc."
-	puts $ufile " * (C) Copyright 2007-2008 Michal Simek"
+	puts $ufile " * (C) Copyright 2007-2009 Michal Simek"
 	puts $ufile " *"
 	puts $ufile " * Michal SIMEK <monstr@monstr.eu>"
 	puts $ufile " *"
@@ -538,7 +540,11 @@ proc slave_ll_temac_port {slave intc index} {
 	set ip_tree [slaveip_basic $slave $intc "" [format_ip_name "ethernet" $baseaddr]]
 	set ip_tree [tree_append $ip_tree [list "device_type" string "network"]]
 	variable mac_count
-	set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 0x00 0x00 $mac_count]]]
+	set seed4 [clock seconds]
+	set seed5 [clock clicks]
+	set mac_rand_b4 [expr $seed4 % 256]
+	set mac_rand_b5 [expr $seed5 % 256]
+	set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 $mac_rand_b4 $mac_rand_b5 $mac_count]]]
 	set mac_count [expr $mac_count + 1]
 
 	set ip_tree [tree_append $ip_tree [gen_reg_property $name $baseaddr $highaddr]]
@@ -685,7 +691,7 @@ proc gener_slave {node slave intc} {
 		"opb_intc" -
 		"xps_intc" {
 			# Interrupt controllers
-			lappend node [gen_intc $slave $intc "interrupt-controller" "C_NUM_INTR_INPUTS"]
+			lappend node [gen_intc $slave $intc "interrupt-controller" "C_NUM_INTR_INPUTS C_KIND_OF_INTR"]
 		}
 		"mdm" -
 		"opb_mdm" {
@@ -779,7 +785,11 @@ proc gener_slave {node slave intc} {
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "ethernet" [default_parameters $slave]]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "network"]]
 			variable mac_count
-			set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 0x00 0x00 $mac_count]]]
+			set seed4 [clock seconds]
+			set seed5 [clock clicks]
+			set mac_rand_b4 [expr $seed4 % 256]
+			set mac_rand_b5 [expr $seed5 % 256]
+			set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 $mac_rand_b4 $mac_rand_b5 $mac_count]]]
 			set mac_count [expr $mac_count + 1]
 
 			lappend node $ip_tree
@@ -1096,7 +1106,11 @@ proc gen_microblaze {tree hwproc_handle params} {
 	set cpu_type [xget_hw_value $hwproc_handle]
 
 	set icache_size [scan_int_parameter_value $hwproc_handle "C_CACHE_BYTE_SIZE"]
+	set icache_base [scan_int_parameter_value $hwproc_handle "C_ICACHE_BASEADDR"]
+	set icache_high [scan_int_parameter_value $hwproc_handle "C_ICACHE_HIGHADDR"]
 	set dcache_size [scan_int_parameter_value $hwproc_handle "C_DCACHE_BYTE_SIZE"]
+	set dcache_base [scan_int_parameter_value $hwproc_handle "C_DCACHE_BASEADDR"]
+	set dcache_high [scan_int_parameter_value $hwproc_handle "C_DCACHE_HIGHADDR"]
 	# The Microblaze parameters are in *words*, while the device tree
 	# is in bytes.
 	set icache_line_size [expr 4*[scan_int_parameter_value $hwproc_handle "C_ICACHE_LINE_LEN"]]
@@ -1116,10 +1130,14 @@ proc gen_microblaze {tree hwproc_handle params} {
 	lappend proc_node [list timebase-frequency int $clk]
 	lappend proc_node [list reg int 0]
 	if { [llength $icache_size] != 0 } {
+		lappend proc_node [list i-cache-baseaddr hexint $icache_base]
+		lappend proc_node [list i-cache-highaddr hexint $icache_high]
 		lappend proc_node [list i-cache-size hexint $icache_size]
 		lappend proc_node [list i-cache-line-size hexint $icache_line_size]
 	}
 	if { [llength $dcache_size] != 0 } {
+		lappend proc_node [list d-cache-baseaddr hexint $dcache_base]
+		lappend proc_node [list d-cache-highaddr hexint $dcache_high]
 		lappend proc_node [list d-cache-size hexint $dcache_size]
 		lappend proc_node [list d-cache-line-size hexint $dcache_line_size]
 	}
