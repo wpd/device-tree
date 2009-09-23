@@ -1547,6 +1547,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{xps_uart16550_2} {xps_uart16550_2.00.a} \
 		{xps_uartlite} {xps_uartlite_1.00.a} \
 		{xps_sysace} {xps_sysace_1.00.a} \
+		{xps_usb_host} {xps_usb_host_1.00.a} \
 	]
 
 	if {$hw_ver != ""} {
