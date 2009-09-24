@@ -95,6 +95,7 @@ proc generate {os_handle} {
 	debug info "\#--------------------------------------"
 
 	set bootargs [xget_sw_parameter_value $os_handle "bootargs"]
+	# TODO: remove next line which is a temporary HACK for CR 532155
 	while {[regsub {^([;]?[.]+)([;])} $bootargs {\1,} bootargs]} {}
 
 	set consoleip [xget_sw_parameter_value $os_handle "console device"]
@@ -1511,10 +1512,26 @@ proc format_ip_name {devicetype baseaddr {label ""}} {
 	}
 }
 
+# TODO: remove next two lines which is a temporary HACK for CR 532315
+set num_intr_inputs -1
+
 proc gen_params {node_list handle params {trimprefix "C_"} } {
 	foreach par_name $params {
 		if {[catch {
 			set par_value [scan_int_parameter_value $handle $par_name]
+			# TODO: remove next if elseif block which is a temporary HACK for CR 532315
+			if {[string match C_NUM_INTR_INPUTS $par_name]} {
+				set num_intr_inputs $par_value
+			} elseif {[string match C_KIND_OF_INTR $par_name]} {
+				# Chop off the upper word
+				# 64-bit systems generate this as a long long
+				if {[string length $par_value] > 8} { 
+					# Chop off upper word
+					set par_value [hexint [string range $par_value 8 [expr [string length $par_value]-1]]]
+				}
+				# Pad to 32 bits - num_intr_inputs
+				set par_value [expr $par_value & 1<<$num_intr]
+			}
 			lappend node_list [list [format_param_name $par_name $trimprefix] hexint $par_value]
 		} {err}]} {
 			set par_handle [xget_hw_parameter_handle $handle $par_name]
