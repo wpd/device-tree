@@ -1523,14 +1523,10 @@ proc gen_params {node_list handle params {trimprefix "C_"} } {
 			if {[string match C_NUM_INTR_INPUTS $par_name]} {
 				set num_intr_inputs $par_value
 			} elseif {[string match C_KIND_OF_INTR $par_name]} {
-				# Chop off the upper word
-				# 64-bit systems generate this as a long long
-				if {[string length $par_value] > 8} { 
-					# Chop off upper word
-					set par_value [hexint [string range $par_value 8 [expr [string length $par_value]-1]]]
-				}
 				# Pad to 32 bits - num_intr_inputs
-				set par_value [expr $par_value & 1<<$num_intr]
+				set par_mask [expr 1<<$num_intr_inputs]
+				set par_64bit [expr $par_value & $par_mask]
+				set par_value [expr $par_64bit]
 			}
 			lappend node_list [list [format_param_name $par_name $trimprefix] hexint $par_value]
 		} {err}]} {
