@@ -1524,9 +1524,24 @@ proc gen_params {node_list handle params {trimprefix "C_"} } {
 				set num_intr_inputs $par_value
 			} elseif {[string match C_KIND_OF_INTR $par_name]} {
 				# Pad to 32 bits - num_intr_inputs
-				set par_mask [expr 1<<$num_intr_inputs]
-				set par_64bit [expr $par_value & $par_mask]
-				set par_value [expr $par_64bit]
+				if {$num_intr_inputs != -1} {
+					set count 0
+					set mask 0
+					set par_mask 0
+					while {$count < $num_intr_inputs} {
+						set mask [expr {1<<$count}]
+						set new_mask [expr {$mask | $par_mask}]
+						set par_mask $new_mask
+						set new_count [expr {$count + 1}]
+						set count $new_count
+					}
+					set par_value_32 $par_value
+					set par_value [expr {$par_value_32 & $par_mask}]
+				} else {
+					debug warning "Warning: num-intr-inputs not set yet, kind-of-intr will be set to zero"
+					set par_value 0
+				}
+					
 			}
 			lappend node_list [list [format_param_name $par_name $trimprefix] hexint $par_value]
 		} {err}]} {
