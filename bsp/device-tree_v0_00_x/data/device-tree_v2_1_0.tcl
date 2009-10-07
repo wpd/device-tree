@@ -766,7 +766,12 @@ proc gener_slave {node slave intc} {
 		}
 		"xps_sysace" -
 		"opb_sysace" {
-			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "sysace" [default_parameters $slave] ]
+			set mem_width [scan_int_parameter_value $slave "C_MEM_WIDTH"]
+			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "sysace" [default_parameters $slave] ]
+			if {$mem_width == 8} {
+				set ip_tree [tree_append $ip_tree [list "8-bit" empty empty]]
+			}
+			lappend node $ip_tree
 			#"MEM_WIDTH"]
 		}
 		"opb_ethernet" -
