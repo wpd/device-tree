@@ -43,6 +43,7 @@ set periphery_array ""
 set uartlite_count 0
 set mac_count 0
 set gpio_names {}
+set overrides {}
 
 set serial_count 0
 set ethernet_count 0
@@ -97,11 +98,12 @@ proc generate {os_handle} {
 
 	set bootargs [xget_sw_parameter_value $os_handle "bootargs"]
 	set consoleip [xget_sw_parameter_value $os_handle "stdout"]
+	global overrides
 	set overrides [xget_sw_parameter_value $os_handle "periph_type_overrides"]
-	generate_device_tree "xilinx.dts" $bootargs $consoleip $overrides
+	generate_device_tree "xilinx.dts" $bootargs $consoleip
 }
 
-proc generate_device_tree {filepath bootargs {consoleip ""} {overrides ""}} {
+proc generate_device_tree {filepath bootargs {consoleip ""}} {
 	variable  device_tree_generator_version
 	debug info "--- device tree generator version: v$device_tree_generator_version ---"
 	debug info "generating $filepath"
@@ -266,9 +268,9 @@ proc generate_device_tree {filepath bootargs {consoleip ""} {overrides ""}} {
 	lappend toplevel [list \#size-cells int 1]
 	lappend toplevel [list \#address-cells int 1]
 	lappend toplevel [list model string "testing"]
-	set reset [reset_gpio $overrides]
+	set reset [reset_gpio]
 	if { "$reset" != "" } {
-		lappend toplevel [list hard-reset-gpios labelref-ext $reset]
+		lappend toplevel $reset
 	}
 	lappend toplevel [list chosen tree $chosen]
 
@@ -339,33 +341,83 @@ proc headerc {ufile generator_version} {
 # for reset-gpio is used only size equals 1
 #
 # PARAMETER periph_type_overrides = {hard-reset-gpios Reset_GPIO 1 1}
-#
-# For more overrides function is better to use switch
-proc reset_gpio {overrides} {
+proc reset_gpio {} {
+	global overrides
 	# ignore size parameter
+	set reset {}
 	foreach over $overrides {
 		# parse hard-reset-gpio keyword
 		if {[lindex $over 0] == "hard-reset-gpios"} {
 			# search if that gpio name is valid IP core in system
-			global gpio_names
-			foreach gpio_name $gpio_names {
-				if {[lindex $gpio_name 0] == [lindex $over 1]} {
-					# gpio pins are from 1 to width
-					if { [lindex $over 2] == "0" } {
-						puts "GPIO pins are from 1 to GPIO width"
-						return
-					}
-					# check if is pin larger then gpio width
-					if {[lindex $gpio_name 1] >= [lindex $over 2]} {
-						return "[lindex $gpio_name 0] [lindex $gpio_name 1] 1"
-					} else {
-						puts "Requested pin is greater than number of GPIO pins"
-						return
-					}
+			set desc [valid_gpio [lindex $over 1]]
+			if { "$desc" != "" } {
+				# check if is pin larger then gpio width
+				if {[lindex $desc 1] > [lindex $over 2]} {
+					set k [ list [lindex $over 1] [lindex $over 2] 1]
+					set reset "hard-reset-gpios labelref-ext {{$k}}"
+					return $reset
+				} else {
+					puts "RESET-GPIO: Requested pin is greater than number of GPIO pins: $over"
 				}
+			} else {
+				puts "RESET-GPIO: Not valid IP name: $over"
 			}
-			puts "No valid hard-reset-gpio IP"
-			return
+		}
+	}
+	return
+}
+
+# For generation of gpio led description
+# this function is called from bus code because linux needs to have this description in the same node as is IP
+# FIXME there could be maybe problem if system contains bridge and gpio is after it - needs test
+#
+# PARAMETER periph_type_overrides = {led heartbeat LEDs_8Bit 5 5} {led yellow LEDs_8Bit 7 2} {led green LEDs_8Bit 4 1}
+proc led_gpio {} {
+	global overrides
+	set tree {}
+	foreach over $overrides {
+		# parse hard-reset-gpio keyword
+		if {[lindex $over 0] == "led"} {
+			# clear trigger
+			set trigger ""
+			set desc [valid_gpio [lindex $over 2]]
+			if { "$desc" != "" } {
+				# check if is pin larger then gpio width
+				if { [lindex $desc 1] > [lindex $over 3]} {
+					# check if the size exceed number of pins
+					if { [lindex $desc 1] >= [expr [lindex $over 3] + [lindex $over 4]] } {
+						# assemble led node
+						set label_desc "{label string [lindex $over 1]}"
+						set led_pins "{[lindex $over 2] [lindex $over 3] [lindex $over 4]}"
+						if { [string match -nocase "heartbeat" [lindex $over 1]] } {
+							set trigger "{linux,default-trigger string heartbeat}"
+						}
+						set tree "{[lindex $over 1] tree { $label_desc $trigger { gpios labelref-ext $led_pins }}} $tree"
+					} else {
+						puts "LED-GPIO: Requested pin size reach out of GPIO pins width: $over"
+					}
+
+				} else {
+					puts "LED-GPIO: Requested pin is greater than number of GPIO pins: $over"
+				}
+			} else {
+				puts "LED-GPIO: Not valid IP name $over"
+			}
+		}
+	}
+	# it is a complex node that's why I have to assemble it
+	if { "$tree" != "" } {
+		set tree "gpio-leds tree { {compatible string gpio-leds} $tree }"
+	}
+	return $tree
+}
+
+# Check if gpio name is valid or not
+proc valid_gpio {name} {
+	global gpio_names
+	foreach gpio_desc $gpio_names {
+		if { [lindex $gpio_desc 0] == "$name" } {
+			return $gpio_desc
 		}
 	}
 	return
@@ -1444,6 +1496,13 @@ proc bus_bridge {slave intc_handle baseaddr face} {
 			set bus_node [gener_slave $bus_node $ip $intc_handle]
 			lappend periphery_array $ip
 		}
+	}
+
+	# I have to generate led description on the same level as gpio node is
+	# we are using designs with one plb - that's why is ok to have it here
+	set led [led_gpio]
+	if { "$led" != "" } {
+		lappend bus_node $led
 	}
 
 	lappend bus_node [list \#size-cells int 1]
