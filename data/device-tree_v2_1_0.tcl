@@ -913,7 +913,10 @@ proc gener_slave {node slave intc} {
 			global gpio_names
 			lappend gpio_names [list [xget_hw_name $slave] [scan_int_parameter_value $slave "C_GPIO_WIDTH"]]
 			# We should handle this specially, to report two ports.
-			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "gpio" [default_parameters $slave]]
+			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "gpio" [default_parameters $slave]]
+			set ip_tree [tree_append $ip_tree [list "#gpio-cells" int "2"]]
+			set ip_tree [tree_append $ip_tree [list "gpio-controller" empty empty]]
+			lappend node $ip_tree
 		}
 		"opb_iic" -
 		"xps_iic" {
