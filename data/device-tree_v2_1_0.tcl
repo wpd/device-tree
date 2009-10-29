@@ -42,6 +42,7 @@ set cpunumber 0
 set periphery_array ""
 set uartlite_count 0
 set mac_count 0
+set gpio_names {}
 
 set serial_count 0
 set ethernet_count 0
@@ -96,10 +97,11 @@ proc generate {os_handle} {
 
 	set bootargs [xget_sw_parameter_value $os_handle "bootargs"]
 	set consoleip [xget_sw_parameter_value $os_handle "stdout"]
-	generate_device_tree "xilinx.dts" $bootargs $consoleip
+	set overrides [xget_sw_parameter_value $os_handle "periph_type_overrides"]
+	generate_device_tree "xilinx.dts" $bootargs $consoleip $overrides
 }
 
-proc generate_device_tree {filepath bootargs {consoleip ""}} {
+proc generate_device_tree {filepath bootargs {consoleip ""} {overrides ""}} {
 	variable  device_tree_generator_version
 	debug info "--- device tree generator version: v$device_tree_generator_version ---"
 	debug info "generating $filepath"
@@ -264,6 +266,10 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 	lappend toplevel [list \#size-cells int 1]
 	lappend toplevel [list \#address-cells int 1]
 	lappend toplevel [list model string "testing"]
+	set reset [reset_gpio $overrides]
+	if { "$reset" != "" } {
+		lappend toplevel [list hard-reset-gpios labelref-ext $reset]
+	}
 	lappend toplevel [list chosen tree $chosen]
 
 	#
@@ -325,6 +331,44 @@ proc headerc {ufile generator_version} {
 	puts $ufile " * XPS project directory: [prj_dir]"
 	puts $ufile " */"
 	puts $ufile ""
+}
+
+# generate structure for reset gpio.
+# mss description - first pin of Reset_GPIO ip is used for system reset
+# {key-word IP_name gpio_pin size_of_pin}
+# for reset-gpio is used only size equals 1
+#
+# PARAMETER periph_type_overrides = {hard-reset-gpios Reset_GPIO 1 1}
+#
+# For more overrides function is better to use switch
+proc reset_gpio {overrides} {
+	# ignore size parameter
+	foreach over $overrides {
+		# parse hard-reset-gpio keyword
+		if {[lindex $over 0] == "hard-reset-gpios"} {
+			# search if that gpio name is valid IP core in system
+			global gpio_names
+			foreach gpio_name $gpio_names {
+				if {[lindex $gpio_name 0] == [lindex $over 1]} {
+					# gpio pins are from 1 to width
+					if { [lindex $over 2] == "0" } {
+						puts "GPIO pins are from 1 to GPIO width"
+						return
+					}
+					# check if is pin larger then gpio width
+					if {[lindex $gpio_name 1] >= [lindex $over 2]} {
+						return "[lindex $gpio_name 0] [lindex $gpio_name 1] 1"
+					} else {
+						puts "Requested pin is greater than number of GPIO pins"
+						return
+					}
+				}
+			}
+			puts "No valid hard-reset-gpio IP"
+			return
+		}
+	}
+	return
 }
 
 proc get_intc_signals {intc} {
@@ -865,6 +909,9 @@ proc gener_slave {node slave intc} {
 		}
 		"opb_gpio" -
 		"xps_gpio" {
+			# save gpio names and width for gpio reset code
+			global gpio_names
+			lappend gpio_names [list [xget_hw_name $slave] [scan_int_parameter_value $slave "C_GPIO_WIDTH"]]
 			# We should handle this specially, to report two ports.
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "gpio" [default_parameters $slave]]
 		}
@@ -1692,6 +1739,12 @@ proc write_value {file indent type value} {
 			puts -nonewline $file "\]"
 		} elseif {$type == "labelref"} {
 			puts -nonewline $file "= <&$value>"
+		} elseif {$type == "labelref-ext"} {
+			puts -nonewline $file "= < &"
+			foreach element $value {
+				puts -nonewline $file "$element "
+			}
+			puts -nonewline $file ">"
 		} elseif {$type == "aliasref"} {
 			puts -nonewline $file "= &$value"
 		} elseif {$type == "string"} {

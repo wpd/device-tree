@@ -34,4 +34,5 @@ PARAMETER name = bootargs, desc = "Booting arguments", type = string, default = 
 
 PARAMETER name = stdout, desc = "Instance name of IP core for boot console (e.g. RS232_Uart_1, not xps_uart16550)", type = peripheral_instance,range=(opb_uartlite, opb_uart16550, opb_uart16440, xps_uartlite), default = "";
 
+PARAMETER name = periph_type_overrides, desc = "List of peripheral type overrides", type = string, default = "";
 END OS
