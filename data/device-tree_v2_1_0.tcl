@@ -1643,10 +1643,37 @@ proc format_ip_name {devicetype baseaddr {label ""}} {
 	}
 }
 
+# TODO: remove next two lines which is a temporary HACK for CR 532315
+set num_intr_inputs -1
+
 proc gen_params {node_list handle params {trimprefix "C_"} } {
 	foreach par_name $params {
 		if {[catch {
 			set par_value [scan_int_parameter_value $handle $par_name]
+			# TODO: remove next if elseif block which is a temporary HACK for CR 532315
+			if {[string match C_NUM_INTR_INPUTS $par_name]} {
+				set num_intr_inputs $par_value
+			} elseif {[string match C_KIND_OF_INTR $par_name]} {
+				# Pad to 32 bits - num_intr_inputs
+				if {$num_intr_inputs != -1} {
+					set count 0
+					set mask 0
+					set par_mask 0
+					while {$count < $num_intr_inputs} {
+						set mask [expr {1<<$count}]
+						set new_mask [expr {$mask | $par_mask}]
+						set par_mask $new_mask
+						set new_count [expr {$count + 1}]
+						set count $new_count
+					}
+					set par_value_32 $par_value
+					set par_value [expr {$par_value_32 & $par_mask}]
+				} else {
+					debug warning "Warning: num-intr-inputs not set yet, kind-of-intr will be set to zero"
+					set par_value 0
+				}
+					
+			}
 			lappend node_list [list [format_param_name $par_name $trimprefix] hexint $par_value]
 		} {err}]} {
 			set par_handle [xget_hw_parameter_handle $handle $par_name]
