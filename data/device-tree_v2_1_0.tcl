@@ -857,7 +857,7 @@ proc gener_slave {node slave intc} {
 			lappend alias_node_list [list serial$serial_count aliasref $name]
 			incr serial_count
 
-			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "serial" [default_parameters $slave] "" "" [list "ns16550"] ]
+			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "serial" [default_parameters $slave] "" "" [list "ns16550a"] ]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
 			set ip_tree [tree_append $ip_tree [list "current-speed" int "9600"]]
 
