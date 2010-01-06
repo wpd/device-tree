@@ -762,6 +762,21 @@ proc gener_slave {node slave intc} {
 		"xps_timer" -
 		"opb_timer" {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "timer" [default_parameters $slave] ]
+
+			# for version 1.01b of the xps timer, make sure that it has the patch applied to the h/w
+			# so that it's using an edge interrupt rather than a falling as described in AR 33880
+			# this is tracking a h/w bug in EDK 11.4 that should be fixed in the future
+ 
+			set hw_ver [xget_hw_parameter_value $slave "HW_VER"]
+			if { $hw_ver == "1.01.b" && $type == "xps_timer" } {
+				set port_handle [xget_hw_port_handle $slave "Interrupt"]
+				set sensitivity [xget_hw_subproperty_value $port_handle "SENSITIVITY"];
+				if { [string compare -nocase $sensitivity "EDGE_RISING"] != 0 } {
+					error "xps_timer version 1.01b must be patched to rising edge IRQ sensitivity. \
+						Please see Xilinx Answer Record 33880 at http://www.xilinx.com/support/answers/33880.htm \
+						and follow the instructions there."
+				}
+			}
 			#"C_COUNT_WIDTH C_ONE_TIMER_ONLY"]
 		}
 		"xps_sysace" -
@@ -1546,7 +1561,7 @@ proc gen_params {node_list handle params {trimprefix "C_"} } {
 					debug warning "Warning: num-intr-inputs not set yet, kind-of-intr will be set to zero"
 					set par_value 0
 				}
-					
+				
 			}
 			lappend node_list [list [format_param_name $par_name $trimprefix] hexint $par_value]
 		} {err}]} {
