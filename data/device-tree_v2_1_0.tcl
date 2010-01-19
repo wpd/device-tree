@@ -1093,6 +1093,56 @@ proc gener_slave {node slave intc} {
 
 			lappend node $tree
 		}
+		"plbv46_pci" {
+			# We can automatically generate the ranges property, but that's about it
+			# the interrupt-map encodes board-level info that cannot be
+			# derived from the MHS.
+			# Default handling for all params first
+			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "plbv46-pci" [default_parameters $slave]]
+
+			# Standard stuff required fror the pci OF bindings
+			set ip_tree [tree_append $ip_tree [list "#size-cells" int "2"]]
+			set ip_tree [tree_append $ip_tree [list "#address-cells" int "3"]]
+			set ip_tree [tree_append $ip_tree [list "#interrupt-cells" int "1"]]
+			set ip_tree [tree_append $ip_tree [list "device_type" string "pci"]]
+			# Generate ranges property.  Lots of assumptions here - 32 bit address space being the main one
+			set ranges ""
+			set ipifbar_num [ scan_int_parameter_value $slave "C_IPIFBAR_NUM"]
+			for {set i 0} {$i < $ipifbar_num} {incr i} {
+				set ipif_spacetype [ scan_int_parameter_value $slave [ format "C_IPIF_SPACETYPE_%i" $i ] ]
+				set ipifbar [ scan_int_parameter_value $slave [ format "C_IPIFBAR_%i" $i ] ]
+				set ipif_highaddr [ scan_int_parameter_value $slave [ format "C_IPIF_HIGHADDR_%i" $i ] ]
+				set ipifbar2pcibar [ scan_int_parameter_value $slave [ format "C_IPIFBAR2PCIBAR_%i" $i ] ]
+				# A quick DRC to make sure the IPIFBAR and IPIFBAR2PCIBAR match
+				# This is a limitation of the kernel PCI layer rather than anything else
+				if { $ipifbar != $ipifbar2pcibar } {
+					error "ERROR: $name:  C_IPIFBAR_$i and C_IPIBAR2PCIBAR_$i must match"
+				}
+				# Different magic number depending upon the type of address space
+				switch $ipif_spacetype {
+					"0" {
+						# IO space
+						set space_code "0x01000000"
+						debug warning "WARNING: $name BAR $i: PCI I/O spaces not supported in Linux kernel PCI drivers"
+					}
+					"1" {
+						# mem space
+						set space_code "0x02000000"
+					}
+				}
+				set ranges [lappend ranges $space_code 0 $ipifbar2pcibar $ipifbar 0 [ expr $ipif_highaddr - $ipifbar + 1 ]]
+			}
+			set ip_tree [tree_append $ip_tree [ list "ranges" hexinttuple $ranges ]]
+
+			# Now the interrupt-map-mask etc
+			set ip_tree [tree_append $ip_tree [ list "interrupt-map-mask" hexinttuple "0xff00 0x0 0x0 0x7" ]]
+
+			# Make sure the user knows they've still got more work to do
+			# If we were prepared to add a custom PARAMETER to the MLD then we could do moer here, but for now this is 
+			# the best we can do
+			debug warning "WARNING: Cannot automatically populate PCI interrupt-map property - this must be completed manually"
+			lappend node $ip_tree
+		}
 		"microblaze" {
 			debug ip "Other Microblaze CPU $name=$type"
 			lappend node [gen_microblaze $slave [default_parameters $slave]]
@@ -1709,6 +1759,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{opb_timer} {xps-timer-1.00.a} \
 		{xps_timer} {xps-timer-1.00.a} \
 		{plb_v46} {plb_v46_1.00.a} \
+		{plbv46_pci} {plbv46_pci_1.03.a} \
 		{xps_bram_if_cntlr} {xps_bram_if_cntlr_1.00.a} \
 		{xps_ethernetlite} {xps_ethernetlite_1.00.a} \
 		{xps_gpio} {xps_gpio_1.00.a} \
