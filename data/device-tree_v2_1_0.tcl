@@ -100,6 +100,10 @@ proc generate {os_handle} {
 	set consoleip [xget_sw_parameter_value $os_handle "stdout"]
 	global overrides
 	set overrides [xget_sw_parameter_value $os_handle "periph_type_overrides"]
+	global flash_memory
+	set flash_memory [xget_sw_parameter_value $os_handle "flash_memory"]
+	global flash_memory_bank
+	set flash_memory_bank [xget_sw_parameter_value $os_handle "flash_memory_bank"]
 	generate_device_tree "xilinx.dts" $bootargs $consoleip
 }
 
@@ -807,6 +811,19 @@ proc tt {number} {
 	return $tab
 }
 
+# Change the name of a node.
+proc change_nodename {nodetochange oldname newname} {
+	if {[llength $nodetochange] == 0} {
+		error "Tried to change the name of an empty node: $oldname with $newname"
+	}
+	# The name of a node is in the first element of the node
+	set lineofname [lindex $nodetochange 0]
+	set substart [string first $oldname $lineofname]
+	set subend [expr {$substart + [string length $oldname] - 1}]
+	set lineofname [string replace $lineofname $substart $subend $newname]
+	return [lreplace $nodetochange 0 0 "$lineofname"]
+}
+
 proc gener_slave {node slave intc} {
 	set name [xget_hw_name $slave]
 	set type [xget_hw_value $slave]
@@ -1027,6 +1044,7 @@ proc gener_slave {node slave intc} {
 				# fdt.
 				if {$synch_mem == 0} {
 					debug warning "WARNING: Bank $x of EMC core $name is used in asynchronous mode.  We assume this core is connected to a flash memory, although in some older designs this configuration may have been used to interface to a peripheral.  Current design recommendations suggest using an EPC core to interface to such peripherals."
+					global flash_memory flash_memory_bank
 					set baseaddr_prefix [format "MEM%d_" $x]
 					set tree [slaveip_intr $slave $intc [interrupt_list $slave] "flash" [default_parameters $slave] $baseaddr_prefix "" "cfi-flash"]
 
@@ -1034,6 +1052,10 @@ proc gener_slave {node slave intc} {
 					set datawidth [scan_int_parameter_value $slave [format "C_%sWIDTH" $baseaddr_prefix]]
 					set tree [tree_append $tree [list "bank-width" int "[expr ($datawidth/8)]"]]
 
+					# If it is a set as the system Flash memory, change the name of this node to PetaLinux standard system Flash emmory name
+					if {[ string match -nocase $name $flash_memory ] && $x == $flash_memory_bank} {
+						set tree [change_nodename $tree $name "primary_flash"]
+					}
 					lappend node $tree
 				} 
 			}
