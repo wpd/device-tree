@@ -100,6 +100,10 @@ proc generate {os_handle} {
 	set consoleip [xget_sw_parameter_value $os_handle "stdout"]
 	global overrides
 	set overrides [xget_sw_parameter_value $os_handle "periph_type_overrides"]
+	global main_memory
+	set main_memory [xget_sw_parameter_value $os_handle "main_memory"]
+	global main_memory_bank
+	set main_memory_bank [xget_sw_parameter_value $os_handle "main_memory_bank"]
 	global flash_memory
 	set flash_memory [xget_sw_parameter_value $os_handle "flash_memory"]
 	global flash_memory_bank
@@ -1027,6 +1031,7 @@ proc gener_slave {node slave intc} {
 		"plb_emc" -
 		"mch_opb_emc" -
 		"xps_mch_emc" {
+			global main_memory main_memory_bank
 			# Handle flash memories with 'banks'. Generate one flash node
 			# for each bank, if necessary.  If not connected to flash,
 			# then do nothing.
@@ -1035,29 +1040,25 @@ proc gener_slave {node slave intc} {
 				set count 1
 			}
 			for {set x 0} {$x < $count} {incr x} {
-				set synch_mem [scan_int_parameter_value $slave [format "C_SYNCH_MEM_%d" $x]]
-				# C_SYNCH_MEM_$x = 0 indicates the bank handles
-				# a flash device and it should be listed as a
-				# slave in fdt.
-				# C_SYNCH_MEM_$x = 1 indicates the bank handles
-				# SRAM and it should be listed as a memory in
-				# fdt.
-				if {$synch_mem == 0} {
-					debug warning "WARNING: Bank $x of EMC core $name is used in asynchronous mode.  We assume this core is connected to a flash memory, although in some older designs this configuration may have been used to interface to a peripheral.  Current design recommendations suggest using an EPC core to interface to such peripherals."
-					global flash_memory flash_memory_bank
-					set baseaddr_prefix [format "MEM%d_" $x]
-					set tree [slaveip_intr $slave $intc [interrupt_list $slave] "flash" [default_parameters $slave] $baseaddr_prefix "" "cfi-flash"]
+				
+				# Make sure we didn't already register this guy as the main memory.
+				# see main handling in gen_memories
+				if {[ string match -nocase $name $main_memory ] && $x == $main_memory_bank } {
+					continue;
+				}
+				global flash_memory flash_memory_bank
+				set baseaddr_prefix [format "MEM%d_" $x]
+				set tree [slaveip_intr $slave $intc [interrupt_list $slave] "flash" [default_parameters $slave] $baseaddr_prefix "" "cfi-flash"]
 
-					# Flash needs a bank-width attribute.
-					set datawidth [scan_int_parameter_value $slave [format "C_%sWIDTH" $baseaddr_prefix]]
-					set tree [tree_append $tree [list "bank-width" int "[expr ($datawidth/8)]"]]
+				# Flash needs a bank-width attribute.
+				set datawidth [scan_int_parameter_value $slave [format "C_%sWIDTH" $baseaddr_prefix]]
+				set tree [tree_append $tree [list "bank-width" int "[expr ($datawidth/8)]"]]
 
-					# If it is a set as the system Flash memory, change the name of this node to PetaLinux standard system Flash emmory name
-					if {[ string match -nocase $name $flash_memory ] && $x == $flash_memory_bank} {
-						set tree [change_nodename $tree $name "primary_flash"]
-					}
-					lappend node $tree
-				} 
+				# If it is a set as the system Flash memory, change the name of this node to PetaLinux standard system Flash emmory name
+				if {[ string match -nocase $name $flash_memory ] && $x == $flash_memory_bank} {
+					set tree [change_nodename $tree $name "primary_flash"]
+				}
+				lappend node $tree
 			}
 		}
 		"mpmc" {
@@ -1370,12 +1371,16 @@ proc gen_microblaze {tree hwproc_handle params} {
 }
 
 proc gen_memories {tree hwproc_handle} {
+	global main_memory main_memory_bank
 	set mhs_handle [xget_hw_parent_handle $hwproc_handle]
 	set ip_handles [xget_hw_ipinst_handle $mhs_handle "*"]
 	set memory_count 0
 	foreach slave $ip_handles {
 		set name [xget_hw_name $slave]
 		set type [xget_hw_value $slave]
+		if {![string match $name $main_memory]} {
+			continue;
+		}
 		switch $type {
 			"plb_bram_if_cntlr" -
 			"opb_bram_if_cntlr" {
@@ -1412,25 +1417,10 @@ proc gen_memories {tree hwproc_handle} {
 					set count 1
 				}
 				for {set x 0} {$x < $count} {incr x} {
-					switch $type {
-						"plb_emc" -
-						"opb_emc" -
-						"mch_opb_emc" -
-						"xps_mch_emc" {
-							# C_SYNCH_MEM_$x = 0 indicates the bank handles
-							# a flash device and it should be listed as a
-							# slave in fdt.
-							# C_SYNCH_MEM_$x = 1 indicates the bank handles
-							# SRAM and it should be listed as a memory in
-							# fdt.
-							set synch_mem [scan_int_parameter_value $slave [format "C_SYNCH_MEM_%d" $x]]
-							if {$synch_mem == 0} {
-								continue;
-							}
-						}
-					}			
-					lappend tree [memory $slave [format "MEM%d_" $x] ""]
-					set memory_count [expr $memory_count + 1]
+					if { $x == $main_memory_bank } {
+						lappend tree [memory $slave [format "MEM%d_" $x] ""]
+						set memory_count [expr $memory_count + 1]
+					}
 				}
 			}
 			"mpmc" {
