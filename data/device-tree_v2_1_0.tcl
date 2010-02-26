@@ -1069,6 +1069,26 @@ proc gener_slave {node slave intc} {
 			# mpmc has.
 			lappend node [slave_mpmc $slave $intc]
 		}
+		"xps_spi" {
+			# We will handle SPI FLASH here
+			global flash_memory flash_memory_bank
+			set tree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] "" ]
+			
+			if {[string match -nocase $flash_memory $name]} {
+				# If it is a SPI FLASH, we will add a SPI Flash
+				# subnode to the SPI controller
+				set subnode {}
+				# Set the SPI Flash chip select
+				lappend subnode [list "reg" hexinttuple [list $flash_memory_bank]]
+				# Set the SPI Flash clock freqeuncy
+				set sys_clk [get_clock_frequency $slave "SPLB_Clk"]
+				set sck_ratio [scan_int_parameter_value $slave "C_SCK_RATIO"]
+				set sck [expr { $sys_clk / $sck_ratio }]
+				lappend subnode [list [format_name "spi-max-frequency"] int $sck]
+				set tree [tree_append $tree [list [format_ip_name "main-flash" $flash_memory_bank] tree $subnode]]
+			}
+			lappend node $tree
+		}
 		"opb2plb_bridge" {
 			# Hmm.. how do we represent this?
 			#	lappend node [bus_bridge $slave $intc "MPLB" "C_RNG"]
