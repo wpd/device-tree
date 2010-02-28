@@ -1085,7 +1085,7 @@ proc gener_slave {node slave intc} {
 				set sck_ratio [scan_int_parameter_value $slave "C_SCK_RATIO"]
 				set sck [expr { $sys_clk / $sck_ratio }]
 				lappend subnode [list [format_name "spi-max-frequency"] int $sck]
-				set tree [tree_append $tree [list [format_ip_name "main-flash" $flash_memory_bank] tree $subnode]]
+				set tree [tree_append $tree [list [format_ip_name "primary_flash" $flash_memory_bank] tree $subnode]]
 			}
 			lappend node $tree
 		}
