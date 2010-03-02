@@ -1075,6 +1075,9 @@ proc gener_slave {node slave intc} {
 			set tree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] "" ]
 			
 			if {[string match -nocase $flash_memory $name]} {
+				# Add the address-cells and size-cells to make the DTC compiler stop outputing warning
+				set tree [tree_append $tree [list "#address-cells" int "1"]]
+				set tree [tree_append $tree [list "#size-cells" int "0"]]
 				# If it is a SPI FLASH, we will add a SPI Flash
 				# subnode to the SPI controller
 				set subnode {}
