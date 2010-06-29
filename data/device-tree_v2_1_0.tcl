@@ -723,6 +723,7 @@ proc slave_ll_temac_port {slave intc index} {
 }
 proc slave_ll_temac {slave intc} {
 	set tree [compound_slave $slave]
+	set tree [tree_append $tree [list ranges empty empty]]
 	set tree [tree_append $tree [slave_ll_temac_port $slave $intc 0] ]
 	set port1_enabled  [scan_int_parameter_value $slave "C_TEMAC1_ENABLED"]
 	if {$port1_enabled == "1"} {
