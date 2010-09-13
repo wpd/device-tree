@@ -1667,18 +1667,25 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{opb_intc} {xps_intc_1.00.a} \
 		{opb_timer} {xps-timer-1.00.a} \
 		{xps_timer} {xps-timer-1.00.a} \
+		{axi_timer} {xps-timer-1.00.a} \
 		{plb_v46} {plb_v46_1.00.a} \
 		{xps_bram_if_cntlr} {xps_bram_if_cntlr_1.00.a} \
 		{xps_ethernetlite} {xps_ethernetlite_1.00.a} \
 		{xps_gpio} {xps_gpio_1.00.a} \
+		{axi_gpio} {xps_gpio_1.00.a} \
 		{xps_hwicap} {xps_hwicap_1.00.a} \
 		{xps_iic} {xps_iic_2.00.a} \
+		{axi_iic} {xps_iic_2.00.a} \
 		{xps_intc} {xps_intc_1.00.a} \
+		{axi_intc} {xps_intc_1.00.a} \
 		{xps_ll_temac} {xps_ll_temac_1.00.a} \
 		{xps_ps2} {xps_ps2_1.00.a} \
 		{xps_spi_2} {xps_spi_2.00.a} \
+		{axi_spi} {xps_spi_2.00.a} \
 		{xps_uart16550_2} {xps_uart16550_2.00.a} \
+		{axi_uart16550} {xps_uart16550_2.00.a} \
 		{xps_uartlite} {xps_uartlite_1.00.a} \
+		{axi_uartlite} {xps_uartlite_1.00.a} \
 		{xps_sysace} {xps_sysace_1.00.a} \
 		{xps_usb_host} {xps_usb_host_1.00.a} \
 	]
