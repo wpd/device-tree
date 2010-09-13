@@ -871,6 +871,9 @@ proc gener_slave {node slave intc} {
 			# We should handle this specially, to report two ports.
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "i2c" [default_parameters $slave]]
 		}
+		"xps_spi" {
+			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "spi" [default_parameters $slave]]
+		}
 		"xps_usb_host" {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "usb" [default_parameters $slave] "SPLB_" "" [list "usb-ehci"]]
 		}
