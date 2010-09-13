@@ -108,6 +108,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 	debug info "generating $filepath"
 
 	set toplevel {}
+	set ip_tree {}
 	set chosen {}
 	lappend chosen [list bootargs string $bootargs]
 
@@ -152,17 +153,29 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 		"microblaze" {
 			set intc [get_handle_to_intc $proc_handle "Interrupt"]
 			set toplevel [gen_microblaze $toplevel $hwproc_handle [default_parameters $hwproc_handle]]
-			set busif_handle [xget_hw_busif_handle $hwproc_handle "DPLB"]
-			if {[llength $busif_handle] != 0} {
+			# Microblaze v8 has AXI and/or PLB. xget_hw_busif_handle returns
+			# a valid handle for both these bus ifs, even if they are not
+			# connected. The better way of checking if a bus is connected
+			# or not is to check it's value.
+			set bus_name [xget_hw_busif_value $hwproc_handle "M_AXI_DP"]
+			if { [string compare -nocase $bus_name ""] != 0 } {
+				set tree [bus_bridge $hwproc_handle $intc 0 "M_AXI_DP"]
+				set tree [tree_append $tree [list ranges empty empty]]
+				lappend ip_tree $tree
+			}
+			set bus_name [xget_hw_busif_value $hwproc_handle "DPLB"]
+			if { [string compare -nocase $bus_name ""] != 0 } {
 				# Microblaze v7 has PLB.
 				set tree [bus_bridge $hwproc_handle $intc 0 "DPLB"]
 				set tree [tree_append $tree [list ranges empty empty]]
-				lappend toplevel $tree
-			} else {
+				lappend ip_tree $tree
+			}
+			set bus_name [xget_hw_busif_value $hwproc_handle "DOPB"]
+			if { [string compare -nocase $bus_name ""] != 0 } {
 				# Older microblazes have OPB.
 				set tree [bus_bridge $hwproc_handle $intc 0 "DOPB"]
 				set tree [tree_append $tree [list ranges empty empty]]
-				lappend toplevel $tree
+				lappend ip_tree $tree
 			}
 			lappend toplevel [list "compatible" stringtuple [list "xlnx,microblaze"] ]
 		}
@@ -175,21 +188,21 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 				# older ppc405s have a single PLB interface.
 				set tree [bus_bridge $hwproc_handle $intc 0 "DPLB"]
 				set tree [tree_append $tree [list ranges empty empty]]
-				lappend toplevel $tree
+				lappend ip_tree $tree
 			} else {
 				# newer ppc405s since edk9.2 have two plb interfaces, with
 				# DPLB1 only being used for memory.
 				set tree [bus_bridge $hwproc_handle $intc 0 "DPLB0"]
 				set tree [tree_append $tree [list ranges empty empty]]
-				lappend toplevel $tree
+				lappend ip_tree $tree
 				set tree [bus_bridge $hwproc_handle $intc 1 "DPLB1"]
 				set tree [tree_append $tree [list ranges empty empty]]
-				lappend toplevel $tree
+				lappend ip_tree $tree
 			}
 			# pickup things which are only on the dcr bus.
 			if {[bus_is_connected $hwproc_handle "MDCR"]} {
 				set tree [bus_bridge $hwproc_handle $intc 0 "MDCR"]
-				lappend toplevel $tree
+				lappend ip_tree $tree
 			}
 
 			lappend toplevel [list "compatible" stringtuple [list "xlnx,virtex405" "xlnx,virtex"] ]
@@ -199,16 +212,16 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			set toplevel [gen_ppc440 $toplevel $hwproc_handle $intc [default_parameters $hwproc_handle]]
 			set tree [bus_bridge $hwproc_handle $intc 0 "MPLB"]
 			set tree [tree_append $tree [list ranges empty empty]]
-			lappend toplevel $tree
+			lappend ip_tree $tree
 			# pickup things which are only on the dcr bus.
 			if {[bus_is_connected $hwproc_handle "MDCR"]} {
 				set tree [bus_bridge $hwproc_handle $intc 0 "MDCR"]
-				lappend toplevel $tree
+				lappend ip_tree $tree
 			}
 
 # 			set tree [bus_bridge $hwproc_handle $intc 0 "PPC440MC"]
 # 			set tree [tree_append $tree [list ranges empty empty]]
-# 			lappend toplevel $tree
+# 			lappend ip_tree $tree
 
 			lappend toplevel [list "compatible" stringtuple [list "xlnx,virtex440" "xlnx,virtex"] ]
 			set cpu_name [xget_hw_name $hwproc_handle]
@@ -219,8 +232,9 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 		}
 	}
 
+	set dev_tree [concat $toplevel $ip_tree]
 	if {$consoleip != ""} {
-		set consolepath [get_pathname_for_label $toplevel $consoleip]
+		set consolepath [get_pathname_for_label $dev_tree $consoleip]
 		if {$consolepath != ""} {
 			lappend chosen [list "linux,stdout-path" string $consolepath]
 		} else {
