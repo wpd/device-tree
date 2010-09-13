@@ -690,7 +690,8 @@ proc gener_slave {node slave intc} {
 	set type [xget_hw_value $slave]
 	switch -exact $type {
 		"opb_intc" -
-		"xps_intc" {
+		"xps_intc" -
+		"axi_intc" {
 			# Interrupt controllers
 			lappend node [gen_intc $slave $intc "interrupt-controller" "C_NUM_INTR_INPUTS C_KIND_OF_INTR"]
 		}
@@ -760,7 +761,8 @@ proc gener_slave {node slave intc} {
 			#"BAUDRATE DATA_BITS CLK_FREQ ODD_PARITY USE_PARITY"]
 		}
 		"xps_timer" -
-		"opb_timer" {
+		"opb_timer" -
+		"axi_timer" {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "timer" [default_parameters $slave] ]
 
 			# for version 1.01b of the xps timer, make sure that it has the patch applied to the h/w
@@ -862,16 +864,19 @@ proc gener_slave {node slave intc} {
 			lappend node [slaveip_intr $slave $intc "Playback_Interrupt Record_Interrupt" "ac97" ""]
 		}
 		"opb_gpio" -
-		"xps_gpio" {
+		"xps_gpio" -
+		"axi_gpio" {
 			# We should handle this specially, to report two ports.
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "gpio" [default_parameters $slave]]
 		}
 		"opb_iic" -
-		"xps_iic" {
+		"xps_iic" -
+		"axi_iic" {
 			# We should handle this specially, to report two ports.
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "i2c" [default_parameters $slave]]
 		}
-		"xps_spi" {
+		"xps_spi" -
+		"axi_spi" {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "spi" [default_parameters $slave]]
 		}
 		"xps_usb_host" {
