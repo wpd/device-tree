@@ -691,7 +691,7 @@ proc get_handle_to_intc {proc_handle port_name} {
 	return $intc
 }
 
-#retun number of tabulator
+#return number of tabulator
 proc tt {number} {
 	set tab ""
 	for {set x 0} {$x < $number} {incr x} {
