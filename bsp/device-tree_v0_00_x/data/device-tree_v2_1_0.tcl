@@ -702,7 +702,8 @@ proc gener_slave {node slave intc} {
 			#"C_MB_DBG_PORTS C_UART_WIDTH C_USE_UART"]
 		}
 		"xps_uartlite" -
-		"opb_uartlite" {
+		"opb_uartlite" -
+		"axi_uartlite" {
 			#
 			# Add this uartlite device to the alias list
 			#
@@ -718,8 +719,10 @@ proc gener_slave {node slave intc} {
 			set ip_tree [tree_append $ip_tree [list "current-speed" int [xget_sw_parameter_value $slave "C_BAUDRATE"]]]
 			if { $type == "opb_uartlite"} {
 				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [get_clock_frequency $slave "SOPB_Clk"]]]
-			} else {
+			} elseif { $type == "xps_uartlite" } {
 				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [get_clock_frequency $slave "SPLB_Clk"]]]
+			} elseif { $type == "axi_uartlite" } {
+				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [get_clock_frequency $slave "S_AXI_ACLK"]]]
 			}
 			set uartlite_count [expr $uartlite_count + 1]
 			lappend node $ip_tree
@@ -727,7 +730,8 @@ proc gener_slave {node slave intc} {
 		}
 		"xps_uart16550" -
 		"plb_uart16550" -
-		"opb_uart16550" {
+		"opb_uart16550" -
+		"axi_uart16550" {
 			#
 			# Add this uart device to the alias list
 			#
@@ -746,8 +750,10 @@ proc gener_slave {node slave intc} {
 				set freq [get_clock_frequency $slave "OPB_Clk"]
 			} elseif { $type == "plb_uart16550"} {
 				set freq [get_clock_frequency $slave "PLB_Clk"]
-			} else {
+			} elseif { $type == "xps_uart16550"} {
 				set freq [get_clock_frequency $slave "SPLB_Clk"]
+			} elseif { $type == "axi_uart16550"} {
+				set freq [get_clock_frequency $slave "S_AXI_ACLK"]
 			}
 			set has_xin [scan_int_parameter_value $slave "C_HAS_EXTERNAL_XIN"]
 			if { $has_xin == "1" } {
@@ -756,7 +762,11 @@ proc gener_slave {node slave intc} {
 			set ip_tree [tree_append $ip_tree [list "clock-frequency" int $freq]]
 
 			set ip_tree [tree_append $ip_tree [list "reg-shift" int "2"]]
-			set ip_tree [tree_append $ip_tree [list "reg-offset" hexint [expr 0x1003]]]
+			if { $type == "axi_uart16550"} {
+				set ip_tree [tree_append $ip_tree [list "reg-offset" hexint [expr 0x1000]]]
+			} else {
+				set ip_tree [tree_append $ip_tree [list "reg-offset" hexint [expr 0x1003]]]
+			}
 			lappend node $ip_tree
 			#"BAUDRATE DATA_BITS CLK_FREQ ODD_PARITY USE_PARITY"]
 		}
