@@ -902,7 +902,9 @@ proc gener_slave {node slave intc} {
 		"mch_opb_ddr" -
 		"mch_opb_ddr2" -
 		"mch_opb_sdram" -
-		"ppc440mc_ddr2" {
+		"ppc440mc_ddr2" -
+		"axi_s6_ddrx" -
+		"axi_v6_ddrx" {
 			# Do nothing..  this is handled by the 'memory' special case.
 		}
 		"opb_emc" -
@@ -935,6 +937,34 @@ proc gener_slave {node slave intc} {
 
 					lappend node $tree
 				} 
+			}
+		}
+		"axi_emc" {
+			# Handle flash memories with 'banks'. Generate one flash node
+			# for each bank, if necessary.  If not connected to flash,
+			# then do nothing.
+			set count [scan_int_parameter_value $slave "C_NUM_BANKS_MEM"]
+			if { [llength $count] == 0 } {
+				set count 1
+			}
+			for {set x 0} {$x < $count} {incr x} {
+				set synch_mem [scan_int_parameter_value $slave [format "C_MEM%d_TYPE" $x]]
+				# C_MEM$x_TYPE = 2 or 3 indicates the bank handles
+				# a flash device and it should be listed as a
+				# slave in fdt.
+				# C_MEM$x_TYPE = 0, 1 or 4 indicates the bank handles
+				# SRAM and it should be listed as a memory in
+				# fdt.
+				if { {$synch_mem == 2} || {$synch_mem == 3} } {
+					set baseaddr_prefix [format "S_AXI_MEM%d_" $x]
+					set tree [slaveip_intr $slave $intc [interrupt_list $slave] "flash" [default_parameters $slave] $baseaddr_prefix "" "cfi-flash"]
+
+					# Flash needs a bank-width attribute.
+					set datawidth [scan_int_parameter_value $slave [format "C_MEM%d_WIDTH" $x]]
+					set tree [tree_append $tree [list "bank-width" int "[expr ($datawidth/8)]"]]
+
+					lappend node $tree
+				}
 			}
 		}
 		"mpmc" {
@@ -1220,6 +1250,22 @@ proc gen_memories {tree hwproc_handle} {
 				lappend tree [memory $slave "MEM_" ""]
 				set memory_count [expr $memory_count + 1]
 			}
+			"axi_s6_ddrx" {
+				for {set x 0} {$x < 6} {incr x} {
+					set baseaddr [scan_int_parameter_value $slave [format "C_S%d_AXI_BASEADDR" $x]]
+					set highaddr [scan_int_parameter_value $slave [format "C_S%d_AXI_HIGHADDR" $x]]
+					if {$highaddr < $baseaddr} {
+						continue;
+					}
+					lappend tree [memory $slave [format "S%d_AXI_" $x] ""]
+					break;
+				}
+				set memory_count [expr $memory_count + 1]
+			}
+			"axi_v6_ddrx" {
+				lappend tree [memory $slave "S_AXI_" ""]
+				set memory_count [expr $memory_count + 1]
+			}
 			"opb_cypress_usb" -
 			"plb_ddr" -
 			"plb_ddr2" -
@@ -1257,6 +1303,27 @@ proc gen_memories {tree hwproc_handle} {
 						}
 					}			
 					lappend tree [memory $slave [format "MEM%d_" $x] ""]
+					set memory_count [expr $memory_count + 1]
+				}
+			}
+			"axi_emc" {
+				# Handle memories with 'banks'. Generate one memory
+				# node for each bank.
+				set count [scan_int_parameter_value $slave "C_NUM_BANKS_MEM"]
+				if { [llength $count] == 0 } {
+					set count 1
+				}
+				for {set x 0} {$x < $count} {incr x} {
+					# C_MEM$x_TYPE = 2 or 3 indicates the bank handles
+					# a flash device and it should be listed as a
+					# slave in fdt.
+					# C_MEM$x_TYPE = 0, 1 or 4 indicates the bank handles
+					# SRAM and it should be listed as a memory in
+					# fdt.
+					if { {$synch_mem == 2} || {$synch_mem == 3} } {
+						continue;
+					}
+					lappend tree [memory $slave [format "S_AXI_MEM%d_" $x] ""]
 					set memory_count [expr $memory_count + 1]
 				}
 			}
