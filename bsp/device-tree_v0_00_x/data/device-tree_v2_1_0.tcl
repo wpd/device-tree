@@ -260,9 +260,10 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 	set toplevel_file [open $filepath w]
 	headerc $toplevel_file $device_tree_generator_version
 	puts $toplevel_file "/dts-v1/;"
-	puts -nonewline $toplevel_file "/ "
+	puts $toplevel_file "/ {"
 	write_tree 0 $toplevel_file $toplevel
-	puts $toplevel_file " ;"
+	write_tree 0 $toplevel_file $ip_tree
+	puts $toplevel_file "} ;"
 	close $toplevel_file
 }
 
@@ -1837,7 +1838,9 @@ proc write_value {file indent type value} {
 				set first false
 			}
 		} elseif {$type == "tree"} {
+			puts $file "{"
 			write_tree $indent $file $value
+			puts -nonewline $file "} "
 		} else {
 			puts "unknown type $type"
 		}
@@ -1877,7 +1880,6 @@ proc write_nodes {indent file tree} {
 }
 
 proc write_tree {indent file tree} {
-	puts $file "{"
 	set trees {}
 	set nontrees {}
 	foreach node $tree {
@@ -1890,7 +1892,7 @@ proc write_tree {indent file tree} {
 	write_nodes $indent $file $nontrees
 	write_nodes $indent $file $trees
 
-	puts -nonewline $file "[tt $indent]} "
+	puts -nonewline $file "[tt $indent]"
 }
 
 proc get_pathname_for_label {tree label {path /}} {
