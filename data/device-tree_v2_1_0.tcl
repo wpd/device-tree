@@ -108,6 +108,12 @@ proc generate {os_handle} {
 	set flash_memory [xget_sw_parameter_value $os_handle "flash_memory"]
 	global flash_memory_bank
 	set flash_memory_bank [xget_sw_parameter_value $os_handle "flash_memory_bank"]
+	global timer
+	set timer [xget_sw_parameter_value $os_handle "timer"]
+	if { [string match "" $timer] || [string match "none" $timer] } {
+		debug warning "ERROR: No timer is specified in the system. Linux requires dual channel timer."
+		exit 1
+	}
 	generate_device_tree "xilinx.dts" $bootargs $consoleip
 }
 
@@ -911,6 +917,14 @@ proc gener_slave {node slave intc} {
 		}
 		"xps_timer" -
 		"opb_timer" {
+			global timer
+			if {[ string match -nocase $name $timer ]} {
+				set one_timer_only [xget_hw_parameter_value $slave "C_ONE_TIMER_ONLY"]
+				if { $one_timer_only == "1" } {
+					debug warning "ERROR: Linux requires dual channel timer, but $name is set to single channel. Please configure the $name to dual channel"
+					exit 1
+				}
+			}
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "timer" [default_parameters $slave] ]
 
 			# for version 1.01b of the xps timer, make sure that it has the patch applied to the h/w
