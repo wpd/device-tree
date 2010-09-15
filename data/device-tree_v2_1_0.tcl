@@ -123,6 +123,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 	debug info "generating $filepath"
 
 	set toplevel {}
+	set ip_tree {}
 
 	set proc_handle [xget_libgen_proc_handle]
 	set hwproc_handle [xget_handle $proc_handle "IPINST"]
@@ -165,17 +166,29 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 		"microblaze" {
 			set intc [get_handle_to_intc $proc_handle "Interrupt"]
 			set toplevel [gen_microblaze $toplevel $hwproc_handle [default_parameters $hwproc_handle]]
-			set busif_handle [xget_hw_busif_handle $hwproc_handle "DPLB"]
-			if {[llength $busif_handle] != 0} {
+			# Microblaze v8 has AXI and/or PLB. xget_hw_busif_handle returns
+			# a valid handle for both these bus ifs, even if they are not
+			# connected. The better way of checking if a bus is connected
+			# or not is to check it's value.
+			set bus_name [xget_hw_busif_value $hwproc_handle "M_AXI_DP"]
+			if { [string compare -nocase $bus_name ""] != 0 } {
+				set tree [bus_bridge $hwproc_handle $intc 0 "M_AXI_DP"]
+				set tree [tree_append $tree [list ranges empty empty]]
+				lappend ip_tree $tree
+			}
+			set bus_name [xget_hw_busif_value $hwproc_handle "DPLB"]
+			if { [string compare -nocase $bus_name ""] != 0 } {
 				# Microblaze v7 has PLB.
 				set tree [bus_bridge $hwproc_handle $intc 0 "DPLB"]
 				set tree [tree_append $tree [list ranges empty empty]]
-				lappend toplevel $tree
-			} else {
+				lappend ip_tree $tree
+			}
+			set bus_name [xget_hw_busif_value $hwproc_handle "DOPB"]
+			if { [string compare -nocase $bus_name ""] != 0 } {
 				# Older microblazes have OPB.
 				set tree [bus_bridge $hwproc_handle $intc 0 "DOPB"]
 				set tree [tree_append $tree [list ranges empty empty]]
-				lappend toplevel $tree
+				lappend ip_tree $tree
 			}
 			lappend toplevel [list "compatible" stringtuple [list "xlnx,microblaze"] ]
 		}
@@ -188,21 +201,21 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 				# older ppc405s have a single PLB interface.
 				set tree [bus_bridge $hwproc_handle $intc 0 "DPLB"]
 				set tree [tree_append $tree [list ranges empty empty]]
-				lappend toplevel $tree
+				lappend ip_tree $tree
 			} else {
 				# newer ppc405s since edk9.2 have two plb interfaces, with
 				# DPLB1 only being used for memory.
 				set tree [bus_bridge $hwproc_handle $intc 0 "DPLB0"]
 				set tree [tree_append $tree [list ranges empty empty]]
-				lappend toplevel $tree
+				lappend ip_tree $tree
 				set tree [bus_bridge $hwproc_handle $intc 1 "DPLB1"]
 				set tree [tree_append $tree [list ranges empty empty]]
-				lappend toplevel $tree
+				lappend ip_tree $tree
 			}
 			# pickup things which are only on the dcr bus.
 			if {[bus_is_connected $hwproc_handle "MDCR"]} {
 				set tree [bus_bridge $hwproc_handle $intc 0 "MDCR"]
-				lappend toplevel $tree
+				lappend ip_tree $tree
 			}
 
 			lappend toplevel [list "compatible" stringtuple [list "xlnx,virtex405" "xlnx,virtex"] ]
@@ -212,16 +225,16 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			set toplevel [gen_ppc440 $toplevel $hwproc_handle $intc [default_parameters $hwproc_handle]]
 			set tree [bus_bridge $hwproc_handle $intc 0 "MPLB"]
 			set tree [tree_append $tree [list ranges empty empty]]
-			lappend toplevel $tree
+			lappend ip_tree $tree
 			# pickup things which are only on the dcr bus.
 			if {[bus_is_connected $hwproc_handle "MDCR"]} {
 				set tree [bus_bridge $hwproc_handle $intc 0 "MDCR"]
-				lappend toplevel $tree
+				lappend ip_tree $tree
 			}
 
 # 			set tree [bus_bridge $hwproc_handle $intc 0 "PPC440MC"]
 # 			set tree [tree_append $tree [list ranges empty empty]]
-# 			lappend toplevel $tree
+# 			lappend ip_tree $tree
 
 			lappend toplevel [list "compatible" stringtuple [list "xlnx,virtex440" "xlnx,virtex"] ]
 			set cpu_name [xget_hw_name $hwproc_handle]
@@ -268,8 +281,9 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 	set chosen {}
 	lappend chosen [list bootargs string $bootargs]
 
+	set dev_tree [concat $toplevel $ip_tree]
 	if {$consoleip != ""} {
-		set consolepath [get_pathname_for_label $toplevel $consoleip]
+		set consolepath [get_pathname_for_label $dev_tree $consoleip]
 		if {$consolepath != ""} {
 			lappend chosen [list "linux,stdout-path" string $consolepath]
 		} else {
@@ -304,9 +318,10 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 	set toplevel_file [open $filepath w]
 	headerc $toplevel_file $device_tree_generator_version
 	puts $toplevel_file "/dts-v1/;"
-	puts -nonewline $toplevel_file "/ "
+	puts $toplevel_file "/ {"
 	write_tree 0 $toplevel_file $toplevel
-	puts $toplevel_file " ;"
+	write_tree 0 $toplevel_file $ip_tree
+	puts $toplevel_file "} ;"
 	close $toplevel_file
 }
 
@@ -819,7 +834,7 @@ proc get_handle_to_intc {proc_handle port_name} {
 	return $intc
 }
 
-#retun number of tabulator
+#return number of tabulator
 proc tt {number} {
 	set tab ""
 	for {set x 0} {$x < $number} {incr x} {
@@ -846,7 +861,8 @@ proc gener_slave {node slave intc} {
 	set type [xget_hw_value $slave]
 	switch -exact $type {
 		"opb_intc" -
-		"xps_intc" {
+		"xps_intc" -
+		"axi_intc" {
 			# Interrupt controllers
 			lappend node [gen_intc $slave $intc "interrupt-controller" "C_NUM_INTR_INPUTS C_KIND_OF_INTR"]
 		}
@@ -857,7 +873,8 @@ proc gener_slave {node slave intc} {
 			#"C_MB_DBG_PORTS C_UART_WIDTH C_USE_UART"]
 		}
 		"xps_uartlite" -
-		"opb_uartlite" {
+		"opb_uartlite" -
+		"axi_uartlite" {
 			#
 			# Add this uartlite device to the alias list
 			#
@@ -873,8 +890,10 @@ proc gener_slave {node slave intc} {
 			set ip_tree [tree_append $ip_tree [list "current-speed" int [xget_sw_parameter_value $slave "C_BAUDRATE"]]]
 			if { $type == "opb_uartlite"} {
 				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [get_clock_frequency $slave "SOPB_Clk"]]]
-			} else {
+			} elseif { $type == "xps_uartlite" } {
 				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [get_clock_frequency $slave "SPLB_Clk"]]]
+			} elseif { $type == "axi_uartlite" } {
+				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [get_clock_frequency $slave "S_AXI_ACLK"]]]
 			}
 			set uartlite_count [expr $uartlite_count + 1]
 			lappend node $ip_tree
@@ -882,7 +901,8 @@ proc gener_slave {node slave intc} {
 		}
 		"xps_uart16550" -
 		"plb_uart16550" -
-		"opb_uart16550" {
+		"opb_uart16550" -
+		"axi_uart16550" {
 			#
 			# Add this uart device to the alias list
 			#
@@ -901,8 +921,10 @@ proc gener_slave {node slave intc} {
 				set freq [get_clock_frequency $slave "OPB_Clk"]
 			} elseif { $type == "plb_uart16550"} {
 				set freq [get_clock_frequency $slave "PLB_Clk"]
-			} else {
+			} elseif { $type == "xps_uart16550"} {
 				set freq [get_clock_frequency $slave "SPLB_Clk"]
+			} elseif { $type == "axi_uart16550"} {
+				set freq [get_clock_frequency $slave "S_AXI_ACLK"]
 			}
 			set has_xin [scan_int_parameter_value $slave "C_HAS_EXTERNAL_XIN"]
 			if { $has_xin == "1" } {
@@ -911,12 +933,17 @@ proc gener_slave {node slave intc} {
 			set ip_tree [tree_append $ip_tree [list "clock-frequency" int $freq]]
 
 			set ip_tree [tree_append $ip_tree [list "reg-shift" int "2"]]
-			set ip_tree [tree_append $ip_tree [list "reg-offset" hexint [expr 0x1003]]]
+			if { $type == "axi_uart16550"} {
+				set ip_tree [tree_append $ip_tree [list "reg-offset" hexint [expr 0x1000]]]
+			} else {
+				set ip_tree [tree_append $ip_tree [list "reg-offset" hexint [expr 0x1003]]]
+			}
 			lappend node $ip_tree
 			#"BAUDRATE DATA_BITS CLK_FREQ ODD_PARITY USE_PARITY"]
 		}
 		"xps_timer" -
-		"opb_timer" {
+		"opb_timer" -
+		"axi_timer" {
 			global timer
 			if {[ string match -nocase $name $timer ]} {
 				set one_timer_only [xget_hw_parameter_value $slave "C_ONE_TIMER_ONLY"]
@@ -1017,7 +1044,8 @@ proc gener_slave {node slave intc} {
 			lappend node [slaveip_intr $slave $intc "Playback_Interrupt Record_Interrupt" "ac97" ""]
 		}
 		"opb_gpio" -
-		"xps_gpio" {
+		"xps_gpio" -
+		"axi_gpio" {
 			# save gpio names and width for gpio reset code
 			global gpio_names
 			lappend gpio_names [list [xget_hw_name $slave] [scan_int_parameter_value $slave "C_GPIO_WIDTH"]]
@@ -1028,9 +1056,14 @@ proc gener_slave {node slave intc} {
 			lappend node $ip_tree
 		}
 		"opb_iic" -
-		"xps_iic" {
+		"xps_iic" -
+		"axi_iic" {
 			# We should handle this specially, to report two ports.
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "i2c" [default_parameters $slave]]
+		}
+		"xps_spi" -
+		"axi_spi" {
+			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "spi" [default_parameters $slave]]
 		}
 		"xps_usb_host" {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "usb" [default_parameters $slave] "SPLB_" "" [list "usb-ehci"]]
@@ -1045,7 +1078,9 @@ proc gener_slave {node slave intc} {
 		"mch_opb_ddr" -
 		"mch_opb_ddr2" -
 		"mch_opb_sdram" -
-		"ppc440mc_ddr2" {
+		"ppc440mc_ddr2" -
+		"axi_s6_ddrx" -
+		"axi_v6_ddrx" {
 			# Do nothing..  this is handled by the 'memory' special case.
 		}
 		"opb_emc" -
@@ -1080,6 +1115,38 @@ proc gener_slave {node slave intc} {
 					set tree [change_nodename $tree $name "primary_flash"]
 				}
 				lappend node $tree
+			}
+		}
+		"axi_emc" {
+			# Handle flash memories with 'banks'. Generate one flash node
+			# for each bank, if necessary.  If not connected to flash,
+			# then do nothing.
+			set count [scan_int_parameter_value $slave "C_NUM_BANKS_MEM"]
+			if { [llength $count] == 0 } {
+				set count 1
+			}
+			for {set x 0} {$x < $count} {incr x} {
+				set synch_mem [scan_int_parameter_value $slave [format "C_MEM%d_TYPE" $x]]
+				# C_MEM$x_TYPE = 2 or 3 indicates the bank handles
+				# a flash device and it should be listed as a
+				# slave in fdt.
+				# C_MEM$x_TYPE = 0, 1 or 4 indicates the bank handles
+				# SRAM and it should be listed as a memory in
+				# fdt.
+				if { {$synch_mem == 2} || {$synch_mem == 3} } {
+					set baseaddr_prefix [format "S_AXI_MEM%d_" $x]
+					set tree [slaveip_intr $slave $intc [interrupt_list $slave] "flash" [default_parameters $slave] $baseaddr_prefix "" "cfi-flash"]
+
+					# Flash needs a bank-width attribute.
+					set datawidth [scan_int_parameter_value $slave [format "C_MEM%d_WIDTH" $x]]
+					set tree [tree_append $tree [list "bank-width" int "[expr ($datawidth/8)]"]]
+
+					# If it is a set as the system Flash memory, change the name of this node to PetaLinux standard system Flash emmory name
+					if {[ string match -nocase $name $flash_memory ] && $x == $flash_memory_bank} {
+						set tree [change_nodename $tree $name "primary_flash"]
+					}
+					lappend node $tree
+				} 
 			}
 		}
 		"mpmc" {
@@ -1442,6 +1509,22 @@ proc gen_memories {tree hwproc_handle} {
 				lappend tree [memory $slave "MEM_" ""]
 				set memory_count [expr $memory_count + 1]
 			}
+			"axi_s6_ddrx" {
+				for {set x 0} {$x < 6} {incr x} {
+					set baseaddr [scan_int_parameter_value $slave [format "C_S%d_AXI_BASEADDR" $x]]
+					set highaddr [scan_int_parameter_value $slave [format "C_S%d_AXI_HIGHADDR" $x]]
+					if {$highaddr < $baseaddr} {
+						continue;
+					}
+					lappend tree [memory $slave [format "S%d_AXI_" $x] ""]
+					break;
+				}
+				set memory_count [expr $memory_count + 1]
+			}
+			"axi_v6_ddrx" {
+				lappend tree [memory $slave "S_AXI_" ""]
+				set memory_count [expr $memory_count + 1]
+			}
 			"opb_cypress_usb" -
 			"plb_ddr" -
 			"plb_ddr2" -
@@ -1465,6 +1548,31 @@ proc gen_memories {tree hwproc_handle} {
 						lappend tree [memory $slave [format "MEM%d_" $x] ""]
 						set memory_count [expr $memory_count + 1]
 					}
+				}
+			}
+			"axi_emc" {
+				# Handle memories with 'banks'. Generate one memory
+				# node for each bank.
+				set count [scan_int_parameter_value $slave "C_NUM_BANKS_MEM"]
+				if { [llength $count] == 0 } {
+					set count 1
+				}
+				for {set x 0} {$x < $count} {incr x} {
+					# C_MEM$x_TYPE = 2 or 3 indicates the bank handles
+					# a flash device and it should be listed as a
+					# slave in fdt.
+					# C_MEM$x_TYPE = 0, 1 or 4 indicates the bank handles
+					# SRAM and it should be listed as a memory in
+					# fdt.
+					if { {$synch_mem == 2} || {$synch_mem == 3} } {
+						continue;
+					}
+					lappend tree [memory $slave [format "S_AXI_MEM%d_" $x] ""]
+					set memory_count [expr $memory_count + 1]
+					if {[ string match -nocase $name $flash_memory ] && $x == $flash_memory_bank} {
+						set tree [change_nodename $tree $name "primary_flash"]
+					}
+					lappend node $tree
 				}
 			}
 			"mpmc" {
@@ -1814,19 +1922,26 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{opb_intc} {xps_intc_1.00.a} \
 		{opb_timer} {xps-timer-1.00.a} \
 		{xps_timer} {xps-timer-1.00.a} \
+		{axi_timer} {xps-timer-1.00.a} \
 		{plb_v46} {plb_v46_1.00.a} \
 		{plbv46_pci} {plbv46_pci_1.03.a} \
 		{xps_bram_if_cntlr} {xps_bram_if_cntlr_1.00.a} \
 		{xps_ethernetlite} {xps_ethernetlite_1.00.a} \
 		{xps_gpio} {xps_gpio_1.00.a} \
+		{axi_gpio} {xps_gpio_1.00.a} \
 		{xps_hwicap} {xps_hwicap_1.00.a} \
 		{xps_iic} {xps_iic_2.00.a} \
+		{axi_iic} {xps_iic_2.00.a} \
 		{xps_intc} {xps_intc_1.00.a} \
+		{axi_intc} {xps_intc_1.00.a} \
 		{xps_ll_temac} {xps_ll_temac_1.00.a} \
 		{xps_ps2} {xps_ps2_1.00.a} \
 		{xps_spi_2} {xps_spi_2.00.a} \
+		{axi_spi} {xps_spi_2.00.a} \
 		{xps_uart16550_2} {xps_uart16550_2.00.a} \
+		{axi_uart16550} {xps_uart16550_2.00.a} \
 		{xps_uartlite} {xps_uartlite_1.00.a} \
+		{axi_uartlite} {xps_uartlite_1.00.a} \
 		{xps_can} {xps_can_1.00.a} \
 		{xps_sysace} {xps_sysace_1.00.a} \
 		{xps_usb_host} {xps_usb_host_1.00.a} \
@@ -1971,7 +2086,9 @@ proc write_value {file indent type value} {
 				set first false
 			}
 		} elseif {$type == "tree"} {
+			puts $file "{"
 			write_tree $indent $file $value
+			puts -nonewline $file "} "
 		} else {
 			puts "unknown type $type"
 		}
@@ -2011,7 +2128,6 @@ proc write_nodes {indent file tree} {
 }
 
 proc write_tree {indent file tree} {
-	puts $file "{"
 	set trees {}
 	set nontrees {}
 	foreach node $tree {
@@ -2024,7 +2140,7 @@ proc write_tree {indent file tree} {
 	write_nodes $indent $file $nontrees
 	write_nodes $indent $file $trees
 
-	puts -nonewline $file "[tt $indent]} "
+	puts -nonewline $file "[tt $indent]"
 }
 
 proc get_pathname_for_label {tree label {path /}} {
