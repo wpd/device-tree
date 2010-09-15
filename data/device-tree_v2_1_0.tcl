@@ -83,9 +83,9 @@ set alias_node_list {}
 #     device_tree::generate_device_tree "linux/arch/powerpc/boot/dts/$dts_name" $kcmd_line
 #
 
-proc device_tree_drc {os_handle} {
+proc bsp_drc {os_handle} {
 	debug info "\#--------------------------------------"
-	debug info "\# device-tree BSP DRC...!"
+	debug info "\# device-tree BSP DRC..."
 	debug info "\#--------------------------------------"
 }
 
