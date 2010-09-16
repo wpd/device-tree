@@ -1250,7 +1250,7 @@ proc gener_slave {node slave intc} {
 				# A quick DRC to make sure the IPIFBAR and IPIFBAR2PCIBAR match
 				# This is a limitation of the kernel PCI layer rather than anything else
 				if { $ipifbar != $ipifbar2pcibar } {
-					error "ERROR: $name:  C_IPIFBAR_$i and C_IPIBAR2PCIBAR_$i must match"
+					debug warning "WARNING: $name:  C_IPIFBAR_$i and C_IPIBAR2PCIBAR_$i don't match"
 				}
 				# Different magic number depending upon the type of address space
 				switch $ipif_spacetype {
