@@ -1167,7 +1167,6 @@ proc gener_slave {node slave intc} {
 				# C_MEM$x_TYPE = 0, 1 or 4 indicates the bank handles
 				# SRAM and it should be listed as a memory in
 				# fdt.
-				if { {$synch_mem == 2} || {$synch_mem == 3} } {
 					set baseaddr_prefix [format "S_AXI_MEM%d_" $x]
 					set tree [slaveip_intr $slave $intc [interrupt_list $slave] "flash" [default_parameters $slave] $baseaddr_prefix "" "cfi-flash"]
 
@@ -1176,11 +1175,11 @@ proc gener_slave {node slave intc} {
 					set tree [tree_append $tree [list "bank-width" int "[expr ($datawidth/8)]"]]
 
 					# If it is a set as the system Flash memory, change the name of this node to PetaLinux standard system Flash emmory name
+					global flash_memory flash_memory_bank
 					if {[ string match -nocase $name $flash_memory ] && $x == $flash_memory_bank} {
 						set tree [change_nodename $tree $name "primary_flash"]
 					}
 					lappend node $tree
-				} 
 			}
 		}
 		"mpmc" {
