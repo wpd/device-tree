@@ -1805,6 +1805,12 @@ proc default_parameters {ip_handle} {
 			"C_DPLB*" -
 			"C_IPLB*" -
 			"C_PLB*" -
+			"C_M_AXI*" -
+			"C_S_AXI_ADDR_WIDTH" -
+			"C_S_AXI_DATA_WIDTH" -
+			"C_S_AXI_PROTOCOL" -
+			"C_M*_AXIS*" -
+			"C_S*_AXIS*" -
 			"HW_VER" {}
 			default { lappend params $par_name }
 		}
