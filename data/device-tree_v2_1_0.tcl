@@ -1680,6 +1680,10 @@ proc bus_bridge {slave intc_handle baseaddr face} {
 				set devicetype "dcr"
 				set compatible_list [list "simple-bus"]
 			}
+			"axi_interconnect" {
+				set devicetype "axi"
+				set compatible_list [list "simple-bus"]
+			}
 			default {
 				set devicetype $bus_type
 			}
