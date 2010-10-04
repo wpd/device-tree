@@ -262,12 +262,14 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 		# generate default string for uart16550 or uartlite
 		set uart_handle [xget_sw_ipinst_handle_from_processor [xget_libgen_proc_handle] $consoleip]
 		switch -exact [xget_value $uart_handle "VALUE"] {
+			"axi_uart16550" -
 			"xps_uart16550" -
 			"plb_uart16550" -
 			"opb_uart16550" {
 				# for uart16550 is default string 115200
 				set bootargs "console=ttyS$serial_number,115200"
 			}
+			"axi_uartlite" -
 			"xps_uartlite" -
 			"opb_uartlite" {
 				set bootargs "console=ttyUL$serial_number,[xget_sw_parameter_value $uart_handle "C_BAUDRATE"]"
@@ -979,6 +981,7 @@ proc gener_slave {node slave intc} {
 		"plb_ethernet" -
 		"opb_ethernetlite" -
 		"xps_ethernetlite" -
+		"axi_ethernetlite" -
 		"plb_temac" {
 			#
 			# Add this temac channel to the alias list
@@ -1090,6 +1093,7 @@ proc gener_slave {node slave intc} {
 		}
 		"plb_bram_if_cntlr" -
 		"opb_bram_if_cntlr" -
+		"axi_bram_ctrl" -
 		"opb_cypress_usb" -
 		"plb_ddr" -
 		"plb_ddr2" -
@@ -1490,6 +1494,7 @@ proc gen_memories {tree hwproc_handle} {
 			continue;
 		}
 		switch $type {
+			"axi_bram_ctrl" -
 			"plb_bram_if_cntlr" -
 			"opb_bram_if_cntlr" {
 				# Ignore these, since they aren't big enough to be main
