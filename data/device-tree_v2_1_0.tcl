@@ -1934,7 +1934,9 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{plb_v46} {plb_v46_1.00.a} \
 		{plbv46_pci} {plbv46_pci_1.03.a} \
 		{xps_bram_if_cntlr} {xps_bram_if_cntlr_1.00.a} \
+		{axi_bram_ctrl} {xps_bram_if_cntlr_1.00.a} \
 		{xps_ethernetlite} {xps_ethernetlite_1.00.a} \
+		{axi_ethernetlite} {xps_ethernetlite_1.00.a} \
 		{xps_gpio} {xps_gpio_1.00.a} \
 		{axi_gpio} {xps_gpio_1.00.a} \
 		{xps_hwicap} {xps_hwicap_1.00.a} \
