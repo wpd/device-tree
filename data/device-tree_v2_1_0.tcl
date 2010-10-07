@@ -958,13 +958,15 @@ proc gener_slave {node slave intc} {
 		"axi_timer" {
 			global timer
 			if {[ string match -nocase $name $timer ]} {
+				set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "system_timer" [default_parameters $slave] ]
 				set one_timer_only [xget_hw_parameter_value $slave "C_ONE_TIMER_ONLY"]
 				if { $one_timer_only == "1" } {
 					debug warning "ERROR: Linux requires dual channel timer, but $name is set to single channel. Please configure the $name to dual channel"
 					exit 1
 				}
+			} else {
+				set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "timer" [default_parameters $slave] ]
 			}
-			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "timer" [default_parameters $slave] ]
 
 			# for version 1.01b of the xps timer, make sure that it has the patch applied to the h/w
 			# so that it's using an edge interrupt rather than a falling as described in AR 33880
@@ -981,6 +983,12 @@ proc gener_slave {node slave intc} {
 				}
 			}
 			#"C_COUNT_WIDTH C_ONE_TIMER_ONLY"]
+
+			if { $type == "axi_timer"} {
+				set freq [get_clock_frequency $slave "S_AXI_ACLK"]
+				set ip_tree [tree_append $ip_tree [list "clock-frequency" int $freq]]
+			}
+			lappend node $ip_tree
 		}
 		"xps_sysace" -
 		"opb_sysace" {
