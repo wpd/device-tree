@@ -1969,6 +1969,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{xps_gpio} {xps_gpio_1.00.a} \
 		{axi_gpio} {xps_gpio_1.00.a} \
 		{xps_hwicap} {xps_hwicap_1.00.a} \
+		{xps_tft} {xlnx,xps-tft-1.00.a} \
 		{xps_iic} {xps_iic_2.00.a} \
 		{axi_iic} {xps_iic_2.00.a} \
 		{xps_intc} {xps_intc_1.00.a} \
@@ -1984,6 +1985,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{axi_uartlite} {xps_uartlite_1.00.a} \
 		{xps_can} {xps_can_1.00.a} \
 		{xps_sysace} {xps_sysace_1.00.a} \
+		{axi_sysace} {xps_sysace_1.00.a} \
 		{xps_usb_host} {xps_usb_host_1.00.a} \
 	]
 
