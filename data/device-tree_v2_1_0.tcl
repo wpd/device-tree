@@ -1303,6 +1303,20 @@ proc gener_slave {node slave intc} {
 			debug ip "Other PowerPC405 CPU $name=$type"
 			lappend node [gen_ppc405 $slave [default_parameters $slave]]
 		}
+		"xps_epc" {
+			set tree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] "PRH0_" ]
+			# Add the address-cells and size-cells to make the DTC compiler stop outputing warning
+			set tree [tree_append $tree [list "#address-cells" int "1"]]
+			set tree [tree_append $tree [list "#size-cells" int "0"]]
+
+			set epc_peripheral_num [xget_hw_parameter_value $slave "C_NUM_PERIPHERALS"]
+			for {set x 0} {$x < ${epc_peripheral_num}} {incr x} {
+				set subnode [slaveip_intr $slave $intc [interrupt_list $slave] "" "" "PRH${x}_" ]
+				set subnode [change_nodename $subnode $name "${name}_p${x}"]
+				set tree [tree_append $tree $subnode]
+			}
+			lappend node $tree
+		}
 		default {
 			# *Most* IP should be handled by this default case.
 			if {[catch {lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] "" ]} {error}]} {
