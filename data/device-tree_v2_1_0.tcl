@@ -517,8 +517,8 @@ proc get_intr_type {ip_handle port_name} {
 
 # Generate a template for a compound slave, such as the ll_temac or
 # the opb_ps2_dual_ref
-proc compound_slave {slave} {
-	set baseaddr [scan_int_parameter_value $slave "C_BASEADDR"]
+proc compound_slave {slave {baseaddrname "C_BASEADDR"}} {
+	set baseaddr [scan_int_parameter_value $slave ${baseaddrname}]
 	set ip_name [xget_hw_name $slave]
 	set ip_type [xget_hw_value $slave]
 	set tree [list [format_ip_name $ip_type $baseaddr $ip_name] tree {}]
@@ -1304,10 +1304,8 @@ proc gener_slave {node slave intc} {
 			lappend node [gen_ppc405 $slave [default_parameters $slave]]
 		}
 		"xps_epc" {
-			set tree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] "PRH0_" ]
-			# Add the address-cells and size-cells to make the DTC compiler stop outputing warning
-			set tree [tree_append $tree [list "#address-cells" int "1"]]
-			set tree [tree_append $tree [list "#size-cells" int "0"]]
+			set tree [compound_slave $slave "C_PRH0_BASEADDR"]
+			set tree [tree_append $tree [list ranges empty empty]]
 
 			set epc_peripheral_num [xget_hw_parameter_value $slave "C_NUM_PERIPHERALS"]
 			for {set x 0} {$x < ${epc_peripheral_num}} {incr x} {
@@ -1859,6 +1857,7 @@ proc default_parameters {ip_handle} {
 			"C_S_AXI_ACLK_PERIOD_PS" -
 			"C_M*_AXIS*" -
 			"C_S*_AXIS*" -
+			"C_PRH*" -
 			"HW_VER" {}
 			default { lappend params $par_name }
 		}
