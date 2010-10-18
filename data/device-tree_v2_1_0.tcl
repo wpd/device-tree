@@ -994,10 +994,21 @@ proc gener_slave {node slave intc} {
 			}
 			lappend node $ip_tree
 		}
+		"axi_sysace" -
 		"xps_sysace" -
 		"opb_sysace" {
-			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "sysace" [default_parameters $slave] ]
+			puts "fdsfjsdfdasjfas"
+			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "sysace" [default_parameters $slave] ]
 			#"MEM_WIDTH"]
+			set sysace_width [xget_hw_parameter_value $slave "C_MEM_WIDTH"]
+			if { $sysace_width == "8" } {
+				set ip_tree [tree_append $ip_tree [list "8-bit" empty empty]]
+			} elseif { $sysace_width == "16" } {
+				set ip_tree [tree_append $ip_tree [list "16-bit" empty empty]]
+			} else {
+				error "Unsuported Systemace memory width"
+			}
+			lappend node $ip_tree
 		}
 		"opb_ethernet" -
 		"plb_ethernet" -
