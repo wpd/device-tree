@@ -111,10 +111,7 @@ proc generate {os_handle} {
 	set flash_memory_bank [xget_sw_parameter_value $os_handle "flash_memory_bank"]
 	global timer
 	set timer [xget_sw_parameter_value $os_handle "timer"]
-	if { [string match "" $timer] || [string match "none" $timer] } {
-		debug warning "ERROR: No timer is specified in the system. Linux requires dual channel timer."
-		exit 1
-	}
+
 	generate_device_tree "xilinx.dts" $bootargs $consoleip
 }
 
@@ -165,6 +162,13 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 	set proctype [xget_value $hwproc_handle "OPTION" "IPNAME"]
 	switch $proctype {
 		"microblaze" {
+			# Microblaze linux system requires dual-channel timer
+			global timer
+			if { [string match "" $timer] || [string match "none" $timer] } {
+				debug warning "ERROR: No timer is specified in the system. Linux requires dual channel timer."
+				exit 1
+			}
+
 			set intc [get_handle_to_intc $proc_handle "Interrupt"]
 			set toplevel [gen_microblaze $toplevel $hwproc_handle [default_parameters $hwproc_handle]]
 
