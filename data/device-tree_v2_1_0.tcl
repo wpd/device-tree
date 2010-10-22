@@ -1113,7 +1113,11 @@ proc gener_slave {node slave intc} {
 				# Set the SPI Flash chip select
 				lappend subnode [list "reg" hexinttuple [list $flash_memory_bank]]
 				# Set the SPI Flash clock freqeuncy
-				set sys_clk [get_clock_frequency $slave "SPLB_Clk"]
+				if { $type == "axi_spi" } {
+					set sys_clk [get_clock_frequency $slave "S_AXI_ACLK"]
+				} else {
+					set sys_clk [get_clock_frequency $slave "SPLB_Clk"]
+				}
 				set sck_ratio [scan_int_parameter_value $slave "C_SCK_RATIO"]
 				set sck [expr { $sys_clk / $sck_ratio }]
 				lappend subnode [list [format_name "spi-max-frequency"] int $sck]
