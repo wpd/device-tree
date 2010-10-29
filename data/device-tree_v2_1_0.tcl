@@ -2006,8 +2006,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{axi_iic} {xps_iic_2.00.a} \
 		{xps_intc} {xps_intc_1.00.a} \
 		{axi_intc} {xps_intc_1.00.a} \
-		{xps_ll_temac} {xps_ll_temac_1.00.a} \
-		{xps_ll_temac} {xps_ll_temac_1.01.b} \
+		{xps_ll_temac} {xps_ll_temac_1.01.b xps_ll_temac_1.00.a} \
 		{xps_ps2} {xps_ps2_1.00.a} \
 		{xps_spi_2} {xps_spi_2.00.a} \
 		{axi_spi} {xps_spi_2.00.a} \
@@ -2033,9 +2032,12 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 			set add_clist [list [format_xilinx_name "$compatible_list($namewithwildcard)"]]
 			set clist [concat $clist $add_clist]
 		} elseif { [info exists compatible_list($type)] } {               # Check type wildcard match
-			set add_clist [list [format_xilinx_name "$compatible_list($type)"]]
-			if { ![string match $clist $add_clist] } {
-				set clist [concat $clist $add_clist]
+			# Extended compatible property - for example ll_temac
+			foreach single "$compatible_list($type)" {
+				set add_clist [list [format_xilinx_name "$single"]]
+				if { ![string match $clist $add_clist] } {
+					set clist [concat $clist $add_clist]
+				}
 			}
 		}
 	} else {
