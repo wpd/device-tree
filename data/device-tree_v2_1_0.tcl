@@ -2106,8 +2106,12 @@ proc gen_reg_property {nodename baseaddr highaddr {name "reg"}} {
 	if {[string match $highaddr "0x00000000"]} {
 		error "No high address for $nodename"
 	}
+	# Detect undefined baseaddr for MPMC CTRL
+	if {[string match "0x[format %x $baseaddr]" "0xffffffff"]} {
+		error "No base address for $nodename"
+	}
 	set size [expr $highaddr - $baseaddr + 1]
-	if { $size < 0 } {
+	if { [format %x $size] < 0 } {
 		error "Bad highaddr for $nodename"
 	}
 	return [list $name hexinttuple [list $baseaddr $size]]
