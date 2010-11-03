@@ -798,6 +798,7 @@ proc slave_mpmc {slave intc} {
 	}
 	lappend mpmc_node [list \#size-cells int 1]
 	lappend mpmc_node [list \#address-cells int 1]
+	lappend mpmc_node [list ranges empty empty]
 
 	set num_ports [scan_int_parameter_value $slave "C_NUM_PORTS"]
 	for {set x 0} {$x < $num_ports} {incr x} {
