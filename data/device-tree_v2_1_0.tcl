@@ -3,7 +3,7 @@
 #
 # (C) Copyright 2007-2008 Xilinx, Inc.
 # Based on original code:
-# (C) Copyright 2007-2009 Michal Simek
+# (C) Copyright 2007-2010 Michal Simek
 #
 # Michal SIMEK <monstr@monstr.eu>
 #
