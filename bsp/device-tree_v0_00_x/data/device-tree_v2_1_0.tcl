@@ -970,7 +970,7 @@ proc gener_slave {node slave intc} {
 				# C_MEM$x_TYPE = 0, 1 or 4 indicates the bank handles
 				# SRAM and it should be listed as a memory in
 				# fdt.
-				if { {$synch_mem == 2} || {$synch_mem == 3} } {
+				if { $synch_mem == 2 || $synch_mem == 3 } {
 					set baseaddr_prefix [format "S_AXI_MEM%d_" $x]
 					set tree [slaveip_intr $slave $intc [interrupt_list $slave] "flash" [default_parameters $slave] $baseaddr_prefix "" "cfi-flash"]
 
@@ -1329,13 +1329,14 @@ proc gen_memories {tree hwproc_handle} {
 					set count 1
 				}
 				for {set x 0} {$x < $count} {incr x} {
+					set synch_mem [scan_int_parameter_value $slave [format "C_MEM%d_TYPE" $x]]
 					# C_MEM$x_TYPE = 2 or 3 indicates the bank handles
 					# a flash device and it should be listed as a
 					# slave in fdt.
 					# C_MEM$x_TYPE = 0, 1 or 4 indicates the bank handles
 					# SRAM and it should be listed as a memory in
 					# fdt.
-					if { {$synch_mem == 2} || {$synch_mem == 3} } {
+					if { $synch_mem == 2 || $synch_mem == 3 } {
 						continue;
 					}
 					lappend tree [memory $slave [format "S_AXI_MEM%d_" $x] ""]
