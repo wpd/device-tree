@@ -807,6 +807,7 @@ proc gener_slave {node slave intc} {
 			#"C_COUNT_WIDTH C_ONE_TIMER_ONLY"]
 		}
 		"xps_sysace" -
+		"axi_sysace" -
 		"opb_sysace" {
 			set mem_width [scan_int_parameter_value $slave "C_MEM_WIDTH"]
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "sysace" [default_parameters $slave] ]
@@ -820,6 +821,7 @@ proc gener_slave {node slave intc} {
 		"plb_ethernet" -
 		"opb_ethernetlite" -
 		"xps_ethernetlite" -
+		"axi_ethernetlite" -
 		"plb_temac" {
 			#
 			# Add this temac channel to the alias list
