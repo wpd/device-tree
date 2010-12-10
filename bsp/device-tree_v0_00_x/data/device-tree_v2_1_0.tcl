@@ -1433,6 +1433,10 @@ proc bus_bridge {slave intc_handle baseaddr face} {
 		debug handles "Bus handle $face connected through a bus..."
 		set bus_type [xget_hw_value $bus_handle]
 		switch $bus_type {
+			"axi_interconnect" {
+				set devicetype "axi"
+				set compatible_list [list "simple-bus"]
+			}
 			"plb_v34" -
 			"plb_v46" {
 				set devicetype "plb"
