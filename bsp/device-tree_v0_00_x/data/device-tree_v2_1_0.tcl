@@ -42,6 +42,7 @@ set cpunumber 0
 set periphery_array ""
 set uartlite_count 0
 set mac_count 0
+set phy_count 0
 
 set serial_count 0
 set ethernet_count 0
@@ -695,6 +696,8 @@ proc tt {number} {
 }
 
 proc gener_slave {node slave intc} {
+	variable phy_count
+
 	set name [xget_hw_name $slave]
 	set type [xget_hw_value $slave]
 	switch -exact $type {
@@ -829,6 +832,16 @@ proc gener_slave {node slave intc} {
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "ethernet" [default_parameters $slave]]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "network"]]
 			set ip_tree [gen_macaddr $ip_tree]
+
+			# Check for MDIO bus
+			if {$type == "xps_ethernetlite" || $type == "axi_ethernetlite"} {
+				set has_mdio [scan_int_parameter_value $slave "C_INCLUDE_MDIO"]
+				if {$has_mdio == 1} {
+					set phy_name "phy$phy_count"
+					set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
+					set ip_tree [tree_append $ip_tree [gen_mdiotree]]
+				}
+			}
 
 			lappend node $ip_tree
 		}
@@ -1618,6 +1631,26 @@ proc gen_macaddr {ip_tree} {
 	set mac_count [expr $mac_count + 1]
 
 	return $ip_tree
+}
+
+proc gen_phytree {} {
+	variable phy_count
+
+	set phy_name [format_ip_name phy 7 "phy$phy_count"]
+	set phy_tree [list $phy_name tree {}]
+	set phy_tree [tree_append $phy_tree [list "reg" int 7]]
+	set phy_tree [tree_append $phy_tree [list "device_type" string "ethernet-phy"]]
+	set phy_tree [tree_append $phy_tree [list "compatible" string "marvell,88e1111"]]
+
+	incr phy_count
+	return $phy_tree
+}
+
+proc gen_mdiotree {} {
+	set mdio_tree [list "mdio" tree {}]
+	set mdio_tree [tree_append $mdio_tree [list \#size-cells int 0]]
+	set mdio_tree [tree_append $mdio_tree [list \#address-cells int 1]]
+	return [tree_append $mdio_tree [gen_phytree]]
 }
 
 proc format_name {par_name} {
