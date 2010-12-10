@@ -1778,6 +1778,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{plb_v46} {plb_v46_1.00.a} \
 		{xps_bram_if_cntlr} {xps_bram_if_cntlr_1.00.a} \
 		{xps_ethernetlite} {xps_ethernetlite_1.00.a} \
+		{axi_ethernetlite} {xps_ethernetlite_1.00.a} \
 		{xps_gpio} {xps_gpio_1.00.a} \
 		{axi_gpio} {xps_gpio_1.00.a} \
 		{xps_hwicap} {xps_hwicap_1.00.a} \
@@ -1786,6 +1787,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{xps_intc} {xps_intc_1.00.a} \
 		{axi_intc} {xps_intc_1.00.a} \
 		{xps_ll_temac} {xps_ll_temac_1.00.a} \
+		{axi_ethernet} {axi-ethernet-1.00.a} \
 		{xps_ps2} {xps_ps2_1.00.a} \
 		{xps_spi_2} {xps_spi_2.00.a} \
 		{axi_spi} {xps_spi_2.00.a} \
@@ -1794,6 +1796,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{xps_uartlite} {xps_uartlite_1.00.a} \
 		{axi_uartlite} {xps_uartlite_1.00.a} \
 		{xps_sysace} {xps_sysace_1.00.a} \
+		{axi_sysace} {xps_sysace_1.00.a} \
 		{xps_usb_host} {xps_usb_host_1.00.a} \
 	]
 
