@@ -555,13 +555,7 @@ proc slave_ll_temac_port {slave intc index} {
 
 	set ip_tree [slaveip_basic $slave $intc "" [format_ip_name "ethernet" $baseaddr]]
 	set ip_tree [tree_append $ip_tree [list "device_type" string "network"]]
-	variable mac_count
-	set seed4 [clock seconds]
-	set seed5 [clock clicks]
-	set mac_rand_b4 [expr $seed4 % 256]
-	set mac_rand_b5 [expr $seed5 % 256]
-	set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 $mac_rand_b4 $mac_rand_b5 $mac_count]]]
-	set mac_count [expr $mac_count + 1]
+	set ip_tree [gen_macaddr $ip_tree]
 
 	set ip_tree [tree_append $ip_tree [gen_reg_property $name $baseaddr $highaddr]]
 	set ip_tree [gen_interrupt_property $ip_tree $slave $intc [format "TemacIntc%d_Irpt" $index]]
@@ -834,13 +828,7 @@ proc gener_slave {node slave intc} {
 			# 'network' type
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "ethernet" [default_parameters $slave]]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "network"]]
-			variable mac_count
-			set seed4 [clock seconds]
-			set seed5 [clock clicks]
-			set mac_rand_b4 [expr $seed4 % 256]
-			set mac_rand_b5 [expr $seed5 % 256]
-			set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 $mac_rand_b4 $mac_rand_b5 $mac_count]]]
-			set mac_count [expr $mac_count + 1]
+			set ip_tree [gen_macaddr $ip_tree]
 
 			lappend node $ip_tree
 		}
@@ -1617,6 +1605,19 @@ proc scan_int_parameter_value {ip_handle name} {
 		binary scan [binary format "B*" $tail] "I*" value
 	}
 	return [expr $value]
+}
+
+proc gen_macaddr {ip_tree} {
+	variable mac_count
+
+	set seed4 [clock seconds]
+	set seed5 [clock clicks]
+	set mac_rand_b4 [expr $seed4 % 256]
+	set mac_rand_b5 [expr $seed5 % 256]
+	set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 $mac_rand_b4 $mac_rand_b5 $mac_count]]]
+	set mac_count [expr $mac_count + 1]
+
+	return $ip_tree
 }
 
 proc format_name {par_name} {
