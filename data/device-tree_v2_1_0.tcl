@@ -1062,6 +1062,49 @@ proc gener_slave {node slave intc} {
 			# about the connected LL connection, and the dual cores.
 			lappend node [slave_ll_temac $slave $intc]
 		}
+		"axi_ethernet" {
+			set name [xget_hw_name $slave]
+			set type [xget_hw_value $slave]
+			set baseaddr [scan_int_parameter_value $slave "C_BASEADDR"]
+			set highaddr [expr $baseaddr + 0x3ffff]
+
+			variable ethernet_count
+			variable alias_node_list
+			set alias_node [list ethernet$ethernet_count aliasref $name $ethernet_count]
+			lappend alias_node_list $alias_node
+			incr ethernet_count
+
+			set ip_tree [slaveip_basic $slave $intc "" [format_ip_name "axi-ethernet" $baseaddr $name]]
+			set ip_tree [tree_append $ip_tree [list "device_type" string "network"]]
+			set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 0x00 0x00 $mac_count]]]
+			incr mac_count
+			set phy_name "phy$phy_count"
+			set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
+
+			set ip_tree [tree_append $ip_tree [gen_reg_property $name $baseaddr $highaddr]]
+			set ip_tree [gen_interrupt_property $ip_tree $slave $intc [format "INTERRUPT"]]
+			set ip_name [lindex $ip_tree 0]
+			set ip_node [lindex $ip_tree 2]
+			# Generate the common parameters.
+			set ip_node [gen_params $ip_node $slave [list "C_PHY_TYPE" "C_TYPE" "C_PHYADDR" "C_INCLUDE_IO" "C_HALFDUP"]]
+			set ip_node [gen_params $ip_node $slave [list "C_TXMEM" "C_RXMEM" "C_TXCSUM" "C_RXCSUM" "C_MCAST_EXTEND" "C_STATS" "C_AVB"]]
+			set ip_node [gen_params $ip_node $slave [list "C_TXVLAN_TRAN" "C_RXVLAN_TRAN" "C_TXVLAN_TAG" "C_RXVLAN_TAG" "C_TXVLAN_STRP" "C_RXVLAN_STRP"]]
+			set ip_tree [list $ip_name tree $ip_node]
+			set mhs_handle [xget_hw_parent_handle $slave]
+			# See what the axi ethernet is connected to.
+			set axiethernet_busif_handle [xget_hw_busif_handle $slave "AXI_STR_TXD"]
+			set axiethernet_name [xget_hw_value $axiethernet_busif_handle]
+			set axiethernet_ip_handle [xget_hw_connected_busifs_handle $mhs_handle $axiethernet_name "INITIATOR"]
+			set axiethernet_ip_handle_name [xget_hw_name $axiethernet_ip_handle]
+			set connected_ip_handle [xget_hw_parent_handle $axiethernet_ip_handle]
+			set connected_ip_name [xget_hw_name $connected_ip_handle]
+			set connected_ip_type [xget_hw_value $connected_ip_handle]
+			set ip_tree [tree_append $ip_tree [list "axistream-connected" labelref $connected_ip_name]]
+
+			set ip_tree [tree_append $ip_tree [gen_mdiotree]]
+
+			lappend node $ip_tree
+		}
 		"xps_tft" {
 			lappend node [slaveip_dcr_or_plb $slave $intc "tft" [default_parameters $slave]]
 		}
