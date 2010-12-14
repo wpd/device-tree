@@ -348,6 +348,9 @@ proc post_generate {lib_handle} {
 proc prj_dir {} {
     set old_cwd [pwd]
     cd "../../.."
+    if {[string match "petalinux_bsp_?" [exec basename [pwd]]]} {
+    cd "../../.."
+    }
     set _prj_dir [pwd]
     cd $old_cwd
 
