@@ -717,7 +717,7 @@ proc slave_ll_temac_port {slave intc index} {
 	set ip_tree [tree_append $ip_tree [list "device_type" string "network"]]
 	variable mac_count
 	set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 0x00 0x00 $mac_count]]]
-	set mac_count [expr $mac_count + 1]
+	incr mac_count
 
 	set ip_tree [tree_append $ip_tree [gen_reg_property $name $baseaddr $highaddr]]
 	set ip_tree [gen_interrupt_property $ip_tree $slave $intc [format "TemacIntc%d_Irpt" $index]]
@@ -910,7 +910,7 @@ proc gener_slave {node slave intc} {
 			} elseif { $type == "axi_uartlite" } {
 				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [get_clock_frequency $slave "S_AXI_ACLK"]]]
 			}
-			set uartlite_count [expr $uartlite_count + 1]
+			incr uartlite_count
 			lappend node $ip_tree
 			#"BAUDRATE DATA_BITS CLK_FREQ ODD_PARITY USE_PARITY"]
 		}
@@ -1027,7 +1027,7 @@ proc gener_slave {node slave intc} {
 			set ip_tree [tree_append $ip_tree [list "device_type" string "network"]]
 			variable mac_count
 			set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 0x00 0x00 $mac_count]]]
-			set mac_count [expr $mac_count + 1]
+			incr mac_count
 
 			lappend node $ip_tree
 		}
@@ -1398,7 +1398,7 @@ proc gen_ppc405 {tree hwproc_handle params} {
 	lappend cpus_node [list [format_ip_name "cpu" $cpunumber $cpu_name] "tree" "$proc_node"]
 	lappend cpus_node [list \#size-cells int 0]
 	lappend cpus_node [list \#address-cells int 1]
-	set cpunumber [expr $cpunumber + 1]
+	incr cpunumber
 	lappend cpus_node [list \#cpus hexint "$cpunumber" ]
 	lappend tree [list cpus tree "$cpus_node"]
 	return $tree
@@ -1463,7 +1463,7 @@ proc gen_ppc440 {tree hwproc_handle intc params} {
 	lappend cpus_node [list [format_ip_name "cpu" $cpunumber $cpu_name] "tree" "$proc_node"]
 	lappend cpus_node [list \#size-cells int 0]
 	lappend cpus_node [list \#address-cells int 1]
-	set cpunumber [expr $cpunumber + 1]
+	incr cpunumber
 	lappend cpus_node [list \#cpus hexint "$cpunumber" ]
 	lappend tree [list cpus tree "$cpus_node"]
 	return $tree
@@ -1550,12 +1550,12 @@ proc gen_memories {tree hwproc_handle} {
 			"opb_sdram" {
 				# Handle bankless memories.
 				lappend tree [memory $slave "" ""]
-				set memory_count [expr $memory_count + 1]
+				incr memory_count
 			}
 			"ppc440mc_ddr2" {
 				# Handle bankless memories.
 				lappend tree [memory $slave "MEM_" ""]
-				set memory_count [expr $memory_count + 1]
+				incr memory_count
 			}
 			"axi_s6_ddrx" {
 				for {set x 0} {$x < 6} {incr x} {
@@ -1567,11 +1567,11 @@ proc gen_memories {tree hwproc_handle} {
 					lappend tree [memory $slave [format "S%d_AXI_" $x] ""]
 					break;
 				}
-				set memory_count [expr $memory_count + 1]
+				incr memory_count
 			}
 			"axi_v6_ddrx" {
 				lappend tree [memory $slave "S_AXI_" ""]
-				set memory_count [expr $memory_count + 1]
+				incr memory_count
 			}
 			"opb_cypress_usb" -
 			"plb_ddr" -
@@ -1594,7 +1594,7 @@ proc gen_memories {tree hwproc_handle} {
 				for {set x 0} {$x < $count} {incr x} {
 					if { $x == $main_memory_bank } {
 						lappend tree [memory $slave [format "MEM%d_" $x] ""]
-						set memory_count [expr $memory_count + 1]
+						incr memory_count
 					}
 				}
 			}
@@ -1616,7 +1616,7 @@ proc gen_memories {tree hwproc_handle} {
 						continue;
 					}
 					lappend tree [memory $slave [format "S_AXI_MEM%d_" $x] ""]
-					set memory_count [expr $memory_count + 1]
+					incr memory_count
 					if {[ string match -nocase $name $flash_memory ] && $x == $flash_memory_bank} {
 						set tree [change_nodename $tree $name "primary_flash"]
 					}
@@ -1648,7 +1648,7 @@ proc gen_memories {tree hwproc_handle} {
 					}
 				}
 
-				set memory_count [expr $memory_count + 1]
+				incr memory_count
 			}
 		}
 	}
@@ -1958,8 +1958,7 @@ proc gen_params {node_list handle params {trimprefix "C_"} } {
 						set mask [expr {1<<$count}]
 						set new_mask [expr {$mask | $par_mask}]
 						set par_mask $new_mask
-						set new_count [expr {$count + 1}]
-						set count $new_count
+						incr count
 					}
 					set par_value_32 $par_value
 					set par_value [expr {$par_value_32 & $par_mask}]
