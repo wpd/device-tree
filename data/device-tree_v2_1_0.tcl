@@ -42,6 +42,7 @@ set cpunumber 0
 set periphery_array ""
 set axi_ifs ""
 set uartlite_count 0
+set uart16550_count 0
 set mac_count 0
 set gpio_names {}
 set overrides {}
@@ -269,8 +270,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 		# find out which serial number is my choose uart - from aliases node - there is correct order
 		foreach node $alias_node_list {
 			if { "[lindex $node 2]" == "$consoleip" } {
-				regsub serial "[lindex $node 0]" "" x
-				set serial_number "$x"
+				set serial_number "[lindex $node 3]"
 			}
 		}
 		# generate default string for uart16550 or uartlite
@@ -287,6 +287,9 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			"xps_uartlite" -
 			"opb_uartlite" {
 				set bootargs "console=ttyUL$serial_number,[xget_sw_parameter_value $uart_handle "C_BAUDRATE"]"
+			}
+			"mdm" {
+				set bootargs "console=ttyUL$serial_number,115200"
 			}
 			default {
 				debug warning "WARNING: Unsupported console ip $consoleip. Can't generate bootargs."
@@ -883,9 +886,18 @@ proc gener_slave {node slave intc} {
 		}
 		"mdm" -
 		"opb_mdm" {
+			variable serial_count
+			variable uartlite_count
+			variable alias_node_list
+			lappend alias_node_list [list serial$serial_count aliasref $name $uartlite_count]
+			incr serial_count
+			incr uartlite_count
+
 			# Microblaze debug
-			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "debug" [default_parameters $slave] ]
-			#"C_MB_DBG_PORTS C_UART_WIDTH C_USE_UART"]
+			# EDK 11.4 disables PLB connection when USE_UART is disabled that's why whole node won't be generated
+			# Only bus connected IPs are generated
+			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "debug" [default_parameters $slave] "" "" "xlnx,xps-uartlite-1.00.a" ]
+			#"C_MB_DBG_PORTS C_UART_WIDTH C_USE_UART"
 		}
 		"xps_uartlite" -
 		"opb_uartlite" -
@@ -894,13 +906,13 @@ proc gener_slave {node slave intc} {
 			# Add this uartlite device to the alias list
 			#
 			variable serial_count
+			variable uartlite_count
 			variable alias_node_list
-			lappend alias_node_list [list serial$serial_count aliasref $name]
+			lappend alias_node_list [list serial$serial_count aliasref $name $uartlite_count]
 			incr serial_count
 
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "serial" [default_parameters $slave] ]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
-			variable uartlite_count
 			set ip_tree [tree_append $ip_tree [list "port-number" int $uartlite_count]]
 			set ip_tree [tree_append $ip_tree [list "current-speed" int [xget_sw_parameter_value $slave "C_BAUDRATE"]]]
 			if { $type == "opb_uartlite"} {
@@ -922,9 +934,11 @@ proc gener_slave {node slave intc} {
 			# Add this uart device to the alias list
 			#
 			variable serial_count
+			variable uart16550_count
 			variable alias_node_list
-			lappend alias_node_list [list serial$serial_count aliasref $name]
+			lappend alias_node_list [list serial$serial_count aliasref $name $uart16550_count]
 			incr serial_count
+			incr uart16550_count
 
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "serial" [default_parameters $slave] "" "" [list "ns16550a"] ]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
@@ -2191,6 +2205,12 @@ proc write_nodes {indent file tree} {
 	set tree [lsort -index 0 $tree]
 	foreach node $tree {
 		if { [llength $node] == 3} {
+			set name [lindex $node 0]
+			set type [lindex $node 1]
+			set value [lindex $node 2]
+			puts -nonewline $file "[tt [expr $indent + 1]]$name "
+			write_value $file [expr $indent + 1] $type $value
+		} elseif { [string match [llength $node] "4"] && [string match [lindex $node 1] "aliasref"] } {
 			set name [lindex $node 0]
 			set type [lindex $node 1]
 			set value [lindex $node 2]
