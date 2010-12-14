@@ -304,7 +304,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			lappend chosen [list "linux,stdout-path" string $consolepath]
 		} else {
 			debug warning "WARNING: console ip $consoleip was not found.  This may prevent output from appearing on the boot console."
-		}		
+		}
 	} else {
 		debug warning "WARNING: no console ip was specified.  This may prevent output from appearing on the boot console."
 	}
@@ -328,7 +328,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 	# Add the alias section to toplevel
 	#
 	lappend toplevel [list aliases tree $alias_node_list]
-	
+
 	set toplevel [gen_memories $toplevel $hwproc_handle]
 
 	set toplevel_file [open $filepath w]
@@ -979,7 +979,7 @@ proc gener_slave {node slave intc} {
 			# for version 1.01b of the xps timer, make sure that it has the patch applied to the h/w
 			# so that it's using an edge interrupt rather than a falling as described in AR 33880
 			# this is tracking a h/w bug in EDK 11.4 that should be fixed in the future
- 
+
 			set hw_ver [xget_hw_parameter_value $slave "HW_VER"]
 			if { $hw_ver == "1.01.b" && $type == "xps_timer" } {
 				set port_handle [xget_hw_port_handle $slave "Interrupt"]
@@ -1001,7 +1001,6 @@ proc gener_slave {node slave intc} {
 		"axi_sysace" -
 		"xps_sysace" -
 		"opb_sysace" {
-			puts "fdsfjsdfdasjfas"
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "sysace" [default_parameters $slave] ]
 			#"MEM_WIDTH"]
 			set sysace_width [xget_hw_parameter_value $slave "C_MEM_WIDTH"]
@@ -1106,7 +1105,7 @@ proc gener_slave {node slave intc} {
 			# We will handle SPI FLASH here
 			global flash_memory flash_memory_bank
 			set tree [slaveip_intr $slave $intc [interrupt_list $slave] "spi" [default_parameters $slave] "" ]
-			
+
 			if {[string match -nocase $flash_memory $name]} {
 				# Add the address-cells and size-cells to make the DTC compiler stop outputing warning
 				set tree [tree_append $tree [list "#address-cells" int "1"]]
@@ -1161,7 +1160,7 @@ proc gener_slave {node slave intc} {
 				set count 1
 			}
 			for {set x 0} {$x < $count} {incr x} {
-				
+
 				# Make sure we didn't already register this guy as the main memory.
 				# see main handling in gen_memories
 				if {[ string match -nocase $name $main_memory ] && $x == $main_memory_bank } {
@@ -1313,7 +1312,7 @@ proc gener_slave {node slave intc} {
 			set ip_tree [tree_append $ip_tree [ list "interrupt-map-mask" hexinttuple "0xff00 0x0 0x0 0x7" ]]
 
 			# Make sure the user knows they've still got more work to do
-			# If we were prepared to add a custom PARAMETER to the MLD then we could do moer here, but for now this is 
+			# If we were prepared to add a custom PARAMETER to the MLD then we could do moer here, but for now this is
 			# the best we can do
 			debug warning "WARNING: Cannot automatically populate PCI interrupt-map property - this must be completed manually"
 			lappend node $ip_tree
@@ -1632,7 +1631,6 @@ proc gen_memories {tree hwproc_handle} {
 			"mpmc" {
 				set share_addresses [scan_int_parameter_value $slave "C_ALL_PIMS_SHARE_ADDRESSES"]
 				if {$share_addresses != 0} {
-					
 					lappend tree [memory $slave "MPMC_" ""]
 				} else {
 					set old_baseaddr [scan_int_parameter_value $slave [format "C_PIM0_BASEADDR" $x]]
@@ -1649,9 +1647,9 @@ proc gen_memories {tree hwproc_handle} {
 						if {$offset != $old_offset} {
 							debug warning "Warning!: mpmc is configured with different offsets on different ports!  Since this is a potentially hazardous configuration, a device tree node describing the memory will not be generated."
 						}
-					} 
+					}
 					if {$safe_addresses == 1} {
-						lappend tree [memory $slave "PIM0_" ""]						
+						lappend tree [memory $slave "PIM0_" ""]
 					}
 				}
 
@@ -1974,7 +1972,6 @@ proc gen_params {node_list handle params {trimprefix "C_"} } {
 					debug warning "Warning: num-intr-inputs not set yet, kind-of-intr will be set to zero"
 					set par_value 0
 				}
-					
 			}
 			lappend node_list [list [format_param_name $par_name $trimprefix] hexint $par_value]
 		} {err}]} {
@@ -2228,7 +2225,7 @@ proc write_tree {indent file tree} {
 }
 
 proc get_pathname_for_label {tree label {path /}} {
-	foreach node $tree {	
+	foreach node $tree {
 		set fullname [lindex $node 0]
 		set type [lindex $node 1]
 		set value [lindex $node 2]
