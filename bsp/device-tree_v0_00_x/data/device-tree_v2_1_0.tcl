@@ -787,7 +787,16 @@ proc gener_slave {node slave intc} {
 		"xps_timer" -
 		"opb_timer" -
 		"axi_timer" {
-			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "timer" [default_parameters $slave] ]
+			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "timer" [default_parameters $slave] ]
+
+			# axi_timer runs at bus frequency, whereas plb and opb timers run at cpu fruquency. The timer driver
+			# in microblaze kernel uses the 'clock-frequency' property, if there is one available; otherwise it
+			# uses cpu frequency. For axi_timer, generate the 'clock-frequency' property with bus frequency as
+			# it's value
+			if { $type == "axi_timer"} {
+				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [get_clock_frequency $slave "S_AXI_ACLK"]]]
+			}
+			lappend node $ip_tree
 
 			# for version 1.01b of the xps timer, make sure that it has the patch applied to the h/w
 			# so that it's using an edge interrupt rather than a falling as described in AR 33880
