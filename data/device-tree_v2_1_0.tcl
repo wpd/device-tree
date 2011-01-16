@@ -1047,11 +1047,13 @@ proc gener_slave {node slave intc} {
 			incr mac_count
 
 			if {$type == "xps_ethernetlite" || $type == "axi_ethernetlite"} {
-				set has_mdio [scan_int_parameter_value $slave "C_INCLUDE_MDIO"]
-				if {$has_mdio == 1} {
-					set phy_name "phy$phy_count"
-					set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
-					set ip_tree [tree_append $ip_tree [gen_mdiotree]]
+				if {[parameter_exists $slave "C_INCLUDE_MDIO"]} {
+					set has_mdio [scan_int_parameter_value $slave "C_INCLUDE_MDIO"]
+					if {$has_mdio == 1} {
+						set phy_name "phy$phy_count"
+						set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
+						set ip_tree [tree_append $ip_tree [gen_mdiotree]]
+					}
 				}
 			}
 
