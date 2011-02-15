@@ -267,13 +267,20 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 
 	if {[llength $bootargs] == 0} {
 		# default number for ttyULX or ttySX is 0
-		set serial_number 0
+		set serial_number ""
 		# find out which serial number is my choose uart - from aliases node - there is correct order
 		foreach node $alias_node_list {
 			if { "[lindex $node 2]" == "$consoleip" } {
 				set serial_number "[lindex $node 3]"
 			}
 		}
+
+		# check serial_number value - if is not setup it means that console is not supported
+		# For example if MDM interrupt is not setup
+		if {[llength $serial_number] == 0} {
+			error "Unsupported console - Please check that all required pins are connected."
+		}
+
 		# generate default string for uart16550 or uartlite
 		set uart_handle [xget_sw_ipinst_handle_from_processor [xget_libgen_proc_handle] $consoleip]
 		switch -exact [xget_value $uart_handle "VALUE"] {
@@ -891,12 +898,17 @@ proc gener_slave {node slave intc} {
 		}
 		"mdm" -
 		"opb_mdm" {
-			variable serial_count
-			variable uartlite_count
-			variable alias_node_list
-			lappend alias_node_list [list serial$serial_count aliasref $name $uartlite_count]
-			incr serial_count
-			incr uartlite_count
+			# Check if interrupt line is setup - if not then can't be used as console
+			set port_handle [xget_hw_port_handle $slave [interrupt_list $slave]]
+			set interrupt_signal [xget_value $port_handle "VALUE"]
+			if {[llength "$interrupt_signal"] != 0} {
+				variable serial_count
+				variable uartlite_count
+				variable alias_node_list
+				lappend alias_node_list [list serial$serial_count aliasref $name $uartlite_count]
+				incr serial_count
+				incr uartlite_count
+			}
 
 			# Microblaze debug
 			# EDK 11.4 disables PLB connection when USE_UART is disabled that's why whole node won't be generated
