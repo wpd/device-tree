@@ -350,17 +350,37 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 proc post_generate {lib_handle} {
 }
 
-
 proc prj_dir {} {
-    set old_cwd [pwd]
-    cd "../../.."
-    if {[string match "petalinux_bsp_?" [exec basename [pwd]]]} {
-    cd "../../.."
-    }
-    set _prj_dir [pwd]
-    cd $old_cwd
+	set folder "[exec pwd]"
+	set folder [string range $folder 0 [expr [string last "/" $folder] - 1]]
+	set folder [string range $folder 0 [expr [string last "/" $folder] - 1]]
+	set folder [string range $folder 0 [expr [string last "/" $folder] - 1]]
+	if {[string match "petalinux_bsp_?" [exec basename $folder]]} {
+		# keep it for non SDK project
+		set project_name "hw_platform_0"
+		if { [file isfile $folder/.project] } {
+			# parse project name
+			set test "[exec cat $folder/.project | grep "project>" ]"
+			# Extract project name: for example from: <project>hw_platform_0</project>
+			# find out the first > and last <
+			set first [string first ">" "$test"]
+			set last [string last "<" "$test" ]
+			set project_name [string range $test [expr $first + 1] [expr $last - 1] ]
+		}
 
-    return [exec bash -c "basename $_prj_dir"]
+		set folder [string range $folder 0 [expr [string last "/" $folder] - 1]]
+		if { [file isdirectory $folder/$project_name] } {
+			set test "[exec cat $folder/$project_name/system.xml | grep SYSTEMINFO ]"
+			set first [string first "SOURCE" "$test"]
+			set last [string last ".xmp" "$test" ]
+			set folder [string range $test $first $last]
+			set folder [string range $folder 0 [expr [string last "/" $folder] - 1]]
+		} else {
+			set folder [string range $folder 0 [expr [string last "/" $folder] - 1]]
+			set folder [string range $folder 0 [expr [string last "/" $folder] - 1]]
+		}
+	}
+	return [exec basename $folder]
 }
 
 proc headerc {ufile generator_version} {
