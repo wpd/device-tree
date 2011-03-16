@@ -4,6 +4,7 @@
 # (C) Copyright 2007-2008 Xilinx, Inc.
 # Based on original code:
 # (C) Copyright 2007-2010 Michal Simek
+* (C) Copyright 2007-2011 PetaLogix Qld Pty Ltd
 #
 # Michal SIMEK <monstr@monstr.eu>
 #
@@ -377,6 +378,7 @@ proc headerc {ufile generator_version} {
 	puts $ufile " *"
 	puts $ufile " * (C) Copyright 2007-2008 Xilinx, Inc."
 	puts $ufile " * (C) Copyright 2007-2010 Michal Simek"
+	puts $ufile " * (C) Copyright 2007-2011 PetaLogix Qld Pty Ltd"
 	puts $ufile " *"
 	puts $ufile " * Michal SIMEK <monstr@monstr.eu>"
 	puts $ufile " *"
