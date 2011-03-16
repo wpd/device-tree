@@ -351,36 +351,24 @@ proc post_generate {lib_handle} {
 }
 
 proc prj_dir {} {
-	set folder "[exec pwd]"
-	set folder [string range $folder 0 [expr [string last "/" $folder] - 1]]
-	set folder [string range $folder 0 [expr [string last "/" $folder] - 1]]
-	set folder [string range $folder 0 [expr [string last "/" $folder] - 1]]
-	if {[string match "petalinux_bsp_?" [exec basename $folder]]} {
-		# keep it for non SDK project
-		set project_name "hw_platform_0"
-		if { [file isfile $folder/.project] } {
-			# parse project name
-			set test "[exec cat $folder/.project | grep "project>" ]"
-			# Extract project name: for example from: <project>hw_platform_0</project>
-			# find out the first > and last <
-			set first [string first ">" "$test"]
-			set last [string last "<" "$test" ]
-			set project_name [string range $test [expr $first + 1] [expr $last - 1] ]
+	namespace eval petalogix-lib {
+		global env
+		set path ${env(PETALINUX)}/hardware/edk_user_repository:${env(MYXILINX)}
+		foreach p [split $path :] {
+			set f $p/PetaLogix/bsp/petalogix-lib_v1_00_a/data/petalogix-lib_v2_1_0.tcl
+			set result [catch {source $f}]
+			case $result {
+				0 { break }
+				1 { continue }
+				default {error "Unknown error"}
+			}
 		}
-
-		set folder [string range $folder 0 [expr [string last "/" $folder] - 1]]
-		if { [file isdirectory $folder/$project_name] } {
-			set test "[exec cat $folder/$project_name/system.xml | grep SYSTEMINFO ]"
-			set first [string first "SOURCE" "$test"]
-			set last [string last ".xmp" "$test" ]
-			set folder [string range $test $first $last]
-			set folder [string range $folder 0 [expr [string last "/" $folder] - 1]]
-		} else {
-			set folder [string range $folder 0 [expr [string last "/" $folder] - 1]]
-			set folder [string range $folder 0 [expr [string last "/" $folder] - 1]]
+		if { ${result} } {
+			error "Unable to load PetaLogix TCL library functions - please ensure \$PETALINUX or \$MYXILINX is set"
 		}
 	}
-	return [exec basename $folder]
+
+	return [petalogix-lib::get_board_name]
 }
 
 proc headerc {ufile generator_version} {
