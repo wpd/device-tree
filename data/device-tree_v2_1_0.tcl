@@ -4,7 +4,7 @@
 # (C) Copyright 2007-2008 Xilinx, Inc.
 # Based on original code:
 # (C) Copyright 2007-2010 Michal Simek
-* (C) Copyright 2007-2011 PetaLogix Qld Pty Ltd
+# (C) Copyright 2007-2011 PetaLogix Qld Pty Ltd
 #
 # Michal SIMEK <monstr@monstr.eu>
 #
