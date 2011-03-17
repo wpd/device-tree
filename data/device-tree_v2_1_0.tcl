@@ -352,24 +352,9 @@ proc post_generate {lib_handle} {
 }
 
 proc prj_dir {} {
-	namespace eval petalogix-lib {
-		global env
-		set path ${env(PETALINUX)}/hardware/edk_user_repository:${env(MYXILINX)}
-		foreach p [split $path :] {
-			set f $p/PetaLogix/bsp/petalogix-lib_v1_00_a/data/petalogix-lib_v2_1_0.tcl
-			set result [catch {source $f}]
-			case $result {
-				0 { break }
-				1 { continue }
-				default {error "Unknown error"}
-			}
-		}
-		if { ${result} } {
-			error "Unable to load PetaLogix TCL library functions - please ensure \$PETALINUX or \$MYXILINX is set"
-		}
-	}
-
-	return [petalogix-lib::get_board_name]
+	# board_name comes from toplevel BSP context
+	global board_name
+	return $board_name
 }
 
 proc headerc {ufile generator_version} {
