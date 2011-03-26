@@ -998,6 +998,9 @@ proc gener_slave {node slave intc} {
 			set tmp [scan_int_parameter_value $slave "C_INCLUDE_DRE"]
 			lappend chan [list "xlnx,include-dre" hexint $tmp]
 
+			set tmp [scan_int_parameter_value $slave "C_INCLUDE_SG"]
+			lappend chan [list "xlnx,include-sg" hexint $tmp]
+
 			set tmp [scan_int_parameter_value $slave "C_USE_DATAMOVER_LITE"]
 			lappend chan [list "xlnx,lite-mode" hexint $tmp]
 
@@ -1016,9 +1019,6 @@ proc gener_slave {node slave intc} {
 			set mytree [tree_append $mytree [list \#size-cells int 1]]
 			set mytree [tree_append $mytree [list \#address-cells int 1]]
 			set mytree [tree_append $mytree [list compatible stringtuple [list "xlnx,axi-cdma"]]]
-
-			set tmp [scan_int_parameter_value $slave "C_INCLUDE_SG"]
-			set mytree [tree_append $mytree [list "xlnx,include-sg" hexint $tmp]]
 
 			set mytree [tree_append $mytree [gen_ranges_property $slave $baseaddr $highaddr $baseaddr]]
 			set mytree [tree_append $mytree [gen_reg_property $hw_name $baseaddr $highaddr]]
