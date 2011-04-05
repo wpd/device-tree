@@ -273,12 +273,7 @@ proc post_generate {lib_handle} {
 
 
 proc prj_dir {} {
-    set old_cwd [pwd]
-    cd "../../.."
-    set _prj_dir [pwd]
-    cd $old_cwd
-
-    return [exec bash -c "basename $_prj_dir"]
+    return [file tail [file normalize [file join .. .. ..]]]
 }
 
 proc headerc {ufile generator_version} {
