@@ -973,7 +973,8 @@ proc gener_slave {node slave intc} {
 		"mch_opb_sdram" -
 		"ppc440mc_ddr2" -
 		"axi_s6_ddrx" -
-		"axi_v6_ddrx" {
+		"axi_v6_ddrx" -
+		"axi_7series_ddrx" {
 			# Do nothing..  this is handled by the 'memory' special case.
 		}
 		"opb_emc" -
@@ -1331,7 +1332,8 @@ proc gen_memories {tree hwproc_handle} {
 				}
 				set memory_count [expr $memory_count + 1]
 			}
-			"axi_v6_ddrx" {
+			"axi_v6_ddrx" -
+			"axi_7series_ddrx" {
 				lappend tree [memory $slave "S_AXI_" ""]
 				set memory_count [expr $memory_count + 1]
 			}
