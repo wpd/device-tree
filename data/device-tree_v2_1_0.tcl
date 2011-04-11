@@ -893,6 +893,12 @@ proc gener_slave {node slave intc} {
 		}
 		"mdm" -
 		"opb_mdm" {
+			# Microblaze debug
+			# EDK 11.4 disables PLB connection when USE_UART is disabled that's why whole node won't be generated
+			# Only bus connected IPs are generated
+			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "debug" [default_parameters $slave] "" "" "xlnx,xps-uartlite-1.00.a" ]
+			#"C_MB_DBG_PORTS C_UART_WIDTH C_USE_UART"
+
 			# Check if interrupt line is setup - if not then can't be used as console
 			set port_handle [xget_hw_port_handle $slave [interrupt_list $slave]]
 			set interrupt_signal [xget_value $port_handle "VALUE"]
@@ -901,15 +907,11 @@ proc gener_slave {node slave intc} {
 				variable uartlite_count
 				variable alias_node_list
 				lappend alias_node_list [list serial$serial_count aliasref $name $uartlite_count]
+				set ip_tree [tree_append $ip_tree [list "port-number" int $uartlite_count]]
 				incr serial_count
 				incr uartlite_count
 			}
-
-			# Microblaze debug
-			# EDK 11.4 disables PLB connection when USE_UART is disabled that's why whole node won't be generated
-			# Only bus connected IPs are generated
-			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "debug" [default_parameters $slave] "" "" "xlnx,xps-uartlite-1.00.a" ]
-			#"C_MB_DBG_PORTS C_UART_WIDTH C_USE_UART"
+			lappend node $ip_tree
 		}
 		"xps_uartlite" -
 		"opb_uartlite" -
