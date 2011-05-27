@@ -751,6 +751,13 @@ proc slaveip {slave intc devicetype params {baseaddr_prefix ""} {other_compatibl
 	return $tree
 }
 
+proc slaveip_pcie_ipif_slave {slave intc devicetype params {baseaddr_prefix ""} {other_compatibles {}} } {
+	set baseaddr [scan_int_parameter_value $slave [format "C_%sMEM0_BASEADDR" $baseaddr_prefix]]
+	set highaddr [scan_int_parameter_value $slave [format "C_%sMEM0_HIGHADDR" $baseaddr_prefix]]
+	set tree [slaveip_explicit_baseaddr $slave $intc $devicetype $params $baseaddr $highaddr $other_compatibles]
+	return $tree
+}
+
 proc slaveip_explicit_baseaddr {slave intc devicetype params baseaddr highaddr {other_compatibles {}} } {
 	set name [xget_hw_name $slave]
 	set type [xget_hw_value $slave]
@@ -1823,6 +1830,38 @@ proc gener_slave {node slave intc} {
 			set tree [tree_append $tree $ranges]
 
 			lappend node $tree
+		}
+		"pcie_ipif_slave" {
+			# We can automatically generate the ranges property, but that's about it
+			# the interrupt-map encodes board-level info that cannot be
+			# derived from the MHS.
+			# Default handling for all params first
+			set ip_tree [slaveip_pcie_ipif_slave $slave $intc "pcie_ipif_slave" [default_parameters $slave]]
+
+			# Standard stuff required fror the pci OF bindings
+			set ip_tree [tree_append $ip_tree [list "#size-cells" int "2"]]
+			set ip_tree [tree_append $ip_tree [list "#address-cells" int "3"]]
+			set ip_tree [tree_append $ip_tree [list "#interrupt-cells" int "1"]]
+			set ip_tree [tree_append $ip_tree [list "device_type" string "pci"]]
+			# Generate ranges property.  Lots of assumptions here - 32 bit address space being the main one
+			set ranges ""
+
+			set ipifbar [ scan_int_parameter_value $slave "C_MEM1_BASEADDR" ]
+			set ipif_highaddr [ scan_int_parameter_value $slave "C_MEM1_HIGHADDR" ]
+			set space_code "0x02000000"
+			
+			set ranges [lappend ranges $space_code 0 $ipifbar $ipifbar 0 [ expr $ipif_highaddr - $ipifbar + 1 ]]
+
+			set ip_tree [tree_append $ip_tree [ list "ranges" hexinttuple $ranges ]]
+
+			# Now the interrupt-map-mask etc
+			set ip_tree [tree_append $ip_tree [ list "interrupt-map-mask" hexinttuple "0xff00 0x0 0x0 0x7" ]]
+
+			# Make sure the user knows they've still got more work to do
+			# If we were prepared to add a custom PARAMETER to the MLD then we could do moer here, but for now this is
+			# the best we can do
+			debug warning "WARNING: Cannot automatically populate PCI interrupt-map property - this must be completed manually"
+			lappend node $ip_tree
 		}
 		"plbv46_pci" {
 			# We can automatically generate the ranges property, but that's about it
