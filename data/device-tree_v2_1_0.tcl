@@ -1015,6 +1015,10 @@ proc gener_slave {node slave intc} {
 			}
 			#"C_COUNT_WIDTH C_ONE_TIMER_ONLY"]
 
+			# axi_timer runs at bus frequency, whereas plb and opb timers run at cpu fruquency. The timer driver
+			# in microblaze kernel uses the 'clock-frequency' property, if there is one available; otherwise it
+			# uses cpu frequency. For axi_timer, generate the 'clock-frequency' property with bus frequency as
+			# it's value
 			if { $type == "axi_timer"} {
 				set freq [get_clock_frequency $slave "S_AXI_ACLK"]
 				set ip_tree [tree_append $ip_tree [list "clock-frequency" int $freq]]
