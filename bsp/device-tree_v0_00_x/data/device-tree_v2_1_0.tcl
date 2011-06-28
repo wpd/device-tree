@@ -955,7 +955,8 @@ proc gener_slave {node slave intc} {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "i2c" [default_parameters $slave]]
 		}
 		"xps_spi" -
-		"axi_spi" {
+		"axi_spi" -
+		"axi_quad_spi" {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "spi" [default_parameters $slave]]
 		}
 		"xps_usb_host" {
@@ -1799,6 +1800,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{xps_ps2} {xps_ps2_1.00.a} \
 		{xps_spi_2} {xps_spi_2.00.a} \
 		{axi_spi} {xps_spi_2.00.a} \
+		{axi_quad_spi} {xps_spi_2.00.a} \
 		{xps_uart16550_2} {xps_uart16550_2.00.a} \
 		{axi_uart16550} {xps_uart16550_2.00.a} \
 		{xps_uartlite} {xps_uartlite_1.00.a} \
