@@ -2101,9 +2101,9 @@ proc gen_params {node_list handle params {trimprefix "C_"} } {
 proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 	array set compatible_list [ list \
 		{opb_intc} {xps_intc_1.00.a} \
-		{opb_timer} {xps-timer-1.00.a} \
-		{xps_timer} {xps-timer-1.00.a} \
-		{axi_timer} {xps-timer-1.00.a} \
+		{opb_timer} {xps_timer_1.00.a} \
+		{xps_timer} {xps_timer_1.00.a} \
+		{axi_timer} {xps_timer_1.00.a} \
 		{plb_v46} {plb_v46_1.00.a} \
 		{plbv46_pci} {plbv46_pci_1.03.a} \
 		{xps_bram_if_cntlr} {xps_bram_if_cntlr_1.00.a} \
@@ -2113,15 +2113,15 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{xps_gpio} {xps_gpio_1.00.a} \
 		{axi_gpio} {xps_gpio_1.00.a} \
 		{xps_hwicap} {xps_hwicap_1.00.a} \
-		{xps_tft} {xps-tft-1.00.a} \
+		{xps_tft} {xps_tft_1.00.a} \
 		{xps_iic} {xps_iic_2.00.a} \
 		{axi_iic} {xps_iic_2.00.a} \
 		{xps_intc} {xps_intc_1.00.a} \
 		{axi_intc} {xps_intc_1.00.a} \
 		{xps_ll_temac} {xps_ll_temac_1.01.b xps_ll_temac_1.00.a} \
 		{xps_ll_fifo} {xps_ll_fifo_1.00.a} \
-		{axi_ethernet} {axi-ethernet-1.00.a} \
-		{axi_dma} {axi-dma-1.00.a} \
+		{axi_ethernet} {axi_ethernet_1.00.a} \
+		{axi_dma} {axi_dma_1.00.a} \
 		{xps_ps2} {xps_ps2_1.00.a} \
 		{xps_spi_2} {xps_spi_2.00.a} \
 		{axi_spi} {xps_spi_2.00.a} \
