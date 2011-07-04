@@ -2109,6 +2109,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{xps_intc} {xps_intc_1.00.a} \
 		{axi_intc} {xps_intc_1.00.a} \
 		{xps_ll_temac} {xps_ll_temac_1.01.b xps_ll_temac_1.00.a} \
+		{xps_ll_fifo} {xps_ll_fifo_1.00.a} \
 		{axi_ethernet} {axi-ethernet-1.00.a} \
 		{axi_dma} {axi-dma-1.00.a} \
 		{xps_ps2} {xps_ps2_1.00.a} \
