@@ -984,6 +984,16 @@ proc gener_slave {node slave intc} {
 			lappend node $ip_tree
 			#"BAUDRATE DATA_BITS CLK_FREQ ODD_PARITY USE_PARITY"]
 		}
+		"xps_timebase_wdt" -
+		"axi_timebase_wdt" {
+			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] ]
+			if { $type == "xps_timebase_wdt" } {
+				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [get_clock_frequency $slave "SPLB_Clk"]]]
+			} elseif { $type == "axi_timebase_wdt" } {
+				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [get_clock_frequency $slave "S_AXI_ACLK"]]]
+			}
+			lappend node $ip_tree
+		}
 		"xps_timer" -
 		"opb_timer" -
 		"axi_timer" {
@@ -2119,6 +2129,8 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{axi_uart16550} {xps_uart16550_2.00.a} \
 		{xps_uartlite} {xps_uartlite_1.00.a} \
 		{axi_uartlite} {xps_uartlite_1.00.a} \
+		{xps_timebase_wdt} {xps_timebase_wdt_1.00.a} \
+		{axi_timebase_wdt} {xps_timebase_wdt_1.00.a} \
 		{xps_can} {xps_can_1.00.a} \
 		{xps_sysace} {xps_sysace_1.00.a} \
 		{axi_sysace} {xps_sysace_1.00.a} \
