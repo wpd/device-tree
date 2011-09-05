@@ -1018,6 +1018,48 @@ proc gener_slave {node slave intc} {
 
 			lappend node $mytree
 		}
+		"axi_cdma" {
+			set hw_name [xget_hw_name $slave]
+
+			set baseaddr [scan_int_parameter_value $slave "C_BASEADDR"]
+			set highaddr [scan_int_parameter_value $slave "C_HIGHADDR"]
+
+			set mytree [list [format_ip_name "axicdma" $baseaddr $hw_name] tree {}]
+			set namestring "dma-channel"
+			set channame [format_name [format "%s@%x" $namestring $baseaddr]]
+
+			set chan {}
+			lappend chan [list compatible stringtuple [list "xlnx,axi-cdma-channel"]]
+			set tmp [scan_int_parameter_value $slave "C_INCLUDE_DRE"]
+			lappend chan [list "xlnx,include-dre" hexint $tmp]
+
+			set tmp [scan_int_parameter_value $slave "C_USE_DATAMOVER_LITE"]
+			lappend chan [list "xlnx,lite-mode" hexint $tmp]
+
+			set tmp [scan_int_parameter_value $slave "C_M_AXI_DATA_WIDTH"]
+			lappend chan [list "xlnx,datawidth" hexint $tmp]
+
+			set tmp [scan_int_parameter_value $slave "C_M_AXI_MAX_BURST_LEN"]
+			lappend chan [list "xlnx,max-burst-len" hexint $tmp]
+
+
+			set chantree [list $channame tree $chan]
+			set chantree [gen_interrupt_property $chantree $slave $intc [list "cdma_introut"]]
+
+			set mytree [tree_append $mytree $chantree]
+
+			set mytree [tree_append $mytree [list \#size-cells int 1]]
+			set mytree [tree_append $mytree [list \#address-cells int 1]]
+			set mytree [tree_append $mytree [list compatible stringtuple [list "xlnx,axi-cdma"]]]
+
+			set tmp [scan_int_parameter_value $slave "C_INCLUDE_SG"]
+			set mytree [tree_append $mytree [list "xlnx,include-sg" hexint $tmp]]
+
+			set mytree [tree_append $mytree [gen_ranges_property $slave $baseaddr $highaddr $baseaddr]]
+			set mytree [tree_append $mytree [gen_reg_property $hw_name $baseaddr $highaddr]]
+
+			lappend node $mytree
+		}
 		"xps_tft" {
 			lappend node [slaveip_dcr_or_plb $slave $intc "tft" [default_parameters $slave]]
 		}
