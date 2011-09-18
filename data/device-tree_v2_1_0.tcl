@@ -1432,9 +1432,55 @@ proc gener_slave {node slave intc} {
 		}
 		default {
 			# *Most* IP should be handled by this default case.
-			if {[catch {lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] "" ]} {error}]} {
-				debug warning "Warning: Default slave handling for unknown IP $name ($type) Failed...  It won't show up in the device tree."
-				debug warning $error
+			# check if is any parameter BASEADDR
+			set ip_params [xget_hw_parameter_handle $slave "*"]
+			set address_array {}
+			puts [xget_hw_name $slave]
+			foreach par_name $ip_params {
+				# check all
+				set name [xget_hw_name $par_name]
+				set addrtype [xget_hw_subproperty_value $par_name "ADDRESS"]
+				if {[string compare -nocase $addrtype "BASE"] == 0} {
+					lappend address_array $par_name
+				}
+			}
+
+			switch [llength $address_array] {
+				"0" {
+					# maybe just IP just with interrupt line
+					set name [xget_hw_name $slave]
+					set type [xget_hw_value $slave]
+					set tree [slaveip_basic $slave $intc [default_parameters $slave] [format_ip_name $type "0" $name] ""]
+					set tree [gen_interrupt_property $tree $slave $intc [interrupt_list $slave]]
+					lappend node $tree
+				}
+				"1" {
+					# address_array has only one baseaddr which means that it is single node
+					set par_name $address_array
+					set base [xget_hw_name $par_name]
+					set high [xget_hw_subproperty_value $par_name "PAIR"]
+					set baseaddr [scan_int_parameter_value $slave $base]
+					set highaddr [scan_int_parameter_value $slave $high]
+					set tree [slaveip_explicit_baseaddr $slave $intc "" [default_parameters $slave] $baseaddr $highaddr ""]
+					set tree [gen_interrupt_property $tree $slave $intc [interrupt_list $slave]]
+					lappend node $tree
+				}
+				default {
+					# Compound ranges list with all BASEADDR and HIGHADDR pairs
+					set ranges_list {}
+					foreach par_name $address_array {
+						set base [xget_hw_name $par_name]
+						set high [xget_hw_subproperty_value $par_name "PAIR"]
+						set baseaddr [scan_int_parameter_value $slave $base]
+						set highaddr [scan_int_parameter_value $slave $high]
+						lappend ranges_list [list $baseaddr $highaddr $baseaddr]
+					}
+					# Use the first BASEADDR parameter to be in node name - order is directed by mpd
+					set tree [compound_slave $slave [xget_hw_name [lindex $address_array 0]]]
+					set tree [tree_append $tree [gen_ranges_property_list $slave $ranges_list]]
+					set tree [gen_interrupt_property $tree $slave $intc [interrupt_list $slave]]
+					lappend node $tree
+				}
 			}
 		}
 	}
