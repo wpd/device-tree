@@ -24,7 +24,7 @@
 # MA 02111-1307 USA
 
 # Debug mechanism.
-set debug_level {}
+variable debug_level {}
 # Uncomment the line below to get general progress messages.
 lappend debug_level [list "info"]
 # Uncomment the line below to get warnings about IP core usage.
@@ -38,20 +38,20 @@ lappend debug_level [list "ip"]
 
 
 # Globals variable
-set device_tree_generator_version "1.1"
-set cpunumber 0
-set periphery_array ""
-set axi_ifs ""
-set uartlite_count 0
-set uart16550_count 0
-set mac_count 0
-set gpio_names {}
-set overrides {}
+variable device_tree_generator_version "1.1"
+variable cpunumber 0
+variable periphery_array ""
+variable axi_ifs ""
+variable uartlite_count 0
+variable uart16550_count 0
+variable mac_count 0
+variable gpio_names {}
+variable overrides {}
 
-set serial_count 0
-set ethernet_count 0
-set alias_node_list {}
-set phy_count 0
+variable serial_count 0
+variable ethernet_count 0
+variable alias_node_list {}
+variable phy_count 0
 
 #
 # How to use generate_device_tree() from another MLD
