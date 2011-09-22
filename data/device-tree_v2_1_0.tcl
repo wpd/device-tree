@@ -1005,6 +1005,11 @@ proc gener_slave {node slave intc} {
 					debug warning "ERROR: Linux requires dual channel timer, but $name is set to single channel. Please configure the $name to dual channel"
 					exit 1
 				}
+				set irq [get_intr $slave $intc "Interrupt"]
+				if { $irq == "-1" } {
+					debug warning "ERROR: Linux requires dual channel timer with interrupt connected. Please configure the $name to interrupt"
+					exit 1
+				}
 			} else {
 				set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "timer" [default_parameters $slave] ]
 			}
