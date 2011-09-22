@@ -489,7 +489,7 @@ proc get_intc_signals {intc} {
 }
 
 # Get interrupt number
-proc get_intr {ip_handle intc intc_value port_name} {
+proc get_intr {ip_handle intc port_name} {
 	if {![string match "" $intc] && ![string match -nocase "none" $intc]} {
 		set intc_signals [get_intc_signals $intc]
 		set port_handle [xget_hw_port_handle $ip_handle "$port_name"]
@@ -2197,12 +2197,10 @@ proc gen_ranges_property_list {slave rangelist} {
 }
 
 proc gen_interrupt_property {tree slave intc interrupt_port_list} {
-	set pocet [scan_int_parameter_value $intc "C_NUM_INTR_INPUTS"]
-	set pocet [expr $pocet - 1]
 	set intc_name [xget_hw_name $intc]
 	set interrupt_list {}
 	foreach in $interrupt_port_list {
-		set irq [get_intr $slave $intc $pocet $in]
+		set irq [get_intr $slave $intc $in]
 
 		if {![string match $irq "-1"]} {
 			set irq_type [get_intr_type $slave $in]
