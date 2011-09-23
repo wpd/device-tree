@@ -101,6 +101,7 @@ proc generate {os_handle} {
 	debug info "\#--------------------------------------"
 
 	set bootargs [xget_sw_parameter_value $os_handle "bootargs"]
+	global consoleip
 	set consoleip [xget_sw_parameter_value $os_handle "stdout"]
 	global overrides
 	set overrides [xget_sw_parameter_value $os_handle "periph_type_overrides"]
@@ -881,6 +882,20 @@ proc change_nodename {nodetochange oldname newname} {
 	return [lreplace $nodetochange 0 0 "$lineofname"]
 }
 
+proc check_console_irq {slave intc} {
+	global consoleip
+	set name [xget_hw_name $slave]
+
+	set irq [get_intr $slave $intc [interrupt_list $slave]]
+	if { $irq == "-1" } {
+		if {[string match -nocase $name $consoleip]} {
+			error "Console($name) interrupt line is not connected to the interrupt controller [xget_hw_name $intc]. Please connect it or choose different console IP."
+		} else {
+			debug warning "Warning!: Serial IP ($name) has no interrupt connected!"
+		}
+	}
+}
+
 proc gener_slave {node slave intc} {
 	variable phy_count
 	variable mac_count
@@ -902,10 +917,10 @@ proc gener_slave {node slave intc} {
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "debug" [default_parameters $slave] "" "" "xlnx,xps-uartlite-1.00.a" ]
 			#"C_MB_DBG_PORTS C_UART_WIDTH C_USE_UART"
 
-			# Check if interrupt line is setup - if not then can't be used as console
-			set port_handle [xget_hw_port_handle $slave [interrupt_list $slave]]
-			set interrupt_signal [xget_value $port_handle "VALUE"]
-			if {[llength "$interrupt_signal"] != 0} {
+			# Check if uart feature is enabled
+			set use_uart [xget_hw_parameter_value $slave "C_USE_UART"]
+			if { "$use_uart" == "1" } {
+				check_console_irq $slave $intc
 				variable serial_count
 				variable uartlite_count
 				variable alias_node_list
@@ -922,6 +937,7 @@ proc gener_slave {node slave intc} {
 			#
 			# Add this uartlite device to the alias list
 			#
+			check_console_irq $slave $intc
 			variable serial_count
 			variable uartlite_count
 			variable alias_node_list
@@ -950,6 +966,7 @@ proc gener_slave {node slave intc} {
 			#
 			# Add this uart device to the alias list
 			#
+			check_console_irq $slave $intc
 			variable serial_count
 			variable uart16550_count
 			variable alias_node_list
