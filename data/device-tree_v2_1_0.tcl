@@ -168,8 +168,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			# Microblaze linux system requires dual-channel timer
 			global timer
 			if { [string match "" $timer] || [string match "none" $timer] } {
-				debug warning "ERROR: No timer is specified in the system. Linux requires dual channel timer."
-				exit 1
+				error "No timer is specified in the system. Linux requires dual channel timer."
 			}
 
 			set intc [get_handle_to_intc $proc_handle "Interrupt"]
@@ -1002,13 +1001,11 @@ proc gener_slave {node slave intc} {
 				set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "system_timer" [default_parameters $slave] ]
 				set one_timer_only [xget_hw_parameter_value $slave "C_ONE_TIMER_ONLY"]
 				if { $one_timer_only == "1" } {
-					debug warning "ERROR: Linux requires dual channel timer, but $name is set to single channel. Please configure the $name to dual channel"
-					exit 1
+					error "Linux requires dual channel timer, but $name is set to single channel. Please configure the $name to dual channel"
 				}
 				set irq [get_intr $slave $intc "Interrupt"]
 				if { $irq == "-1" } {
-					debug warning "ERROR: Linux requires dual channel timer with interrupt connected. Please configure the $name to interrupt"
-					exit 1
+					error "Linux requires dual channel timer with interrupt connected. Please configure the $name to interrupt"
 				}
 			} else {
 				set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "timer" [default_parameters $slave] ]
