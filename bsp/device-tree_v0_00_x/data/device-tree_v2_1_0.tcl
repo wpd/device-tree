@@ -2052,10 +2052,13 @@ proc gen_reg_property {nodename baseaddr highaddr {name "reg"}} {
 	if {[string match $highaddr "0x00000000"]} {
 		error "No high address for $nodename"
 	}
-	set size [expr $highaddr - $baseaddr + 1]
-	if { $size < 0 } {
+	set baseaddr [format %u $baseaddr]
+	set highaddr [format %u $highaddr]
+	if { $highaddr < $baseaddr } {
 		error "Bad highaddr for $nodename"
 	}
+
+	set size [format %u [expr $highaddr - $baseaddr + 1]]
 	return [list $name hexinttuple [list $baseaddr $size]]
 }
 
