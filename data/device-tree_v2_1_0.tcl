@@ -1935,11 +1935,47 @@ proc bus_bridge {slave intc_handle baseaddr face} {
 	# A list of all the IP that have been generated already.
 	variable periphery_array
 
+	set mdm {}
+	set uartlite {}
+	set fulluart {}
+	set sorted_ip {}
+	set console_type ""
+
+	global consoleip
+	# Sort all serial IP to be nice in the alias list
+	foreach ip $bus_ip_handles {
+		set name [xget_hw_name $ip]
+		set type [xget_hw_value $ip]
+
+		# Save console type for alias sorting
+		if { [string match "$name" "$consoleip"] } {
+			set console_type "$type"
+		}
+
+		# Add all uarts to own class
+		if { [string first "uartlite" "$type"] != -1 } {
+			lappend uartlite $ip
+		} elseif { [string first "uart16550" "$type"] != -1 } {
+			lappend fulluart $ip
+		} elseif { [string first "mdm" "$type"] != -1 } {
+			lappend mdm $ip
+		} else {
+			lappend sorted_ip $ip
+		}
+	}
+
+	# This order will be in alias list
+	if { [string first "uart16550" "$console_type"] != -1 } {
+		set sorted_ip "$sorted_ip $fulluart $uartlite $mdm"
+	} else {
+		set sorted_ip "$sorted_ip $uartlite $fulluart $mdm"
+	}
+
 	# Start generating the node for the bus.
 	set bus_node {}
 
 	# Populate with all the slaves.
-	foreach ip $bus_ip_handles {
+	foreach ip $sorted_ip {
 		# If we haven't already generated this ip
 		if {[lsearch $periphery_array $ip] == -1} {
 			set bus_node [gener_slave $bus_node $ip $intc_handle]
