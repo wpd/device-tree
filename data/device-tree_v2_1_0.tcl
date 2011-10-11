@@ -104,6 +104,10 @@ proc generate {os_handle} {
 	set consoleip [xget_sw_parameter_value $os_handle "stdout"]
 	global overrides
 	set overrides [xget_sw_parameter_value $os_handle "periph_type_overrides"]
+	# Format override string to list format
+	set overrides [string map { "\}\{" "\} \{" } $overrides]
+	set overrides [string map { "," " " } $overrides]
+
 	global main_memory
 	set main_memory [xget_sw_parameter_value $os_handle "main_memory"]
 	global main_memory_bank
@@ -2211,6 +2215,38 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		set clist [list [format_xilinx_name "$type"]]
 	}
 	set clist [concat $clist $other_compatibles]
+
+	# Command: "compatible <IP name> -replace/-append <compatible list>"
+	# or: "compatible <IP name> <compatible list>" where replace is used
+	global overrides
+	foreach i $overrides {
+		# skip others overrides
+		if { [lindex "$i" 0] != "compatible" } {
+			continue;
+		}
+		# Compatible command have at least 4 elements in the list
+		if { [llength $i] < 3 } {
+			error "Wrong compatible override command string - $i"
+		}
+		# Check IP name
+		if { [string match [lindex "$i" 1] "$nodename"] } {
+			if { [string match [lindex "$i" 2] "-replace"] } {
+				# Replace the whole compatible property list
+				set clist [lrange "$i" 3 end]
+				break;
+			} elseif { [string match [lindex "$i" 2] "-append"] } {
+				# Append it to the list
+				set compact [lrange "$i" 3 end]
+				set clist [concat $clist $compact]
+				break;
+			} else {
+				# Replace behavior
+				set clist [lrange "$i" 2 end]
+				break;
+			}
+		}
+	}
+
 	return [list "compatible" stringtuple $clist]
 }
 
