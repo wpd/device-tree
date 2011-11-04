@@ -2106,6 +2106,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{opb_timer} {xps_timer_1.00.a} \
 		{xps_timer} {xps_timer_1.00.a} \
 		{axi_timer} {xps_timer_1.00.a} \
+		{mpmc} {mpmc_3.00.a} \
 		{plb_v46} {plb_v46_1.00.a} \
 		{plbv46_pci} {plbv46_pci_1.03.a} \
 		{xps_bram_if_cntlr} {xps_bram_if_cntlr_1.00.a} \
