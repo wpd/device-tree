@@ -2134,6 +2134,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{xps_timebase_wdt} {xps_timebase_wdt_1.00.a} \
 		{axi_timebase_wdt} {xps_timebase_wdt_1.00.a} \
 		{xps_can} {xps_can_1.00.a} \
+		{axi_can} {xps_can_1.00.a} \
 		{xps_sysace} {xps_sysace_1.00.a} \
 		{axi_sysace} {xps_sysace_1.00.a} \
 		{xps_usb_host} {xps_usb_host_1.00.a} \
