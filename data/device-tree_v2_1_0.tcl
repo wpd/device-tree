@@ -42,8 +42,6 @@ variable device_tree_generator_version "1.1"
 variable cpunumber 0
 variable periphery_array ""
 variable axi_ifs ""
-variable uartlite_count 0
-variable uart16550_count 0
 variable mac_count 0
 variable gpio_names {}
 variable overrides {}
@@ -266,46 +264,32 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 		}
 	}
 
-	variable serial_count
 	variable alias_node_list
-	puts "$serial_count $alias_node_list"
+	puts "$alias_node_list"
 
 	if {[llength $bootargs] == 0} {
-		# default number for ttyULX or ttySX is 0
-		set serial_number ""
-		# find out which serial number is my choose uart - from aliases node - there is correct order
-		foreach node $alias_node_list {
-			if { "[lindex $node 2]" == "$consoleip" } {
-				set serial_number "[lindex $node 3]"
-			}
-		}
-
-		# check serial_number value - if is not setup it means that console is not supported
-		# For example if MDM interrupt is not setup
-		if {[llength $serial_number] == 0} {
-			error "Unsupported console - Please check that all required pins are connected."
-		}
-
-		# generate default string for uart16550 or uartlite
-		set uart_handle [xget_sw_ipinst_handle_from_processor [xget_libgen_proc_handle] $consoleip]
-		switch -exact [xget_value $uart_handle "VALUE"] {
-			"axi_uart16550" -
-			"xps_uart16550" -
-			"plb_uart16550" -
-			"opb_uart16550" {
-				# for uart16550 is default string 115200
-				set bootargs "console=ttyS$serial_number,115200"
-			}
-			"axi_uartlite" -
-			"xps_uartlite" -
-			"opb_uartlite" {
-				set bootargs "console=ttyUL$serial_number,[xget_sw_parameter_value $uart_handle "C_BAUDRATE"]"
-			}
-			"mdm" {
-				set bootargs "console=ttyUL$serial_number,115200"
-			}
-			default {
-				debug warning "WARNING: Unsupported console ip $consoleip. Can't generate bootargs."
+		# generate default string for uart16550 or uartlite if specified
+		if {![string match "" $consoleip] && ![string match -nocase "none" $consoleip] } {
+			set uart_handle [xget_sw_ipinst_handle_from_processor [xget_libgen_proc_handle] $consoleip]
+			switch -exact [xget_value $uart_handle "VALUE"] {
+				"axi_uart16550" -
+				"xps_uart16550" -
+				"plb_uart16550" -
+				"opb_uart16550" {
+					# for uart16550 is default string 115200
+					set bootargs "console=ttyS0,115200"
+				}
+				"axi_uartlite" -
+				"xps_uartlite" -
+				"opb_uartlite" {
+					set bootargs "console=ttyUL0,[xget_sw_parameter_value $uart_handle "C_BAUDRATE"]"
+				}
+				"mdm" {
+					set bootargs "console=ttyUL0,115200"
+				}
+				default {
+					debug warning "WARNING: Unsupported console ip $consoleip. Can't generate bootargs."
+				}
 			}
 		}
 	}
@@ -921,13 +905,18 @@ proc gener_slave {node slave intc} {
 			set use_uart [xget_hw_parameter_value $slave "C_USE_UART"]
 			if { "$use_uart" == "1" } {
 				check_console_irq $slave $intc
-				variable serial_count
-				variable uartlite_count
+
 				variable alias_node_list
-				lappend alias_node_list [list serial$serial_count aliasref $name $uartlite_count]
-				set ip_tree [tree_append $ip_tree [list "port-number" int $uartlite_count]]
-				incr serial_count
-				incr uartlite_count
+				global consoleip
+				if {[string match -nocase $name $consoleip]} {
+					lappend alias_node_list [list serial0 aliasref $name 0]
+					set ip_tree [tree_append $ip_tree [list "port-number" int 0]]
+				} else {
+					variable serial_count
+					incr serial_count
+					lappend alias_node_list [list serial$serial_count aliasref $name $serial_count]
+					set ip_tree [tree_append $ip_tree [list "port-number" int $serial_count]]
+				}
 			}
 			lappend node $ip_tree
 		}
@@ -938,15 +927,22 @@ proc gener_slave {node slave intc} {
 			# Add this uartlite device to the alias list
 			#
 			check_console_irq $slave $intc
-			variable serial_count
-			variable uartlite_count
-			variable alias_node_list
-			lappend alias_node_list [list serial$serial_count aliasref $name $uartlite_count]
-			incr serial_count
 
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "serial" [default_parameters $slave] ]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
-			set ip_tree [tree_append $ip_tree [list "port-number" int $uartlite_count]]
+
+			variable alias_node_list
+			global consoleip
+			if {[string match -nocase $name $consoleip]} {
+				lappend alias_node_list [list serial0 aliasref $name 0]
+				set ip_tree [tree_append $ip_tree [list "port-number" int 0]]
+			} else {
+				variable serial_count
+				incr serial_count
+				lappend alias_node_list [list serial$serial_count aliasref $name $serial_count]
+				set ip_tree [tree_append $ip_tree [list "port-number" int $serial_count]]
+			}
+
 			set ip_tree [tree_append $ip_tree [list "current-speed" int [xget_sw_parameter_value $slave "C_BAUDRATE"]]]
 			if { $type == "opb_uartlite"} {
 				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [get_clock_frequency $slave "SOPB_Clk"]]]
@@ -955,7 +951,6 @@ proc gener_slave {node slave intc} {
 			} elseif { $type == "axi_uartlite" } {
 				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [get_clock_frequency $slave "S_AXI_ACLK"]]]
 			}
-			incr uartlite_count
 			lappend node $ip_tree
 			#"BAUDRATE DATA_BITS CLK_FREQ ODD_PARITY USE_PARITY"]
 		}
@@ -967,12 +962,16 @@ proc gener_slave {node slave intc} {
 			# Add this uart device to the alias list
 			#
 			check_console_irq $slave $intc
-			variable serial_count
-			variable uart16550_count
+
 			variable alias_node_list
-			lappend alias_node_list [list serial$serial_count aliasref $name $uart16550_count]
-			incr serial_count
-			incr uart16550_count
+			global consoleip
+			if {[string match -nocase $name $consoleip]} {
+				lappend alias_node_list [list serial0 aliasref $name 0]
+			} else {
+				variable serial_count
+				incr serial_count
+				lappend alias_node_list [list serial$serial_count aliasref $name $serial_count]
+			}
 
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "serial" [default_parameters $slave] "" "" [list "ns16550a"] ]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
