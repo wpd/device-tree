@@ -896,13 +896,20 @@ proc gener_slave {node slave intc} {
 		"mdm" -
 		"opb_mdm" {
 			# Microblaze debug
-			# EDK 11.4 disables PLB connection when USE_UART is disabled that's why whole node won't be generated
-			# Only bus connected IPs are generated
-			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "debug" [default_parameters $slave] "" "" "xlnx,xps-uartlite-1.00.a" ]
-			#"C_MB_DBG_PORTS C_UART_WIDTH C_USE_UART"
-
 			# Check if uart feature is enabled
 			set use_uart [xget_hw_parameter_value $slave "C_USE_UART"]
+			# HACK - if it's got the UART then tag it as a serial
+			# device in the device tree.
+			if { "$use_uart" == "1" } {
+				set type "serial"
+			} else {
+				set type "debug"
+			}
+			# EDK 11.4 disables PLB connection when USE_UART is disabled that's why whole node won't be generated
+			# Only bus connected IPs are generated
+			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "${type}" [default_parameters $slave] "" "" "xlnx,xps-uartlite-1.00.a" ]
+			#"C_MB_DBG_PORTS C_UART_WIDTH C_USE_UART"
+
 			if { "$use_uart" == "1" } {
 				check_console_irq $slave $intc
 
