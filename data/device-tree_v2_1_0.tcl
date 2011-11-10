@@ -2271,7 +2271,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 	}
 	set clist [concat $clist $other_compatibles]
 
-	# Command: "compatible <IP name> -replace/-append <compatible list>"
+	# Command: "compatible -replace/-append <IP name> <compatible list>"
 	# or: "compatible <IP name> <compatible list>" where replace is used
 	global overrides
 	foreach i $overrides {
@@ -2283,18 +2283,22 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		if { [llength $i] < 3 } {
 			error "Wrong compatible override command string - $i"
 		}
-		# Check IP name
-		if { [string match [lindex "$i" 1] "$nodename"] } {
-			if { [string match [lindex "$i" 2] "-replace"] } {
-				# Replace the whole compatible property list
-				set clist [lrange "$i" 3 end]
-				break;
-			} elseif { [string match [lindex "$i" 2] "-append"] } {
+		# Check command and then IP name
+		if { [string match [lindex "$i" 1] "-append"] } {
+	                if { [string match [lindex "$i" 2] "$nodename"] } {
 				# Append it to the list
 				set compact [lrange "$i" 3 end]
 				set clist [concat $clist $compact]
 				break;
-			} else {
+			}
+		} elseif { [string match [lindex "$i" 1] "-replace"] } {
+	                if { [string match [lindex "$i" 2] "$nodename"] } {
+				# Replace the whole compatible property list
+				set clist [lrange "$i" 3 end]
+				break;
+			}
+		} else {
+	                if { [string match [lindex "$i" 1] "$nodename"] } {
 				# Replace behavior
 				set clist [lrange "$i" 2 end]
 				break;
