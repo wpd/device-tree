@@ -1216,6 +1216,7 @@ proc gener_slave {node slave intc} {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "i2c" [default_parameters $slave]]
 		}
 		"xps_spi" -
+		"axi_quad_spi" -
 		"axi_spi" {
 			# We will handle SPI FLASH here
 			global flash_memory flash_memory_bank
@@ -1231,10 +1232,10 @@ proc gener_slave {node slave intc} {
 				# Set the SPI Flash chip select
 				lappend subnode [list "reg" hexinttuple [list $flash_memory_bank]]
 				# Set the SPI Flash clock freqeuncy
-				if { $type == "axi_spi" } {
-					set sys_clk [get_clock_frequency $slave "S_AXI_ACLK"]
-				} else {
+				if { $type == "xps_spi" } {
 					set sys_clk [get_clock_frequency $slave "SPLB_Clk"]
+				} else {
+					set sys_clk [get_clock_frequency $slave "S_AXI_ACLK"]
 				}
 				set sck_ratio [scan_int_parameter_value $slave "C_SCK_RATIO"]
 				set sck [expr { $sys_clk / $sck_ratio }]
@@ -2233,6 +2234,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{xps_ps2} {xps_ps2_1.00.a} \
 		{xps_spi_2} {xps_spi_2.00.a} \
 		{axi_spi} {xps_spi_2.00.a} \
+		{axi_quad_spi} {xps_spi_2.00.a} \
 		{xps_uart16550_2} {xps_uart16550_2.00.a} \
 		{axi_uart16550} {xps_uart16550_2.00.a} \
 		{xps_uartlite} {xps_uartlite_1.00.a} \
