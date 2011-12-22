@@ -1349,6 +1349,16 @@ proc gener_slave {node slave intc} {
 			set tree [tree_append $tree [gen_ranges_property_list $slave $ranges_list]]
 			lappend node $tree
 		}
+		"plbv46_axi_bridge" {
+			# Fix me -- how do we represent this?
+		}
+		"axi_plbv46_bridge" {
+			set baseaddr [scan_int_parameter_value $slave "C_S_AXI_RNG1_BASEADDR"]
+			set tree [bus_bridge $slave $intc $baseaddr "MPLB"]
+			set ranges_list [default_ranges $slave "C_S_AXI_NUM_ADDR_RANGES" "C_RNG%d_BASEADDR" "C_RNG%d_HIGHADDR" "1"]
+			set tree [tree_append $tree [gen_ranges_property_list $slave $ranges_list]]
+			lappend node $tree
+		}
 		"plbv46_plbv46_bridge" {
 			# FIXME: multiple ranges!
 			set baseaddr [scan_int_parameter_value $slave "C_RNG0_BASEADDR"]
@@ -2035,13 +2045,13 @@ proc interrupt_list {ip_handle} {
 # each range, with a %d in place of the range number.
 # range_high_name_template: parameter name for the high address of
 # each range, with a %d in place of the range number.
-proc default_ranges {ip_handle num_ranges_name range_base_name_template range_high_name_template} {
+proc default_ranges {ip_handle num_ranges_name range_base_name_template range_high_name_template {range_start "0"}} {
 	set count [scan_int_parameter_value $ip_handle $num_ranges_name]
 	if { [llength $count] == 0 } {
 		set count 1
 	}
 	set ranges_list {}
-	for {set x 0} {$x < $count} {incr x} {
+	for {set x ${range_start}} {$x < $count} {incr x} {
 		set baseaddr [scan_int_parameter_value $ip_handle [format $range_base_name_template $x]]
 		set highaddr [scan_int_parameter_value $ip_handle [format $range_high_name_template $x]]
 		lappend ranges_list [list $baseaddr $highaddr $baseaddr]
