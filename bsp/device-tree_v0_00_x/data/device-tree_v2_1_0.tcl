@@ -1252,6 +1252,12 @@ proc gener_slave {node slave intc} {
 
 			lappend node $tree
 		}
+		"axi2axi_connector" {
+			# FIXME: multiple ranges!
+			set baseaddr [scan_int_parameter_value $slave "C_S_AXI_RNG00_BASEADDR"]
+			set tree [bus_bridge $slave $intc $baseaddr "M_AXI"]
+			lappend node $tree
+		}
 		"microblaze" {
 			debug ip "Other Microblaze CPU $name=$type"
 			lappend node [gen_microblaze $slave [default_parameters $slave]]
