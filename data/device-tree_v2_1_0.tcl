@@ -1355,7 +1355,7 @@ proc gener_slave {node slave intc} {
 		"axi_plbv46_bridge" {
 			set baseaddr [scan_int_parameter_value $slave "C_S_AXI_RNG1_BASEADDR"]
 			set tree [bus_bridge $slave $intc $baseaddr "MPLB"]
-			set ranges_list [default_ranges $slave "C_S_AXI_NUM_ADDR_RANGES" "C_RNG%d_BASEADDR" "C_RNG%d_HIGHADDR" "1"]
+			set ranges_list [default_ranges $slave "C_S_AXI_NUM_ADDR_RANGES" "C_S_AXI_RNG%d_BASEADDR" "C_S_AXI_RNG%d_HIGHADDR" "1"]
 			set tree [tree_append $tree [gen_ranges_property_list $slave $ranges_list]]
 			lappend node $tree
 		}
