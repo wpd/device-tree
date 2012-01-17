@@ -2059,7 +2059,7 @@ proc default_ranges {ip_handle num_ranges_name range_base_name_template range_hi
 		set count 1
 	}
 	set ranges_list {}
-	for {set x ${range_start}} {$x < $count} {incr x} {
+	for {set x ${range_start}} {$x < [expr $count + ${range_start}]} {incr x} {
 		set baseaddr [scan_int_parameter_value $ip_handle [format $range_base_name_template $x]]
 		set highaddr [scan_int_parameter_value $ip_handle [format $range_high_name_template $x]]
 		lappend ranges_list [list $baseaddr $highaddr $baseaddr]
