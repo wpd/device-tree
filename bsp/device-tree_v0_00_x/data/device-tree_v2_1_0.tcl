@@ -48,6 +48,8 @@ set serial_count 0
 set ethernet_count 0
 set alias_node_list {}
 
+set ps7_cortexa9_clk 0
+
 set axi_ifs ""
 
 #
@@ -239,6 +241,33 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			lappend toplevel [list "compatible" stringtuple [list "xlnx,virtex440" "xlnx,virtex"] ]
 			set cpu_name [xget_hw_name $hwproc_handle]
 			lappend toplevel [list "dcr-parent" labelref $cpu_name]
+		}
+		"ps7_cortexa9" {
+			set toplevel [gen_cortexa9 $toplevel $hwproc_handle [default_parameters $hwproc_handle]]
+			set bus_name [xget_hw_busif_value $hwproc_handle "M_AXI_DP"]
+			if { [string compare -nocase $bus_name ""] != 0 } {
+				# add all IPs connected to main AXI bus
+				global axi_ifs
+				set axi_ifs [xget_hw_connected_busifs_handle $mhs_handle $bus_name "*"]
+
+				set tree [bus_bridge $hwproc_handle "" 0 "M_AXI_DP"]
+				set tree [tree_append $tree [list ranges empty empty]]
+				# Add intc node because it is not detected
+				set tree [tree_append $tree \
+					[list "intc: interrupt-controller@f8f01000" tree \
+						[list \
+							[list "compatible" stringtuple "arm,gic" ] \
+							[list "reg" hexinttuple [list "0xF8F01000" "0x1000"] ] \
+							[list "#interrupt-cells" inttuple "2" ] \
+							[list "interrupt-controller" empty empty ] \
+						] \
+					] \
+				]
+
+				lappend ip_tree $tree
+			}
+			lappend toplevel [list "interrupt-parent" labelref [list "intc"] ]
+			lappend toplevel [list "compatible" stringtuple [list "xlnx,zynq-ep107"] ]
 		}
 		default {
 			error "unsupported CPU"
@@ -1301,6 +1330,9 @@ proc gener_slave {node slave intc} {
 			debug ip "Other PowerPC405 CPU $name=$type"
 			lappend node [gen_ppc405 $slave [default_parameters $slave]]
 		}
+		"ps7_cortexa9" {
+			#this is handled by proc gen_cortexa9. don't do anything here
+		}
 		default {
 			# *Most* IP should be handled by this default case.
 			if {[catch {lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] "" ]} {error}]} {
@@ -1327,6 +1359,59 @@ proc memory {slave baseaddr_prefix params} {
 	lappend ip_node [list "device_type" string "memory"]
 	set ip_node [gen_params $ip_node $slave $params]
 	return [list [format_ip_name memory $baseaddr $name] tree $ip_node]
+}
+
+proc gen_cortexa9 {tree hwproc_handle params} {
+	set out ""
+	variable cpunumber
+	variable ps7_cortexa9_clk
+	set cpus_node {}
+
+	set mhs_handle [xget_hw_parent_handle $hwproc_handle]
+	set lprocs [xget_cortexa9_handles $mhs_handle]
+
+	# add both the cortex a9 processors to the cpus node
+	foreach hw_proc $lprocs {
+		set cpu_name [xget_hw_name $hw_proc]
+		set cpu_type [xget_hw_value $hw_proc]
+		set hw_ver [xget_hw_parameter_value $hw_proc "HW_VER"]
+
+		set proc_node {}
+		lappend proc_node [list "device_type" string "cpu"]
+		lappend proc_node [list model string "$cpu_type,$hw_ver"]
+		lappend proc_node [gen_compatible_property $cpu_type $cpu_type $hw_ver]
+
+		set ps7_cortexa9_clk [xget_sw_parameter_value $hwproc_handle "C_CPU_CLK_FREQ_HZ"]
+		lappend proc_node [list clock-frequency int $ps7_cortexa9_clk]
+		lappend proc_node [list timebase-frequency int [expr $ps7_cortexa9_clk/2]]
+		lappend proc_node [list reg int $cpunumber]
+		lappend proc_node [list i-cache-size hexint [expr 0x8000]]
+		lappend proc_node [list i-cache-line-size hexint 32]
+		lappend proc_node [list d-cache-size hexint [expr 0x8000]]
+		lappend proc_node [list d-cache-line-size hexint 32]
+		set proc_node [gen_params $proc_node $hw_proc $params]
+		lappend cpus_node [list [format_ip_name "cpu" $cpunumber $cpu_name] "tree" "$proc_node"]
+
+		set cpunumber [expr $cpunumber + 1]
+	}
+	lappend cpus_node [list \#size-cells int 0]
+	lappend cpus_node [list \#address-cells int 1]
+	lappend cpus_node [list \#cpus hexint "$cpunumber" ]
+	lappend tree [list cpus tree "$cpus_node"]
+	return $tree
+}
+
+proc xget_cortexa9_handles { mhs_handle } {
+	set ipinst_list [xget_hw_ipinst_handle $mhs_handle "*"]
+	set lprocs ""
+	foreach ipinst $ipinst_list {
+		set ipname [xget_value $ipinst "OPTION" "IPNAME"]
+		if {[string compare -nocase $ipname "ps7_cortexa9"] == 0} {
+			lappend lprocs $ipinst
+		}
+	}
+
+	return $lprocs
 }
 
 proc gen_ppc405 {tree hwproc_handle params} {
