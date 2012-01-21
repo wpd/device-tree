@@ -1133,6 +1133,7 @@ proc gener_slave {node slave intc} {
 		"xps_usb_host" {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "usb" [default_parameters $slave] "SPLB_" "" [list "usb-ehci"]]
 		}
+		"axi_bram_ctrl" -
 		"plb_bram_if_cntlr" -
 		"opb_bram_if_cntlr" -
 		"opb_cypress_usb" -
@@ -1482,6 +1483,7 @@ proc gen_memories {tree hwproc_handle} {
 		set name [xget_hw_name $slave]
 		set type [xget_hw_value $slave]
 		switch $type {
+			"axi_bram_ctrl" -
 			"plb_bram_if_cntlr" -
 			"opb_bram_if_cntlr" {
 				# Ignore these, since they aren't big enough to be main
