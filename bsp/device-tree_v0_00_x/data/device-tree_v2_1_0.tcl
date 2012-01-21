@@ -1075,6 +1075,15 @@ proc gener_slave {node slave intc} {
 		"xps_tft" {
 			lappend node [slaveip_dcr_or_plb $slave $intc "tft" [default_parameters $slave]]
 		}
+		"logicvc" {
+			# default_parameters filters out *ADDR.
+			# Append C_VMEM_BASEADDR and C_VMEM_HIGHADDR
+			set params [default_parameters $slave]
+			lappend params "C_VMEM_BASEADDR"
+			lappend params "C_VMEM_HIGHADDR"
+
+			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "" $params "REGS_" "" ]
+		}
 		"plb_tft_cntlr_ref" -
 		"plb_dvi_cntlr_ref" {
 			# We handle this specially, since it is a DCR slave.
