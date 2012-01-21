@@ -1075,12 +1075,25 @@ proc gener_slave {node slave intc} {
 		"xps_tft" {
 			lappend node [slaveip_dcr_or_plb $slave $intc "tft" [default_parameters $slave]]
 		}
+		"logibayer" -
 		"logicvc" {
 			# default_parameters filters out *ADDR.
 			# Append C_VMEM_BASEADDR and C_VMEM_HIGHADDR
 			set params [default_parameters $slave]
 			lappend params "C_VMEM_BASEADDR"
 			lappend params "C_VMEM_HIGHADDR"
+
+			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "" $params "REGS_" "" ]
+		}
+		"logisdhc" {
+			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] "REGS_" "" ]
+		}
+		"logibitblt" {
+			# default_parameters filters out *ADDR.
+			# Append C_BB_BASEADDR and C_BB_HIGHADDR
+			set params [default_parameters $slave]
+			lappend params "C_BB_BASEADDR"
+			lappend params "C_BB_HIGHADDR"
 
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "" $params "REGS_" "" ]
 		}
