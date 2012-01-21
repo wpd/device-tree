@@ -49,6 +49,8 @@ set ethernet_count 0
 set alias_node_list {}
 
 set ps7_cortexa9_clk 0
+set ps7_spi_count 0
+set ps7_i2c_count 0
 
 set axi_ifs ""
 
@@ -735,6 +737,9 @@ proc tt {number} {
 
 proc gener_slave {node slave intc} {
 	variable phy_count
+	variable ps7_cortexa9_clk
+	variable ps7_spi_count
+	variable ps7_i2c_count
 
 	set name [xget_hw_name $slave]
 	set type [xget_hw_value $slave]
@@ -819,6 +824,136 @@ proc gener_slave {node slave intc} {
 			}
 			lappend node $ip_tree
 			#"BAUDRATE DATA_BITS CLK_FREQ ODD_PARITY USE_PARITY"]
+		}
+		"ps7_uart" {
+			variable serial_count
+			variable alias_node_list
+
+			lappend alias_node_list [list serial$serial_count aliasref $name]
+
+			set ip_tree [slaveip $slave $intc "serial" [default_parameters $slave] "S_AXI_" "xlnx,xuartps"]
+			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
+
+			set ip_tree [tree_append $ip_tree [list "clock" int [xget_sw_parameter_value $slave "C_UART_CLK_FREQ_HZ"]]]
+
+			if { "$name" == "ps7_uart_0" } {
+				set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "59 0"]]
+			} elseif { "$name" == "ps7_uart_1" } {
+				set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "82 0"]]
+			}
+
+			incr serial_count
+
+			lappend node $ip_tree
+		}
+		"ps7_wdt" -
+		"ps7_usb" -
+		"ps7_ttc" -
+		"ps7_gpio" -
+		"ps7_i2c" -
+		"ps7_nand" -
+		"ps7_qspi" -
+		"ps7_qspi_linear" -
+		"ps7_ethernet" -
+		"ps7_spi" -
+		"ps7_can" -
+		"ps7_scugic" -
+		"ps7_scutimer" -
+		"ps7_scuwdt" -
+		"ps7_dma" -
+		"ps7_smcc" -
+		"ps7_iop_bus_config" -
+		"ps7_ddrc" -
+		"ps7_slcr" -
+		"ps7_ram" -
+		"ps7_dev_cfg" {
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			# use TCL table
+			switch -exact $name {
+				"ps7_scutimer_0" { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "29 0"]]
+						   set ip_tree [tree_append $ip_tree [list "clock-frequency" int [expr $ps7_cortexa9_clk/2]]] }
+				"ps7_scuwdt_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "30 0"]]
+						   set ip_tree [tree_append $ip_tree [list "clock-frequency" int [expr $ps7_cortexa9_clk/2]]] }
+				"ps7_dev_cfg_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "40 0"]] }
+				"ps7_wdt_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "41 0"]]
+						   set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_WDT_CLK_FREQ_HZ"]]]}
+				"ps7_ttc_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "42 0 43 0 44 0"]]
+						   set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_TTC_CLK_FREQ_HZ"]]]}
+				"ps7_qspi_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "51 0"]]
+						   set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_QSPI_CLK_FREQ_HZ"]]]
+						   set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
+						   set ip_tree [tree_append $ip_tree [list "num-chip-select" int 1]]
+						   set qspi_mode [xget_sw_parameter_value $slave "C_QSPI_MODE"]
+						   if {$qspi_mode == 2} {
+							set is_dual 1
+						   } else {
+							set is_dual 0
+						   }
+						   set ip_tree [tree_append $ip_tree [list "is-dual" int $is_dual]]
+						   incr ps7_spi_count }
+				"ps7_gpio_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "52 0"]] }
+				"ps7_usb_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "53 0"]]
+						   set ip_tree [tree_append $ip_tree [list "dr_mode" string "host"]]
+						   set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]] }
+				"ps7_ethernet_0" { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "54 0 55 0"]]
+						   set phy_name "phy$phy_count"
+						   set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
+						   set ip_tree [tree_append $ip_tree [gen_mdiotree]] }
+				"ps7_i2c_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "57 0"]]
+						   set ip_tree [tree_append $ip_tree [list "input-clk" int [expr $ps7_cortexa9_clk/6]]]
+						   set ip_tree [tree_append $ip_tree [list "i2c-clk" int 400000]]
+						   set ip_tree [tree_append $ip_tree [list "bus-id" int $ps7_i2c_count]] }
+						   incr ps7_i2c_count
+				"ps7_spi_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "58 0"]]
+						   set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_SPI_CLK_FREQ_HZ"]]]
+						   set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
+						   set ip_tree [tree_append $ip_tree [list "num-chip-select" int 4]]
+						   incr ps7_spi_count }
+				"ps7_can_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "60 0"]] }
+
+				"ps7_ttc_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "69 0 70 0 71 0"]]
+						   set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_TTC_CLK_FREQ_HZ"]]]}
+				"ps7_usb_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "76 0"]]
+						   set ip_tree [tree_append $ip_tree [list "dr_mode" string "device"]]
+						   set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]] }
+				"ps7_ethernet_1" { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "77 0 78 0"]]
+						   set phy_name "phy$phy_count"
+						   set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
+						   set ip_tree [tree_append $ip_tree [gen_mdiotree]] }
+				"ps7_i2c_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "80 0"]]
+						   set ip_tree [tree_append $ip_tree [list "input-clk" int [expr $ps7_cortexa9_clk/2]]]
+						   set ip_tree [tree_append $ip_tree [list "i2c-clk" int 400000]]
+						   set ip_tree [tree_append $ip_tree [list "bus-id" int $ps7_i2c_count]] }
+				"ps7_spi_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "81 0"]]
+						   set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_SPI_CLK_FREQ_HZ"]]]
+						   set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
+						   set ip_tree [tree_append $ip_tree [list "num-chip-select" int 4]]
+						   incr ps7_spi_count }
+				"ps7_can_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "83 0"]] }
+			}
+			lappend node $ip_tree
+		}
+		"ps7_sdio" {
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "generic-sdhci"]
+			if { $name == "ps7_sd_0" } {
+				set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "56 0"]]
+			} elseif { $name == "ps7_sd_1" } {
+				set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "79 0"]]
+			}
+			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_SDIO_CLK_FREQ_HZ"]]]
+			lappend node $ip_tree
+		}
+
+		# assume sram_0 is NOR flash and sram_1 is SRAM
+		"ps7_nor" -
+		"ps7_sram" {
+			if { $name == "ps7_sram_0" || $name == "ps7_nor_0" } {
+				set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "cfi-flash"]
+				set ip_tree [tree_append $ip_tree [list "bank-width" int 1]]
+			} elseif { $name == "ps7_sram_1" } {
+				set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			}
+			lappend node $ip_tree
 		}
 		"xps_timer" -
 		"opb_timer" -
@@ -1184,6 +1319,7 @@ proc gener_slave {node slave intc} {
 		"xps_usb_host" {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "usb" [default_parameters $slave] "SPLB_" "" [list "usb-ehci"]]
 		}
+		"ps7_ddr" -
 		"axi_bram_ctrl" -
 		"plb_bram_if_cntlr" -
 		"opb_bram_if_cntlr" -
@@ -1619,6 +1755,7 @@ proc gen_memories {tree hwproc_handle} {
 				}
 				set memory_count [expr $memory_count + 1]
 			}
+			"ps7_ddr" -
 			"axi_v6_ddrx" -
 			"axi_7series_ddrx" {
 				lappend tree [memory $slave "S_AXI_" ""]
@@ -1776,6 +1913,7 @@ proc bus_bridge {slave intc_handle baseaddr face} {
 		debug handles "Bus handle $face connected through a bus..."
 		set bus_type [xget_hw_value $bus_handle]
 		switch $bus_type {
+			"ps7_axi_interconnect" -
 			"axi_interconnect" {
 				set devicetype "axi"
 				set compatible_list [list "simple-bus"]
