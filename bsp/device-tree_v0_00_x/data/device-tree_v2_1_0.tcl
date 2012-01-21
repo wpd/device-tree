@@ -1839,6 +1839,7 @@ proc default_parameters {ip_handle} {
 			"C_S_AXI_ADDR_WIDTH" -
 			"C_S_AXI_DATA_WIDTH" -
 			"C_S_AXI_PROTOCOL" -
+			"C_INTERCONNECT_?_AXI*" -
 			"C_M*_AXIS*" -
 			"C_S*_AXIS*" -
 			"HW_VER" {}
