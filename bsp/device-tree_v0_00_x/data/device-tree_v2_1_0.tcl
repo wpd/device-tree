@@ -48,6 +48,8 @@ set serial_count 0
 set ethernet_count 0
 set alias_node_list {}
 
+set axi_ifs ""
+
 #
 # How to use generate_device_tree() from another MLD
 #
@@ -154,6 +156,16 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 		"microblaze" {
 			set intc [get_handle_to_intc $proc_handle "Interrupt"]
 			set toplevel [gen_microblaze $toplevel $hwproc_handle [default_parameters $hwproc_handle]]
+
+			# If is AXI system then it is necessary to load all slave IPs connected
+			# to DC because there is FLASH which isn't handled by DP.
+			# AXI DC slave IPs are added in bus_bridge function.
+			set bus_name [xget_hw_busif_value $hwproc_handle "M_AXI_DC"]
+			if { [string compare -nocase $bus_name ""] != 0 } {
+				global axi_ifs
+				set axi_ifs [xget_hw_connected_busifs_handle $mhs_handle $bus_name "slave"]
+			}
+
 			# Microblaze v8 has AXI and/or PLB. xget_hw_busif_handle returns
 			# a valid handle for both these bus ifs, even if they are not
 			# connected. The better way of checking if a bus is connected
@@ -1688,6 +1700,10 @@ proc bus_bridge {slave intc_handle baseaddr face} {
 			# add them to the list of ip.
 		}
 		set slave_ifs [xget_hw_connected_busifs_handle $mhs_handle $bus_name "slave"]
+		if {[string match $devicetype "axi"]} {
+			global axi_ifs
+			set slave_ifs [concat $slave_ifs $axi_ifs]
+		}
 	}
 
 	set bus_ip_handles {}
