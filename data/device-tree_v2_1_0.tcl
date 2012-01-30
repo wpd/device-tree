@@ -1152,6 +1152,9 @@ proc gener_slave {node slave intc} {
 			set connected_ip_type [xget_hw_value $connected_ip_handle]
 			set ip_tree [tree_append $ip_tree [list "axistream-connected" labelref $connected_ip_name]]
 
+			set freq [get_clock_frequency $slave "S_AXI_ACLK"]
+			set ip_tree [tree_append $ip_tree [list "clock-frequency" int $freq]]
+
 			set ip_tree [tree_append $ip_tree [gen_mdiotree]]
 
 			lappend node $ip_tree
