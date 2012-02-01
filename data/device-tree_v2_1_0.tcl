@@ -1004,6 +1004,7 @@ proc check_console_irq {slave intc} {
 			debug warning "Warning!: Serial IP ($name) has no interrupt connected!"
 		}
 	}
+	return $irq
 }
 
 proc zynq_irq {ip_tree intc name } {
@@ -1079,25 +1080,28 @@ proc gener_slave {node slave intc} {
 			# Check if uart feature is enabled
 			set use_uart [xget_hw_parameter_value $slave "C_USE_UART"]
 			if { "$use_uart" == "1" } {
-				check_console_irq $slave $intc
-
-				set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "serial" [default_parameters $slave] "" "" "xlnx,xps-uartlite-1.00.a" ]
+				set irq [check_console_irq $slave $intc]
 
 				variable alias_node_list
 				global consoleip
-				if {[string match -nocase $name $consoleip]} {
-					lappend alias_node_list [list serial0 aliasref $name 0]
-					set ip_tree [tree_append $ip_tree [list "port-number" int 0]]
+				if { $irq != "-1"} {
+					set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "serial" [default_parameters $slave] "" "" "xlnx,xps-uartlite-1.00.a" ]
+					if {[string match -nocase $name $consoleip]} {
+						lappend alias_node_list [list serial0 aliasref $name 0]
+						set ip_tree [tree_append $ip_tree [list "port-number" int 0]]
+					} else {
+						variable serial_count
+						incr serial_count
+						lappend alias_node_list [list serial$serial_count aliasref $name $serial_count]
+						set ip_tree [tree_append $ip_tree [list "port-number" int $serial_count]]
+					}
 				} else {
-					variable serial_count
-					incr serial_count
-					lappend alias_node_list [list serial$serial_count aliasref $name $serial_count]
-					set ip_tree [tree_append $ip_tree [list "port-number" int $serial_count]]
+					set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "serial" [default_parameters $slave] "" "" "" ]
 				}
 			} else {
 				# EDK 11.4 disables PLB connection when USE_UART is disabled that's why whole node won't be generated
 				# Only bus connected IPs are generated
-				set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "debug" [default_parameters $slave] "" "" "xlnx,xps-uartlite-1.00.a" ]
+				set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "debug" [default_parameters $slave] "" "" "" ]
 				#"C_MB_DBG_PORTS C_UART_WIDTH C_USE_UART"
 			}
 			lappend node $ip_tree
