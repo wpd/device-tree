@@ -1,10 +1,10 @@
 #
 # EDK BSP board generation for device trees supporting Microblaze and PPC
 #
-# (C) Copyright 2007-2008 Xilinx, Inc.
+# (C) Copyright 2007-2012 Xilinx, Inc.
 # Based on original code:
-# (C) Copyright 2007-2011 Michal Simek
-# (C) Copyright 2007-2011 PetaLogix Qld Pty Ltd
+# (C) Copyright 2007-2012 Michal Simek
+# (C) Copyright 2007-2012 PetaLogix Qld Pty Ltd
 #
 # Michal SIMEK <monstr@monstr.eu>
 #
@@ -51,6 +51,12 @@ variable serial_count 0
 variable ethernet_count 0
 variable alias_node_list {}
 variable phy_count 0
+
+variable ps7_spi_count 0
+variable ps7_i2c_count 0
+
+# FIXME it will be better not to use it
+variable ps7_cortexa9_clk 0
 
 #
 # How to use generate_device_tree() from another MLD
@@ -282,6 +288,32 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			set cpu_name [xget_hw_name $hwproc_handle]
 			lappend toplevel [list "dcr-parent" labelref $cpu_name]
 		}
+		"ps7_cortexa9" {
+			set toplevel [gen_cortexa9 $toplevel $hwproc_handle [default_parameters $hwproc_handle]]
+			# MS: This is nasty hack how to get all slave IPs
+			# What I do is that load all IPs from M_AXI_DP and then pass all IPs
+			# in bus_bridge then handle the rest of IPs
+			set ips [xget_hw_proc_slave_periphs $hwproc_handle]
+
+			# FIXME uses axi_ifs instead of ips and remove that param from bus_bridge
+			global axi_ifs
+			set axi_ifs ""
+
+			# Find out GIC
+			foreach i $ips {
+				if { "[xget_hw_value $i]" == "ps7_scugic" } {
+					set intc "$i"
+				}
+			}
+
+			set bus_name [xget_hw_busif_value $hwproc_handle "M_AXI_DP"]
+			if { [string compare -nocase $bus_name ""] != 0 } {
+				set tree [bus_bridge $hwproc_handle $intc 0 "M_AXI_DP" "" $ips]
+				set tree [tree_append $tree [list ranges empty empty]]
+				lappend ip_tree $tree
+			}
+			lappend toplevel [list "compatible" stringtuple [list "xlnx,zynq-ep107"] ]
+		}
 		default {
 			error "unsupported CPU"
 		}
@@ -309,6 +341,9 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 				}
 				"mdm" {
 					set bootargs "console=ttyUL0,115200"
+				}
+				"ps7_uart" {
+					set bootargs "console=ttyPS0,115200"
 				}
 				default {
 					debug warning "WARNING: Unsupported console ip $consoleip. Can't generate bootargs."
@@ -373,8 +408,8 @@ proc headerc {ufile generator_version} {
 	puts $ufile " * Device Tree Generator version: $generator_version"
 	puts $ufile " *"
 	puts $ufile " * (C) Copyright 2007-2008 Xilinx, Inc."
-	puts $ufile " * (C) Copyright 2007-2011 Michal Simek"
-	puts $ufile " * (C) Copyright 2007-2011 PetaLogix Qld Pty Ltd"
+	puts $ufile " * (C) Copyright 2007-2012 Michal Simek"
+	puts $ufile " * (C) Copyright 2007-2012 PetaLogix Qld Pty Ltd"
 	puts $ufile " *"
 	puts $ufile " * Michal SIMEK <monstr@monstr.eu>"
 	puts $ufile " *"
@@ -491,7 +526,41 @@ proc valid_gpio {name} {
 }
 
 proc get_intc_signals {intc} {
-	set signals [split [xget_hw_port_value $intc "intr"] "&"]
+
+	# MS the simplest way to detect ARM is through intc type
+	if { "[xget_hw_value $intc]" == "ps7_scugic" } {
+		# MS here is small complication because INTC from FPGA
+		# are divided to two separate segments. That's why
+		# I generate two silly offsets to setup correct location
+		# for both segments.
+		# FPGA 7-0 - irq 61 - 68
+		# FPGA 15-8 - irq 84 - 91
+
+		for {set x 0} {$x < 61} {incr x} {
+			lappend offset1 $x
+		}
+
+		for {set x 0} {$x < 14} {incr x} {
+			lappend offset2 $x
+		}
+
+		set int_lines "[split [xget_hw_port_value $intc "IRQ_F2P"] "&"]"
+		if { "[llength $int_lines]" > "16" } {
+			error "Too many interrupt lines connected to Zynq GIC"
+		}
+
+		if { "[llength $int_lines]" > "8" } {
+			set signal1 [lrange $int_lines [expr [llength $int_lines] - 9] [llength $int_lines] ]
+			set signal2 [lrange $int_lines 0 [expr [llength $int_lines] - 9] ]
+		} else {
+			set signal1 $int_lines
+			set signal2 ""
+		}
+		set signals "$signal2 $offset2 $signal1 $offset1"
+	} else {
+		set signals [split [xget_hw_port_value $intc "intr"] "&"]
+	}
+
 	set intc_signals {}
 	foreach signal $signals {
 		lappend intc_signals [string trim $signal]
@@ -674,8 +743,8 @@ proc slaveip_basic {slave intc params nodename {other_compatibles {}} } {
 	return [list $nodename tree $ip_node]
 }
 
-proc gen_intc {slave intc devicetype param} {
-	set tree [slaveip $slave $intc $devicetype $param]
+proc gen_intc {slave intc devicetype param {prefix ""} {other_compatibles {}}} {
+	set tree [slaveip $slave $intc $devicetype $param $prefix $other_compatibles]
 	set intc_name [lindex $tree 0]
 	set intc_node [lindex $tree 2]
 
@@ -903,6 +972,49 @@ proc check_console_irq {slave intc} {
 	}
 }
 
+proc zynq_irq {ip_tree intc name } {
+	array set zynq_irq_list [ list \
+		{ps7_scutimer_0} {27 0} \
+		{nFIQFIXME} {28 0} \
+		{cpu_timerFIXME} {29 0} \
+		{ps7_scuwdt_0} {30 0} \
+		{nIRQFIXME} {31 0} \
+		{ps7_dev_cfg_0} {40 0} \
+		{ps7_wdt_0} {41 0} \
+		{ps7_ttc_0} {42 0 43 0 44 0} \
+		{ps7_dmaFIXME} {45 0} \
+		{ps7_dmaFIXME} {46 0 47 0 48 0 49 0} \
+		{smcFIXME} {50 0} \
+		{ps7_qspi_0} {51 0} \
+		{ps7_gpio_0} {52 0} \
+		{ps7_usb_0} {53 0} \
+		{ps7_ethernet_0} {54 0 55 0} \
+		{ps7_sd_0} {56 0} \
+		{ps7_i2c_0} {57 0} \
+		{ps7_spi_0} {58 0} \
+		{ps7_uart_0} {59 0} \
+		{ps7_can_0} {60 0} \
+		{ps7_ttc_1} {69 0 70 0 71 0} \
+		{ps7_dmaFIXME} {72 0 73 0 74 0 75 0} \
+		{ps7_usb_1} {76 0} \
+		{ps7_ethernet_1} {77 0 78 0} \
+		{ps7_sd_1} {79 0} \
+		{ps7_i2c_1} {80 0} \
+		{ps7_spi_1} {81 0} \
+		{ps7_uart_1} {82 0} \
+		{ps7_can_1} {83 0} \
+		{scu_parityFIXME} {92 0} \
+	]
+
+	if { [info exists zynq_irq_list($name)] } {
+		set irq "$zynq_irq_list($name)"
+		set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "$irq"]]
+		set intc_name [xget_hw_name $intc]
+		set ip_tree [tree_append $ip_tree [list "interrupt-parent" labelref $intc_name]]
+	}
+	return $ip_tree
+}
+
 proc gener_slave {node slave intc} {
 	variable phy_count
 	variable mac_count
@@ -944,6 +1056,19 @@ proc gener_slave {node slave intc} {
 				set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "debug" [default_parameters $slave] "" "" "xlnx,xps-uartlite-1.00.a" ]
 				#"C_MB_DBG_PORTS C_UART_WIDTH C_USE_UART"
 			}
+			lappend node $ip_tree
+		}
+		"ps7_uart" {
+			variable alias_node_list
+			variable serial_count
+			incr serial_count
+			lappend alias_node_list [list serial$serial_count aliasref $name $serial_count]
+
+			set ip_tree [slaveip $slave $intc "serial" [default_parameters $slave] "S_AXI_" "xlnx,xuartps"]
+			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
+			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [scan_int_parameter_value $slave "C_UART_CLK_FREQ_HZ"]]]
+			set ip_tree [zynq_irq $ip_tree $intc $name]
+
 			lappend node $ip_tree
 		}
 		"xps_uartlite" -
@@ -1273,6 +1398,138 @@ proc gener_slave {node slave intc} {
 		"xps_usb_host" {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "usb" [default_parameters $slave] "SPLB_" "" [list "usb-ehci"]]
 		}
+		"ps7_wdt" -
+		"ps7_usb" -
+		"ps7_ttc" -
+		"ps7_gpio" -
+		"ps7_i2c" -
+		"ps7_qspi" -
+		"ps7_ethernet" -
+		"ps7_spi" -
+		"ps7_can" -
+		"ps7_smcc" -
+		"ps7_iop_bus_config" -
+		"ps7_slcr" -
+		"ps7_sram" -
+		"ps7_qspi_linear" -
+		"ps7_ram" -
+		"ps7_dma" -
+		"ps7_ddrc" -
+		"ps7_scuwdt" -
+		"ps7_scutimer" -
+		"ps7_dev_cfg" {
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			# use TCL table
+			set ip_tree [zynq_irq $ip_tree $intc $name]
+
+			if { "$name" == "ps7_i2c_0" || "$name" == "ps7_i2c_1" } {
+				variable ps7_i2c_count
+				variable ps7_cortexa9_clk
+				set ip_tree [tree_append $ip_tree [list "input-clk" int [expr $ps7_cortexa9_clk/6]]]
+				set ip_tree [tree_append $ip_tree [list "i2c-clk" int 400000]]
+				set ip_tree [tree_append $ip_tree [list "bus-id" int $ps7_i2c_count]]
+				incr ps7_i2c_count
+			}
+
+			if { "$name" == "ps7_ttc_0" || "$name" == "ps7_ttc_1" } {
+				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_TTC_CLK_FREQ_HZ"]]]
+			}
+
+			if { "$name" == "ps7_scutimer_0" } {
+				variable ps7_cortexa9_clk
+				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [expr $ps7_cortexa9_clk/2]]]
+			}
+
+			if { "$name" == "ps7_qspi_0" } {
+				variable ps7_spi_count
+				set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_QSPI_CLK_FREQ_HZ"]]]
+				set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
+				set ip_tree [tree_append $ip_tree [list "num-chip-select" int 1]]
+				set qspi_mode [xget_sw_parameter_value $slave "C_QSPI_MODE"]
+				if { $qspi_mode == 2} {
+				set is_dual 1
+				} else {
+				set is_dual 0
+				}
+				set ip_tree [tree_append $ip_tree [list "is-dual" int $is_dual]]
+				incr ps7_spi_count
+			}
+
+			if { "$name" == "ps7_wdt_0" } {
+				set ip_tree [tree_append $ip_tree [list "device_type" string "watchdog"]]
+				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_WDT_CLK_FREQ_HZ"]]]
+			}
+			if { "$name" == "ps7_scuwdt_0" } {
+				variable ps7_cortexa9_clk
+				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [expr $ps7_cortexa9_clk/2]]]
+				set ip_tree [tree_append $ip_tree [list "device_type" string "watchdog"]]
+			}
+
+			if { "$name" == "ps7_usb_0" || "$name" == "ps7_usb_1" } {
+				set ip_tree [tree_append $ip_tree [list "dr_mode" string "host"]]
+				set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]]
+			}
+
+			if { "$name" == "ps7_gpio_0" } {
+				set ip_tree [tree_append $ip_tree [list "#gpio-cells" int "2"]]
+				set ip_tree [tree_append $ip_tree [list "gpio-controller" empty empty]]
+			}
+
+			if { "$name" == "ps7_spi_0" || "$name" == "ps7_spi_1" } {
+				variable ps7_spi_count
+				set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_SPI_CLK_FREQ_HZ"]]]
+				set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
+				set ip_tree [tree_append $ip_tree [list "num-chip-select" int 4]]
+				incr ps7_spi_count
+			}
+
+			lappend node $ip_tree
+		}
+		"ps7_sdio" {
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "generic-sdhci"]
+			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_SDIO_CLK_FREQ_HZ"]]]
+			set ip_tree [zynq_irq $ip_tree $intc $name]
+			lappend node $ip_tree
+		}
+		"ps7_nand" {
+			# just C_S_AXI_BASEADDR  C_S_AXI_HIGHADDR C_NAND_CLK_FREQ_HZ C_NAND_MODE C_INTERCONNECT_S_AXI_MASTERS HW_VER INSTANCE
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			lappend node $ip_tree
+		}
+		"ps7_scugic" {
+			# FIXME this node should be provided by SDK and not to compose it by hand
+
+			# just test code to show all interrupts
+#			set port_handles [xget_hw_port_handle $slave "*"]
+#			foreach i $port_handles {
+#				set signals [xget_hw_port_value $slave [xget_hw_name $i]]
+#				puts "$i [xget_hw_name $i] -- $signals --"
+#			}
+
+			# Add interrupt distributor because it is not detected
+			set tree [list "$name: $type@f8f01000" tree \
+					[list \
+						[list "compatible" stringtuple "arm,gic" ] \
+						[list "reg" hexinttuple [list "0xF8F01000" "0x1000" "0xF8F00100" "0x100"] ] \
+						[list "#interrupt-cells" inttuple "0x3" ] \
+						[list "#address-cells" inttuple "1" ] \
+						[list "#size-cells" inttuple "1" ] \
+						[list "interrupt-controller" empty empty ] \
+					] \
+				]
+			lappend node $tree
+
+#			lappend node [gen_intc $slave "" "interrupt-controller" [default_parameters $slave] "S_AXI_" "arm,gic"]
+		}
+		"ps7_trace" -
+		"ps7_ddr" {
+			# Do nothing
+		}
+		"axi_fifo_mm_s" -
+		"axi_dma" {
+			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave]]
+			lappend node $ip_tree
+		}
 		"plb_bram_if_cntlr" -
 		"opb_bram_if_cntlr" -
 		"axi_bram_ctrl" -
@@ -1590,6 +1847,59 @@ proc memory {slave baseaddr_prefix params} {
 	return [list [format_ip_name memory $baseaddr $name] tree $ip_node]
 }
 
+proc gen_cortexa9 {tree hwproc_handle params} {
+	set out ""
+	variable cpunumber
+	variable ps7_cortexa9_clk
+	set cpus_node {}
+
+	set mhs_handle [xget_hw_parent_handle $hwproc_handle]
+	set lprocs [xget_cortexa9_handles $mhs_handle]
+
+	# add both the cortex a9 processors to the cpus node
+	foreach hw_proc $lprocs {
+		set cpu_name [xget_hw_name $hw_proc]
+		set cpu_type [xget_hw_value $hw_proc]
+		set hw_ver [xget_hw_parameter_value $hw_proc "HW_VER"]
+
+		set proc_node {}
+		lappend proc_node [list "device_type" string "cpu"]
+		lappend proc_node [list model string "$cpu_type,$hw_ver"]
+		lappend proc_node [gen_compatible_property $cpu_type $cpu_type $hw_ver]
+
+		set ps7_cortexa9_clk [xget_sw_parameter_value $hwproc_handle "C_CPU_CLK_FREQ_HZ"]
+		lappend proc_node [list clock-frequency int $ps7_cortexa9_clk]
+		lappend proc_node [list timebase-frequency int [expr $ps7_cortexa9_clk/2]]
+		lappend proc_node [list reg int $cpunumber]
+		lappend proc_node [list i-cache-size hexint [expr 0x8000]]
+		lappend proc_node [list i-cache-line-size hexint 32]
+		lappend proc_node [list d-cache-size hexint [expr 0x8000]]
+		lappend proc_node [list d-cache-line-size hexint 32]
+		set proc_node [gen_params $proc_node $hw_proc $params]
+		lappend cpus_node [list [format_ip_name "cpu" $cpunumber $cpu_name] "tree" "$proc_node"]
+
+		set cpunumber [expr $cpunumber + 1]
+	}
+	lappend cpus_node [list \#size-cells int 0]
+	lappend cpus_node [list \#address-cells int 1]
+	lappend cpus_node [list \#cpus hexint "$cpunumber" ]
+	lappend tree [list cpus tree "$cpus_node"]
+	return $tree
+}
+
+proc xget_cortexa9_handles { mhs_handle } {
+	set ipinst_list [xget_hw_ipinst_handle $mhs_handle "*"]
+	set lprocs ""
+	foreach ipinst $ipinst_list {
+		set ipname [xget_value $ipinst "OPTION" "IPNAME"]
+		if {[string compare -nocase $ipname "ps7_cortexa9"] == 0} {
+			lappend lprocs $ipinst
+		}
+	}
+
+	return $lprocs
+}
+
 proc gen_ppc405 {tree hwproc_handle params} {
 	set out ""
 	variable cpunumber
@@ -1799,6 +2109,7 @@ proc gen_memories {tree hwproc_handle} {
 				}
 				incr memory_count
 			}
+			"ps7_ddr" -
 			"axi_v6_ddrx" -
 			"axi_7series_ddrx" {
 				lappend tree [memory $slave "S_AXI_" ""]
@@ -1915,10 +2226,13 @@ proc bus_is_connected {slave face} {
 # baseaddr     : The base address of the address range of this bus.
 # face : The name of the port of the slave that is connected to the
 # bus.
-proc bus_bridge {slave intc_handle baseaddr face} {
+proc bus_bridge {slave intc_handle baseaddr face {handle ""} {ps_ifs ""}} {
 	debug handles "+++++++++++ $slave ++++++++"
 	set busif_handle [xget_hw_busif_handle $slave $face]
-	if {[llength $busif_handle] == 0} {
+	if {[llength $handle] != 0} {
+		set busif_handle $handle
+	}
+ 	if {[llength $busif_handle] == 0} {
 		error "Bus handle $face not found!"
 	}
 	set bus_name [xget_hw_value $busif_handle]
@@ -1958,6 +2272,7 @@ proc bus_bridge {slave intc_handle baseaddr face} {
 				set devicetype "dcr"
 				set compatible_list [list "simple-bus"]
 			}
+			"ps7_axi_interconnect" -
 			"axi_interconnect" {
 				set devicetype "axi"
 				set compatible_list [list "simple-bus"]
@@ -1996,6 +2311,24 @@ proc bus_bridge {slave intc_handle baseaddr face} {
 			}
 		}
 	}
+
+	# MS This is specific function for AXI zynq IPs - I hope it will be removed
+	# soon by providing M_AXI_GP0 interface
+	foreach if $ps_ifs {
+		debug ip "-slave [xget_hw_name $if]"
+		debug handles "  handle: $if"
+
+		# If its not already in the list, and its not the bridge, then
+		# append it.
+		if {$if != $slave} {
+			if {[lsearch $bus_ip_handles $if] == -1} {
+				lappend bus_ip_handles $if
+			} else {
+				debug ip "IP $if [xget_hw_name $if] is already appended - skip it"
+			}
+		}
+	}
+
 	# A list of all the IP that have been generated already.
 	variable periphery_array
 
