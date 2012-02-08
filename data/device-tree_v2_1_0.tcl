@@ -1066,7 +1066,7 @@ proc gener_slave {node slave intc} {
 
 			set ip_tree [slaveip $slave $intc "serial" [default_parameters $slave] "S_AXI_" "xlnx,xuartps"]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
-			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [scan_int_parameter_value $slave "C_UART_CLK_FREQ_HZ"]]]
+			set ip_tree [tree_append $ip_tree [list "clock" int [scan_int_parameter_value $slave "C_UART_CLK_FREQ_HZ"]]]
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 
 			lappend node $ip_tree
@@ -1511,10 +1511,12 @@ proc gener_slave {node slave intc} {
 					[list \
 						[list "compatible" stringtuple "arm,gic" ] \
 						[list "reg" hexinttuple [list "0xF8F01000" "0x1000" "0xF8F00100" "0x100"] ] \
-						[list "#interrupt-cells" inttuple "0x3" ] \
+						[list "#interrupt-cells" hexinttuple "0x2" ] \
 						[list "#address-cells" inttuple "1" ] \
 						[list "#size-cells" inttuple "1" ] \
 						[list "interrupt-controller" empty empty ] \
+						[list "linux,phandle" hexinttuple "0x1" ] \
+						[list "phandle" hexinttuple "0x1" ] \
 					] \
 				]
 			lappend node $tree
