@@ -1446,12 +1446,30 @@ proc gener_slave {node slave intc} {
 				set ip_tree [tree_append $ip_tree [list "num-chip-select" int 1]]
 				set qspi_mode [xget_sw_parameter_value $slave "C_QSPI_MODE"]
 				if { $qspi_mode == 2} {
-				set is_dual 1
+					set is_dual 1
 				} else {
-				set is_dual 0
+					set is_dual 0
 				}
 				set ip_tree [tree_append $ip_tree [list "is-dual" int $is_dual]]
 				incr ps7_spi_count
+
+				# We will handle SPI FLASH here
+				global flash_memory flash_memory_bank
+
+				if {[string match -nocase $flash_memory $name]} {
+					# Add the address-cells and size-cells to make the DTC compiler stop outputing warning
+					set ip_tree [tree_append $ip_tree [list "#address-cells" int "1"]]
+					set ip_tree [tree_append $ip_tree [list "#size-cells" int "0"]]
+					# If it is a SPI FLASH, we will add a SPI Flash
+					# subnode to the SPI controller
+					set subnode {}
+					# Set the SPI Flash chip select
+					lappend subnode [list "reg" hexinttuple [list $flash_memory_bank]]
+					# Set the SPI Flash clock freqeuncy
+					# hardcode this spi-max-frequency (based on board_zc770_xm010.c)
+					lappend subnode [list [format_name "spi-max-frequency"] int 75000000]
+					set ip_tree [tree_append $ip_tree [list [format_ip_name $type $flash_memory_bank "primary_flash"] tree $subnode]]
+				}
 			}
 
 			if { "$name" == "ps7_wdt_0" } {
