@@ -1404,7 +1404,6 @@ proc gener_slave {node slave intc} {
 		"ps7_gpio" -
 		"ps7_i2c" -
 		"ps7_qspi" -
-		"ps7_ethernet" -
 		"ps7_spi" -
 		"ps7_can" -
 		"ps7_smcc" -
@@ -1526,6 +1525,26 @@ proc gener_slave {node slave intc} {
 		"ps7_trace" -
 		"ps7_ddr" {
 			# Do nothing
+		}
+		"ps7_ethernet" {
+			variable ethernet_count
+			variable alias_node_list
+			set alias_node [list ethernet$ethernet_count aliasref $name $ethernet_count]
+			lappend alias_node_list $alias_node
+			incr ethernet_count
+
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 0x00 0x00 $mac_count]]]
+			incr mac_count
+
+			set ip_tree [tree_append $ip_tree [list "#address-cells" int "1"]]
+			set ip_tree [tree_append $ip_tree [list "#size-cells" int "0"]]
+			set phy_name "phy$phy_count"
+			set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
+			set ip_tree [tree_append $ip_tree [gen_ps7_phytree]]
+
+			lappend node $ip_tree
 		}
 		"axi_fifo_mm_s" -
 		"axi_dma" {
@@ -2526,6 +2545,25 @@ proc gen_phytree {} {
 
 	incr phy_count
 	return $phy_tree
+}
+
+# FIXME: Hack for ZC702 to append the subnode
+proc gen_ps7_phytree {} {
+	set mdio_tree [list "mdio" tree {}]
+	set mdio_tree [tree_append $mdio_tree [list \#size-cells int 0]]
+	set mdio_tree [tree_append $mdio_tree [list \#address-cells int 1]]
+
+	variable phy_count
+
+	set phy_name [format_ip_name phy 7 "phy$phy_count"]
+	set phy_tree [list $phy_name tree {}]
+	set phy_tree [tree_append $phy_tree [list "reg" hexinttuple 7]]
+	set phy_tree [tree_append $phy_tree [list "device_type" string "ethernet-phy"]]
+	set phy_tree [tree_append $phy_tree [list "compatible" string "marvell,88e1111"]]
+	set phy_tree [tree_append $phy_tree [list "marvell,reg-init" hexinttuple "0x2 0x15 0x0 0x20"]]
+
+	incr phy_count
+	return [tree_append $mdio_tree $phy_tree]
 }
 
 proc gen_mdiotree {} {
