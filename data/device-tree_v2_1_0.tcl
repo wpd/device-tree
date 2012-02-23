@@ -1518,7 +1518,9 @@ proc gener_slave {node slave intc} {
 						set high [xget_hw_subproperty_value $par_name "PAIR"]
 						set baseaddr [scan_int_parameter_value $slave $base]
 						set highaddr [scan_int_parameter_value $slave $high]
-						lappend ranges_list [list $baseaddr $highaddr $baseaddr]
+						if { "${baseaddr}" < "${highaddr}" } {
+							lappend ranges_list [list $baseaddr $highaddr $baseaddr]
+						}
 					}
 					# Use the first BASEADDR parameter to be in node name - order is directed by mpd
 					set tree [compound_slave $slave [xget_hw_name [lindex $address_array 0]]]
