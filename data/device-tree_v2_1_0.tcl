@@ -41,7 +41,8 @@ lappend debug_level [list "ip"]
 variable device_tree_generator_version "1.1"
 variable cpunumber 0
 variable periphery_array ""
-variable axi_ifs ""
+variable buses {}
+variable bus_count 0
 variable mac_count 0
 variable gpio_names {}
 variable overrides {}
@@ -118,6 +119,9 @@ proc generate {os_handle} {
 	global timer
 	set timer [xget_sw_parameter_value $os_handle "timer"]
 
+	global buses
+	set buses {}
+
 	generate_device_tree "xilinx.dts" $bootargs $consoleip
 }
 
@@ -177,37 +181,44 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			set intc [get_handle_to_intc $proc_handle "Interrupt"]
 			set toplevel [gen_microblaze $toplevel $hwproc_handle [default_parameters $hwproc_handle]]
 
-			# If is AXI system then it is necessary to load all slave IPs connected
-			# to DC because there is FLASH which isn't handled by DP.
-			# AXI DC slave IPs are added in bus_bridge function.
-			set bus_name [xget_hw_busif_value $hwproc_handle "M_AXI_DC"]
-			if { [string compare -nocase $bus_name ""] != 0 } {
-				global axi_ifs
-				set axi_ifs [xget_hw_connected_busifs_handle $mhs_handle $bus_name "slave"]
-			}
+			
 			# Microblaze v8 has AXI and/or PLB. xget_hw_busif_handle returns
 			# a valid handle for both these bus ifs, even if they are not
 			# connected. The better way of checking if a bus is connected
 			# or not is to check it's value.
+			set bus_name [xget_hw_busif_value $hwproc_handle "M_AXI_DC"]
+			if { [string compare -nocase $bus_name ""] != 0 } {
+				set tree [bus_bridge $hwproc_handle $intc 0 "M_AXI_DC"]
+				if { [llength $tree] != 0 } {
+					set tree [tree_append $tree [list ranges empty empty]]
+					lappend ip_tree $tree
+				}
+			}
 			set bus_name [xget_hw_busif_value $hwproc_handle "M_AXI_DP"]
 			if { [string compare -nocase $bus_name ""] != 0 } {
 				set tree [bus_bridge $hwproc_handle $intc 0 "M_AXI_DP"]
-				set tree [tree_append $tree [list ranges empty empty]]
-				lappend ip_tree $tree
+				if { [llength $tree] != 0 } {
+					set tree [tree_append $tree [list ranges empty empty]]
+					lappend ip_tree $tree
+				}
 			}
 			set bus_name [xget_hw_busif_value $hwproc_handle "DPLB"]
 			if { [string compare -nocase $bus_name ""] != 0 } {
 				# Microblaze v7 has PLB.
 				set tree [bus_bridge $hwproc_handle $intc 0 "DPLB"]
-				set tree [tree_append $tree [list ranges empty empty]]
-				lappend ip_tree $tree
+				if { [llength $tree] != 0 } {
+					set tree [tree_append $tree [list ranges empty empty]]
+					lappend ip_tree $tree
+				}
 			}
 			set bus_name [xget_hw_busif_value $hwproc_handle "DOPB"]
 			if { [string compare -nocase $bus_name ""] != 0 } {
 				# Older microblazes have OPB.
 				set tree [bus_bridge $hwproc_handle $intc 0 "DOPB"]
-				set tree [tree_append $tree [list ranges empty empty]]
-				lappend ip_tree $tree
+				if { [llength $tree] != 0 } {
+					set tree [tree_append $tree [list ranges empty empty]]
+					lappend ip_tree $tree
+				}
 			}
 			lappend toplevel [list "compatible" stringtuple [list "xlnx,microblaze"] ]
 		}
@@ -219,22 +230,30 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			if {[llength $busif_handle] != 0} {
 				# older ppc405s have a single PLB interface.
 				set tree [bus_bridge $hwproc_handle $intc 0 "DPLB"]
-				set tree [tree_append $tree [list ranges empty empty]]
-				lappend ip_tree $tree
+				if { [llength $tree] != 0 } {
+					set tree [tree_append $tree [list ranges empty empty]]
+					lappend ip_tree $tree
+				}
 			} else {
 				# newer ppc405s since edk9.2 have two plb interfaces, with
 				# DPLB1 only being used for memory.
 				set tree [bus_bridge $hwproc_handle $intc 0 "DPLB0"]
-				set tree [tree_append $tree [list ranges empty empty]]
-				lappend ip_tree $tree
+				if { [llength $tree] != 0 } {
+					set tree [tree_append $tree [list ranges empty empty]]
+					lappend ip_tree $tree
+				}
 				set tree [bus_bridge $hwproc_handle $intc 1 "DPLB1"]
-				set tree [tree_append $tree [list ranges empty empty]]
-				lappend ip_tree $tree
+				if { [llength $tree] != 0 } {
+					set tree [tree_append $tree [list ranges empty empty]]
+					lappend ip_tree $tree
+				}
 			}
 			# pickup things which are only on the dcr bus.
 			if {[bus_is_connected $hwproc_handle "MDCR"]} {
 				set tree [bus_bridge $hwproc_handle $intc 0 "MDCR"]
-				lappend ip_tree $tree
+				if { [llength $tree] != 0 } {
+					lappend ip_tree $tree
+				}
 			}
 
 			lappend toplevel [list "compatible" stringtuple [list "xlnx,virtex405" "xlnx,virtex"] ]
@@ -243,12 +262,16 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			set intc [get_handle_to_intc $proc_handle "EICC440EXTIRQ"]
 			set toplevel [gen_ppc440 $toplevel $hwproc_handle $intc [default_parameters $hwproc_handle]]
 			set tree [bus_bridge $hwproc_handle $intc 0 "MPLB"]
-			set tree [tree_append $tree [list ranges empty empty]]
-			lappend ip_tree $tree
+			if { [llength $tree] != 0 } {
+				set tree [tree_append $tree [list ranges empty empty]]
+				lappend ip_tree $tree
+			}
 			# pickup things which are only on the dcr bus.
 			if {[bus_is_connected $hwproc_handle "MDCR"]} {
 				set tree [bus_bridge $hwproc_handle $intc 0 "MDCR"]
-				lappend ip_tree $tree
+				if { [llength $tree] != 0 } {
+					lappend ip_tree $tree
+				}
 			}
 
 # 			set tree [bus_bridge $hwproc_handle $intc 0 "PPC440MC"]
@@ -1886,6 +1909,11 @@ proc bus_bridge {slave intc_handle baseaddr face} {
 		error "Bus handle $face not found!"
 	}
 	set bus_name [xget_hw_value $busif_handle]
+	global buses
+	if {[lsearch $buses $bus_name] >= 0} {
+		return {}
+	}
+	lappend buses $bus_name
 	debug ip "IP connected to bus: $bus_name"
 	debug handles "bus_handle: $busif_handle"
 
@@ -1937,10 +1965,6 @@ proc bus_bridge {slave intc_handle baseaddr face} {
 			# add them to the list of ip.
 		}
 		set slave_ifs [xget_hw_connected_busifs_handle $mhs_handle $bus_name "slave"]
-		if {[string match $devicetype "axi"]} {
-			global axi_ifs
-			set slave_ifs [concat $slave_ifs $axi_ifs]
-		}
 	}
 
 	set bus_ip_handles {}
@@ -2021,6 +2045,9 @@ proc bus_bridge {slave intc_handle baseaddr face} {
 	lappend bus_node [list \#address-cells int 1]
 	lappend bus_node [gen_compatible_property $bus_name $bus_type $hw_ver $compatible_list]
 
+	variable bus_count
+	set baseaddr $bus_count
+	incr bus_count
 	return [list [format_ip_name $devicetype $baseaddr $bus_name] tree $bus_node]
 }
 
