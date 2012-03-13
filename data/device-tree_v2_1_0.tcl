@@ -1501,6 +1501,7 @@ proc gener_slave {node slave intc} {
 			debug ip "Other PowerPC405 CPU $name=$type"
 			lappend node [gen_ppc405 $slave [default_parameters $slave]]
 		}
+		"axi_epc" -
 		"xps_epc" {
 			set tree [compound_slave $slave "C_PRH0_BASEADDR"]
 			set tree [tree_append $tree [list ranges empty empty]]
