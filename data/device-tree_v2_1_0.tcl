@@ -2577,8 +2577,7 @@ proc gen_ps7_phytree {} {
 	set phy_tree [list $phy_name tree {}]
 	set phy_tree [tree_append $phy_tree [list "reg" hexinttuple 7]]
 	set phy_tree [tree_append $phy_tree [list "device_type" string "ethernet-phy"]]
-	set phy_tree [tree_append $phy_tree [list "compatible" string "marvell,88e1111"]]
-	set phy_tree [tree_append $phy_tree [list "marvell,reg-init" hexinttuple "0x2 0x15 0x0 0x20"]]
+	set phy_tree [tree_append $phy_tree [list "compatible" string "marvell,88e1116r"]]
 
 	incr phy_count
 	return [tree_append $mdio_tree $phy_tree]
