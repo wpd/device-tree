@@ -312,7 +312,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 				set tree [tree_append $tree [list ranges empty empty]]
 				lappend ip_tree $tree
 			}
-			lappend toplevel [list "compatible" stringtuple [list "xlnx,zynq-ep107"] ]
+			lappend toplevel [list "compatible" stringtuple [list "xlnx,zynq-zc770"] ]
 		}
 		default {
 			error "unsupported CPU"
