@@ -1431,7 +1431,9 @@ proc gener_slave {node slave intc} {
 			}
 
 			if { "$name" == "ps7_ttc_0" || "$name" == "ps7_ttc_1" } {
-				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_TTC_CLK_FREQ_HZ"]]]
+				# FIXME: hardcode it to 133MHz until Xilinx release a FIX
+				set ip_tree [tree_append $ip_tree [list "clock-frequency" int 133000000]]
+				#set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_TTC_CLK_FREQ_HZ"]]]
 			}
 
 			if { "$name" == "ps7_scutimer_0" } {
