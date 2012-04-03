@@ -974,36 +974,38 @@ proc check_console_irq {slave intc} {
 
 proc zynq_irq {ip_tree intc name } {
 	array set zynq_irq_list [ list \
-		{ps7_scutimer_0} {27 0} \
-		{nFIQFIXME} {28 0} \
-		{cpu_timerFIXME} {29 0} \
-		{ps7_scuwdt_0} {30 0} \
-		{nIRQFIXME} {31 0} \
-		{ps7_dev_cfg_0} {40 0} \
-		{ps7_wdt_0} {41 0} \
-		{ps7_ttc_0} {42 0 43 0 44 0} \
-		{ps7_dmaFIXME} {45 0} \
-		{ps7_dmaFIXME} {46 0 47 0 48 0 49 0} \
-		{smcFIXME} {50 0} \
-		{ps7_qspi_0} {51 0} \
-		{ps7_gpio_0} {52 0} \
-		{ps7_usb_0} {53 0} \
-		{ps7_ethernet_0} {54 0 55 0} \
-		{ps7_sd_0} {56 0} \
-		{ps7_i2c_0} {57 0} \
-		{ps7_spi_0} {58 0} \
-		{ps7_uart_0} {59 0} \
-		{ps7_can_0} {60 0} \
-		{ps7_ttc_1} {69 0 70 0 71 0} \
-		{ps7_dmaFIXME} {72 0 73 0 74 0 75 0} \
-		{ps7_usb_1} {76 0} \
-		{ps7_ethernet_1} {77 0 78 0} \
-		{ps7_sd_1} {79 0} \
-		{ps7_i2c_1} {80 0} \
-		{ps7_spi_1} {81 0} \
-		{ps7_uart_1} {82 0} \
-		{ps7_can_1} {83 0} \
-		{scu_parityFIXME} {92 0} \
+		{ps7_scutimer_0} {1 11 0} \
+		{nFIQFIXME} {1 12 0} \
+		{cpu_timerFIXME} {1 13 0} \
+		{ps7_scuwdt_0} {1 14 0} \
+		{nIRQFIXME} {1 15 0} \
+		{ps7_dev_cfg_0} {0 8 0} \
+		{ps7_wdt_0} {0 9 0} \
+		{ps7_ttc_0} {0 10 0 0 11 0 0 12 0} \
+		{ps7_dmaFIXME} {0 13 0} \
+		{ps7_dmaFIXME} {0 14 0 0 15 0 0 16 0 0 17 0} \
+		{smcFIXME} {0 18 0} \
+		{ps7_qspi_0} {0 19 0} \
+		{ps7_gpio_0} {0 20 0} \
+		{ps7_usb_0} {0 21 0} \
+		{ps7_ethernet_0} {0 22 0} \
+		{ps7_ethernet_0FIXME} {0 23 0 0 24 0} \
+		{ps7_sd_0} {0 25 0} \
+		{ps7_i2c_0} {0 26 0} \
+		{ps7_spi_0} {0 27 0} \
+		{ps7_uart_0} {0 28 0} \
+		{ps7_can_0} {0 29 0} \
+		{ps7_ttc_1} {0 30 0 0 31 0 0 32 0} \
+		{ps7_dmaFIXME} {0 40 0 0 41 0 0 42 0 0 43 0} \
+		{ps7_usb_1} {0 44 0} \
+		{ps7_ethernet_1} {0 45 0} \
+		{ps7_ethernet_1FIXME} {0 45 0 0 46 0} \
+		{ps7_sd_1} {0 47 0} \
+		{ps7_i2c_1} {0 48 0} \
+		{ps7_spi_1} {0 49 0} \
+		{ps7_uart_1} {0 50 0} \
+		{ps7_can_1} {0 51 0} \
+		{scu_parityFIXME} {0 60 0} \
 	]
 
 	if { [info exists zynq_irq_list($name)] } {
@@ -1066,6 +1068,8 @@ proc gener_slave {node slave intc} {
 
 			set ip_tree [slaveip $slave $intc "serial" [default_parameters $slave] "S_AXI_" "xlnx,xuartps"]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
+			# MS silly use just clock-frequency which is standard
+			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [scan_int_parameter_value $slave "C_UART_CLK_FREQ_HZ"]]]
 			set ip_tree [tree_append $ip_tree [list "clock" int [scan_int_parameter_value $slave "C_UART_CLK_FREQ_HZ"]]]
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 
@@ -1528,10 +1532,10 @@ proc gener_slave {node slave intc} {
 			# Add interrupt distributor because it is not detected
 			set tree [list "$name: $type@f8f01000" tree \
 					[list \
-						[list "compatible" stringtuple "arm,gic" ] \
+						[list "compatible" stringtuple [list "arm,cortex-a9-gic" "arm,gic" ]] \
 						[list "reg" hexinttuple [list "0xF8F01000" "0x1000" "0xF8F00100" "0x100"] ] \
-						[list "#interrupt-cells" hexinttuple "0x2" ] \
-						[list "#address-cells" inttuple "1" ] \
+						[list "#interrupt-cells" inttuple "3" ] \
+						[list "#address-cells" inttuple "2" ] \
 						[list "#size-cells" inttuple "1" ] \
 						[list "interrupt-controller" empty empty ] \
 						[list "linux,phandle" hexinttuple "0x1" ] \
