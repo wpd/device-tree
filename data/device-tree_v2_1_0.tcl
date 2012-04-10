@@ -48,6 +48,7 @@ variable gpio_names {}
 variable overrides {}
 
 variable serial_count 0
+variable sysace_count 0
 variable ethernet_count 0
 variable alias_node_list {}
 variable phy_count 0
@@ -1233,6 +1234,9 @@ proc gener_slave {node slave intc} {
 			} else {
 				error "Unsuported Systemace memory width"
 			}
+			variable sysace_count
+			set ip_tree [tree_append $ip_tree [list "port-number" int $sysace_count]]
+			incr sysace_count
 			lappend node $ip_tree
 		}
 		"opb_ethernet" -
