@@ -52,6 +52,9 @@ set ps7_cortexa9_clk 0
 set ps7_spi_count 0
 set ps7_i2c_count 0
 
+set dma_device_id 0
+set vdma_device_id 0
+
 set axi_ifs ""
 
 #
@@ -283,7 +286,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			lappend chosen [list "linux,stdout-path" string $consolepath]
 		} else {
 			debug warning "WARNING: console ip $consoleip was not found.  This may prevent output from appearing on the boot console."
-		}		
+		}
 	} else {
 		debug warning "WARNING: no console ip was specified.  This may prevent output from appearing on the boot console."
 	}
@@ -298,7 +301,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 	#
 	variable alias_node_list
 	lappend toplevel [list aliases tree $alias_node_list]
-	
+
 	set toplevel [gen_memories $toplevel $hwproc_handle]
 
 	set toplevel_file [open $filepath w]
@@ -972,7 +975,7 @@ proc gener_slave {node slave intc} {
 			# for version 1.01b of the xps timer, make sure that it has the patch applied to the h/w
 			# so that it's using an edge interrupt rather than a falling as described in AR 33880
 			# this is tracking a h/w bug in EDK 11.4 that should be fixed in the future
- 
+
 			set hw_ver [xget_hw_parameter_value $slave "HW_VER"]
 			if { $hw_ver == "1.01.b" && $type == "xps_timer" } {
 				set port_handle [xget_hw_port_handle $slave "Interrupt"]
@@ -1079,6 +1082,7 @@ proc gener_slave {node slave intc} {
 		}
 		"axi_dma" {
 			set axiethernetfound 0
+			variable dma_device_id
 			set xdma "axi-dma"
 			set mhs_handle [xget_hw_parent_handle $slave]
 			set axidma_busif_handle [xget_hw_busif_handle $slave "M_AXIS_MM2S"]
@@ -1101,13 +1105,13 @@ proc gener_slave {node slave intc} {
 
 				set tx_chan [scan_int_parameter_value $slave "C_INCLUDE_MM2S"]
 				if {$tx_chan == 1} {
-					set chantree [dma_channel_config $xdma $baseaddr "MM2S" $intc $slave]
+					set chantree [dma_channel_config $xdma $baseaddr "MM2S" $intc $slave $dma_device_id]
 					set mytree [tree_append $mytree $chantree]
 				}
 
 				set rx_chan [scan_int_parameter_value $slave "C_INCLUDE_S2MM"]
 				if {$rx_chan == 1} {
-					set chantree [dma_channel_config $xdma [expr $baseaddr + 0x30] "S2MM" $intc $slave]
+					set chantree [dma_channel_config $xdma [expr $baseaddr + 0x30] "S2MM" $intc $slave $dma_device_id]
 					set mytree [tree_append $mytree $chantree]
 				}
 
@@ -1152,8 +1156,10 @@ proc gener_slave {node slave intc} {
 					debug warning $error
 				}
 			}
+			incr dma_device_id
 		}
 		"axi_vdma" {
+			variable vdma_device_id
 			set xdma "axi-vdma"
 			set hw_name [xget_hw_name $slave]
 
@@ -1163,13 +1169,13 @@ proc gener_slave {node slave intc} {
 			set mytree [list [format_ip_name "axivdma" $baseaddr $hw_name] tree {}]
 			set tx_chan [scan_int_parameter_value $slave "C_INCLUDE_MM2S"]
 			if {$tx_chan == 1} {
-				set chantree [dma_channel_config $xdma $baseaddr "MM2S" $intc $slave]
+				set chantree [dma_channel_config $xdma $baseaddr "MM2S" $intc $slave $vdma_device_id]
 				set mytree [tree_append $mytree $chantree]
 			}
 
 			set rx_chan [scan_int_parameter_value $slave "C_INCLUDE_S2MM"]
 			if {$rx_chan == 1} {
-				set chantree [dma_channel_config $xdma [expr $baseaddr + 0x30] "S2MM" $intc $slave]
+				set chantree [dma_channel_config $xdma [expr $baseaddr + 0x30] "S2MM" $intc $slave $vdma_device_id]
 				set mytree [tree_append $mytree $chantree]
 			}
 
@@ -1193,6 +1199,7 @@ proc gener_slave {node slave intc} {
 			set mytree [tree_append $mytree [gen_reg_property $hw_name $baseaddr $highaddr]]
 
 			lappend node $mytree
+			incr vdma_device_id
 		}
 		"axi_cdma" {
 			set hw_name [xget_hw_name $slave]
@@ -1366,7 +1373,7 @@ proc gener_slave {node slave intc} {
 					set tree [tree_append $tree [list "bank-width" int "[expr ($datawidth/8)]"]]
 
 					lappend node $tree
-				} 
+				}
 			}
 		}
 		"axi_emc" {
@@ -1796,7 +1803,7 @@ proc gen_memories {tree hwproc_handle} {
 								continue;
 							}
 						}
-					}			
+					}
 					lappend tree [memory $slave [format "MEM%d_" $x] ""]
 					set memory_count [expr $memory_count + 1]
 				}
@@ -1826,7 +1833,7 @@ proc gen_memories {tree hwproc_handle} {
 			"mpmc" {
 				set share_addresses [scan_int_parameter_value $slave "C_ALL_PIMS_SHARE_ADDRESSES"]
 				if {$share_addresses != 0} {
-					
+
 					lappend tree [memory $slave "MPMC_" ""]
 				} else {
 					set old_baseaddr [scan_int_parameter_value $slave [format "C_PIM0_BASEADDR" $x]]
@@ -1843,9 +1850,9 @@ proc gen_memories {tree hwproc_handle} {
 						if {$offset != $old_offset} {
 							debug warning "Warning!: mpmc is configured with different offsets on different ports!  Since this is a potentially hazardous configuration, a device tree node describing the memory will not be generated."
 						}
-					} 
+					}
 					if {$safe_addresses == 1} {
-						lappend tree [memory $slave "PIM0_" ""]						
+						lappend tree [memory $slave "PIM0_" ""]
 					}
 				}
 
@@ -2191,7 +2198,7 @@ proc gen_params {node_list handle params {trimprefix "C_"} } {
 					debug warning "Warning: num-intr-inputs not set yet, kind-of-intr will be set to zero"
 					set par_value 0
 				}
-				
+
 			}
 			lappend node_list [list [format_param_name $par_name $trimprefix] hexint $par_value]
 		} {err}]} {
@@ -2433,7 +2440,7 @@ proc write_tree {indent file tree} {
 }
 
 proc get_pathname_for_label {tree label {path /}} {
-	foreach node $tree {	
+	foreach node $tree {
 		set fullname [lindex $node 0]
 		set type [lindex $node 1]
 		set value [lindex $node 2]
@@ -2458,7 +2465,7 @@ proc debug {level string} {
 	}
 }
 
-proc dma_channel_config {xdma addr mode intc slave} {
+proc dma_channel_config {xdma addr mode intc slave devid} {
 	set modelow [string tolower $mode]
 	set namestring "dma-channel"
 	set channame [format_name [format "%s@%x" $namestring $addr]]
@@ -2468,6 +2475,7 @@ proc dma_channel_config {xdma addr mode intc slave} {
 	set tmp [scan_int_parameter_value $slave [format "C_INCLUDE_%s_DRE" $mode]]
 	lappend chan [list "xlnx,include-dre" hexint $tmp]
 
+	lappend chan [list "xlnx,device-id" hexint $devid]
 	set tmp [xget_hw_parameter_handle $slave [format "C_%s_AXIS_%s_TDATA_WIDTH" [string index $mode 0] $mode]]
 	if {$tmp != ""} {
 		set tmp [scan_int_parameter_value $slave [format "C_%s_AXIS_%s_TDATA_WIDTH" [string index $mode 0] $mode]]
