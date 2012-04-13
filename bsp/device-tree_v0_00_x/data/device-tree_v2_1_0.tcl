@@ -49,6 +49,7 @@ set ethernet_count 0
 set alias_node_list {}
 
 set ps7_cortexa9_clk 0
+set ps7_cortexa9_1x_clk 0
 set ps7_spi_count 0
 set ps7_i2c_count 0
 
@@ -272,7 +273,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 				lappend ip_tree $tree
 			}
 			lappend toplevel [list "interrupt-parent" labelref [list "intc"] ]
-			lappend toplevel [list "compatible" stringtuple [list "xlnx,zynq-ep107"] ]
+			lappend toplevel [list "compatible" stringtuple [list "xlnx,zynq-zc702"] ]
 		}
 		default {
 			error "unsupported CPU"
@@ -741,6 +742,7 @@ proc tt {number} {
 proc gener_slave {node slave intc} {
 	variable phy_count
 	variable ps7_cortexa9_clk
+	variable ps7_cortexa9_1x_clk
 	variable ps7_spi_count
 	variable ps7_i2c_count
 
@@ -851,24 +853,18 @@ proc gener_slave {node slave intc} {
 		}
 		"ps7_wdt" -
 		"ps7_usb" -
-		"ps7_ttc" -
 		"ps7_gpio" -
 		"ps7_i2c" -
 		"ps7_nand" -
 		"ps7_qspi" -
 		"ps7_qspi_linear" -
-		"ps7_ethernet" -
 		"ps7_spi" -
 		"ps7_can" -
-		"ps7_scugic" -
 		"ps7_scutimer" -
 		"ps7_scuwdt" -
-		"ps7_dma" -
 		"ps7_smcc" -
 		"ps7_iop_bus_config" -
 		"ps7_ddrc" -
-		"ps7_slcr" -
-		"ps7_ram" -
 		"ps7_dev_cfg" {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			# use TCL table
@@ -880,8 +876,6 @@ proc gener_slave {node slave intc} {
 				"ps7_dev_cfg_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "40 0"]] }
 				"ps7_wdt_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "41 0"]]
 						   set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_WDT_CLK_FREQ_HZ"]]]}
-				"ps7_ttc_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "42 0 43 0 44 0"]]
-						   set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_TTC_CLK_FREQ_HZ"]]]}
 				"ps7_qspi_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "51 0"]]
 						   set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_QSPI_CLK_FREQ_HZ"]]]
 						   set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
@@ -898,12 +892,8 @@ proc gener_slave {node slave intc} {
 				"ps7_usb_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "53 0"]]
 						   set ip_tree [tree_append $ip_tree [list "dr_mode" string "host"]]
 						   set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]] }
-				"ps7_ethernet_0" { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "54 0 55 0"]]
-						   set phy_name "phy$phy_count"
-						   set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
-						   set ip_tree [tree_append $ip_tree [gen_mdiotree]] }
 				"ps7_i2c_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "57 0"]]
-						   set ip_tree [tree_append $ip_tree [list "input-clk" int [expr $ps7_cortexa9_clk/6]]]
+						   set ip_tree [tree_append $ip_tree [list "input-clk" int $ps7_cortexa9_1x_clk]]
 						   set ip_tree [tree_append $ip_tree [list "i2c-clk" int 400000]]
 						   set ip_tree [tree_append $ip_tree [list "bus-id" int $ps7_i2c_count]] }
 						   incr ps7_i2c_count
@@ -913,18 +903,11 @@ proc gener_slave {node slave intc} {
 						   set ip_tree [tree_append $ip_tree [list "num-chip-select" int 4]]
 						   incr ps7_spi_count }
 				"ps7_can_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "60 0"]] }
-
-				"ps7_ttc_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "69 0 70 0 71 0"]]
-						   set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_TTC_CLK_FREQ_HZ"]]]}
 				"ps7_usb_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "76 0"]]
 						   set ip_tree [tree_append $ip_tree [list "dr_mode" string "device"]]
 						   set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]] }
-				"ps7_ethernet_1" { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "77 0 78 0"]]
-						   set phy_name "phy$phy_count"
-						   set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
-						   set ip_tree [tree_append $ip_tree [gen_mdiotree]] }
 				"ps7_i2c_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "80 0"]]
-						   set ip_tree [tree_append $ip_tree [list "input-clk" int [expr $ps7_cortexa9_clk/2]]]
+						   set ip_tree [tree_append $ip_tree [list "input-clk" int $ps7_cortexa9_1x_clk]]
 						   set ip_tree [tree_append $ip_tree [list "i2c-clk" int 400000]]
 						   set ip_tree [tree_append $ip_tree [list "bus-id" int $ps7_i2c_count]] }
 				"ps7_spi_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "81 0"]]
@@ -934,6 +917,53 @@ proc gener_slave {node slave intc} {
 						   incr ps7_spi_count }
 				"ps7_can_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "83 0"]] }
 			}
+			lappend node $ip_tree
+		}
+		"ps7_ttc" {
+			set ip_tree {}
+			set baseaddr [scan_int_parameter_value $slave "C_S_AXI_BASEADDR"]
+			set highaddr [scan_int_parameter_value $slave "C_S_AXI_HIGHADDR"]
+			set hw_ver [xget_hw_parameter_value $slave "HW_VER"]
+			set ip_node {}
+			set nodename [format_ip_name $type $baseaddr $name]
+			lappend ip_node [gen_compatible_property $name $type $hw_ver ""]
+			set tree [list $nodename tree $ip_node]
+			set ip_tree [tree_append $tree [gen_reg_property $name $baseaddr $highaddr]]
+
+			switch -exact $name {
+				"ps7_ttc_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "42 0 43 0 44 0"]] }
+				"ps7_ttc_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "69 0 70 0 71 0"]] }
+			}
+			set ip_tree [tree_append $ip_tree [list "clock-frequency-timer0" int [xget_sw_parameter_value $slave "C_TTC_CLK0_FREQ_HZ"]]]
+			set ip_tree [tree_append $ip_tree [list "clock-frequency-timer1" int [xget_sw_parameter_value $slave "C_TTC_CLK1_FREQ_HZ"]]]
+			set ip_tree [tree_append $ip_tree [list "clock-frequency-timer2" int [xget_sw_parameter_value $slave "C_TTC_CLK2_FREQ_HZ"]]]
+			lappend node $ip_tree
+
+		}
+		"ps7_ethernet" {
+			set ip_tree {}
+			set baseaddr [scan_int_parameter_value $slave "C_S_AXI_BASEADDR"]
+			set highaddr [scan_int_parameter_value $slave "C_S_AXI_HIGHADDR"]
+			set hw_ver [xget_hw_parameter_value $slave "HW_VER"]
+			set ip_node {}
+			set nodename [format_ip_name $type $baseaddr $name]
+			lappend ip_node [gen_compatible_property $name $type $hw_ver ""]
+			set tree [list $nodename tree $ip_node]
+			set ip_tree [tree_append $tree [gen_reg_property $name $baseaddr $highaddr]]
+			switch -exact $name {
+				"ps7_ethernet_0" { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "54 0"]] }
+				"ps7_ethernet_1" { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "77 0"]] }
+			}
+			set phy_name "phy$phy_count"
+		   	set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
+		   	set ip_tree [tree_append $ip_tree [list "xlnx,slcr-div0-1000Mbps" int [xget_sw_parameter_value $slave "C_ENET_SLCR_1000Mbps_DIV0"]]]
+		   	set ip_tree [tree_append $ip_tree [list "xlnx,slcr-div1-1000Mbps" int [xget_sw_parameter_value $slave "C_ENET_SLCR_1000Mbps_DIV1"]]]
+		   	set ip_tree [tree_append $ip_tree [list "xlnx,slcr-div0-100Mbps" int [xget_sw_parameter_value $slave "C_ENET_SLCR_100Mbps_DIV0"]]]
+		   	set ip_tree [tree_append $ip_tree [list "xlnx,slcr-div1-100Mbps" int [xget_sw_parameter_value $slave "C_ENET_SLCR_100Mbps_DIV1"]]]
+		   	set ip_tree [tree_append $ip_tree [list "xlnx,slcr-div0-10Mbps" int [xget_sw_parameter_value $slave "C_ENET_SLCR_10Mbps_DIV0"]]]
+		   	set ip_tree [tree_append $ip_tree [list "xlnx,slcr-div1-10Mbps" int [xget_sw_parameter_value $slave "C_ENET_SLCR_10Mbps_DIV1"]]]
+		   	set ip_tree [tree_append $ip_tree [list "xlnx,ptp-enet-clock" int $ps7_cortexa9_1x_clk]]
+			set ip_tree [tree_append $ip_tree [gen_mdiotree $name]]
 			lappend node $ip_tree
 		}
 		"ps7_sdio" {
@@ -1024,7 +1054,7 @@ proc gener_slave {node slave intc} {
 				if {$has_mdio == 1} {
 					set phy_name "phy$phy_count"
 					set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
-					set ip_tree [tree_append $ip_tree [gen_mdiotree]]
+					set ip_tree [tree_append $ip_tree [gen_mdiotree $type]]
 				}
 			}
 
@@ -1076,7 +1106,7 @@ proc gener_slave {node slave intc} {
 			set connected_ip_type [xget_hw_value $connected_ip_handle]
 			set ip_tree [tree_append $ip_tree [list "axistream-connected" labelref $connected_ip_name]]
 
-			set ip_tree [tree_append $ip_tree [gen_mdiotree]]
+			set ip_tree [tree_append $ip_tree [gen_mdiotree $type]]
 
 			lappend node $ip_tree
 		}
@@ -1477,10 +1507,12 @@ proc gener_slave {node slave intc} {
 			#this is handled by proc gen_cortexa9. don't do anything here
 		}
 		default {
-			# *Most* IP should be handled by this default case.
-			if {[catch {lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] "" ]} {error}]} {
-				debug warning "Warning: Default slave handling for unknown IP $name ($type) Failed...  It won't show up in the device tree."
-				debug warning $error
+			if {$type != "ps7_ram" && $type != "ps7_scugic" &&  $type != "ps7_dma" && $type != "ps7_slcr"} {
+				# *Most* IP should be handled by this default case.
+				if {[catch {lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] "" ]} {error}]} {
+					debug warning "Warning: Default slave handling for unknown IP $name ($type) Failed...  It won't show up in the device tree."
+					debug warning $error
+				}
 			}
 		}
 	}
@@ -1495,7 +1527,11 @@ proc memory {slave baseaddr_prefix params} {
 
 	set ip_node {}
 
+	if {$type == "ps7_ddr"} {
+		set baseaddr 0x00000000
+	} else {
 	set baseaddr [scan_int_parameter_value $slave [format "C_%sBASEADDR" $baseaddr_prefix]]
+	}
 	set highaddr [scan_int_parameter_value $slave [format "C_%sHIGHADDR" $baseaddr_prefix]]
 
 	lappend ip_node [gen_reg_property $name $baseaddr $highaddr]
@@ -1508,6 +1544,7 @@ proc gen_cortexa9 {tree hwproc_handle params} {
 	set out ""
 	variable cpunumber
 	variable ps7_cortexa9_clk
+	variable ps7_cortexa9_1x_clk
 	set cpus_node {}
 
 	set mhs_handle [xget_hw_parent_handle $hwproc_handle]
@@ -1525,6 +1562,7 @@ proc gen_cortexa9 {tree hwproc_handle params} {
 		lappend proc_node [gen_compatible_property $cpu_type $cpu_type $hw_ver]
 
 		set ps7_cortexa9_clk [xget_sw_parameter_value $hwproc_handle "C_CPU_CLK_FREQ_HZ"]
+		set ps7_cortexa9_1x_clk [xget_sw_parameter_value $hwproc_handle "C_CPU_1X_CLK_FREQ_HZ"]
 		lappend proc_node [list clock-frequency int $ps7_cortexa9_clk]
 		lappend proc_node [list timebase-frequency int [expr $ps7_cortexa9_clk/2]]
 		lappend proc_node [list reg int $cpunumber]
@@ -2123,24 +2161,31 @@ proc gen_macaddr {ip_tree} {
 	return $ip_tree
 }
 
-proc gen_phytree {} {
+proc gen_phytree {device_name} {
 	variable phy_count
-
-	set phy_name [format_ip_name phy 7 "phy$phy_count"]
-	set phy_tree [list $phy_name tree {}]
-	set phy_tree [tree_append $phy_tree [list "reg" int 7]]
-	set phy_tree [tree_append $phy_tree [list "device_type" string "ethernet-phy"]]
-	set phy_tree [tree_append $phy_tree [list "compatible" string "marvell,88e1111"]]
+	if { $device_name == "ps7_ethernet_0" || $device_name == "ps7_ethernet_1" } {
+		set phy_name [format_ip_name phy 7 "phy$phy_count"]
+		set phy_tree [list $phy_name tree {}]
+		set phy_tree [tree_append $phy_tree [list "reg" int 7]]
+		set phy_tree [tree_append $phy_tree [list "device_type" string "ethernet-phy"]]
+		set phy_tree [tree_append $phy_tree [list "compatible" string "marvell,88e1116r"]]
+	} else {
+		set phy_name [format_ip_name phy 7 "phy$phy_count"]
+		set phy_tree [list $phy_name tree {}]
+		set phy_tree [tree_append $phy_tree [list "reg" int 7]]
+		set phy_tree [tree_append $phy_tree [list "device_type" string "ethernet-phy"]]
+		set phy_tree [tree_append $phy_tree [list "compatible" string "marvell,88e1111"]]
+	}
 
 	incr phy_count
 	return $phy_tree
 }
 
-proc gen_mdiotree {} {
+proc gen_mdiotree {device_name} {
 	set mdio_tree [list "mdio" tree {}]
 	set mdio_tree [tree_append $mdio_tree [list \#size-cells int 0]]
 	set mdio_tree [tree_append $mdio_tree [list \#address-cells int 1]]
-	return [tree_append $mdio_tree [gen_phytree]]
+	return [tree_append $mdio_tree [gen_phytree $device_name]]
 }
 
 proc format_name {par_name} {
