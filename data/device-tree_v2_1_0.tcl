@@ -119,6 +119,12 @@ proc generate {os_handle} {
 	set main_memory [xget_sw_parameter_value $os_handle "main_memory"]
 	global main_memory_bank
 	set main_memory_bank [xget_sw_parameter_value $os_handle "main_memory_bank"]
+	global main_memory_start
+	set main_memory_start [xget_sw_parameter_value $os_handle "main_memory_start"]
+	global main_memory_size
+	set main_memory_size [xget_sw_parameter_value $os_handle "main_memory_size"]
+	global main_memory_offset
+	set main_memory_offset [xget_sw_parameter_value $os_handle "main_memory_offset"]
 	global flash_memory
 	set flash_memory [xget_sw_parameter_value $os_handle "flash_memory"]
 	global flash_memory_bank
@@ -2133,6 +2139,22 @@ proc gen_microblaze {tree hwproc_handle params} {
 
 proc gen_memories {tree hwproc_handle} {
 	global main_memory main_memory_bank
+	global main_memory_start main_memory_size
+	set mhs_handle [xget_hw_parent_handle $hwproc_handle]
+	set ip_handles [xget_hw_ipinst_handle $mhs_handle "*"]
+	set memory_count 0
+	set baseaddr [expr ${main_memory_start}]
+	set memsize [expr ${main_memory_size}]
+	if {$baseaddr > 0 && $memsize > 0} {
+		# Manual memory setup
+		set subnode {}
+		set devtype "memory"
+		lappend subnode [list "device_type" string "${devtype}"]
+		lappend subnode [list "reg" hexinttuple [list $baseaddr $memsize]]
+		lappend tree [list [format_ip_name "${devtype}" $baseaddr "system_memory"] tree $subnode]
+		incr memory_count
+		return $tree
+	}
 	set mhs_handle [xget_hw_parent_handle $hwproc_handle]
 	set ip_handles [xget_hw_ipinst_handle $mhs_handle "*"]
 	set memory_count 0
