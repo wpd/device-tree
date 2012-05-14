@@ -113,7 +113,6 @@ proc generate {os_handle} {
 	set overrides [xget_sw_parameter_value $os_handle "periph_type_overrides"]
 	# Format override string to list format
 	set overrides [string map { "\}\{" "\} \{" } $overrides]
-	set overrides [string map { "," " " } $overrides]
 
 	global main_memory
 	set main_memory [xget_sw_parameter_value $os_handle "main_memory"]
@@ -1279,7 +1278,7 @@ proc gener_slave {node slave intc} {
 			#		if {$has_mdio == 1} {
 			#			set phy_name "phy$phy_count"
 			#			set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
-			#			set ip_tree [tree_append $ip_tree [gen_mdiotree]]
+			#			set ip_tree [tree_append $ip_tree [gen_mdiotree $slave]]
 			#		}
 			#	}
 			#}
@@ -1333,7 +1332,7 @@ proc gener_slave {node slave intc} {
 			set freq [get_clock_frequency $slave "S_AXI_ACLK"]
 			set ip_tree [tree_append $ip_tree [list "clock-frequency" int $freq]]
 
-			set ip_tree [tree_append $ip_tree [gen_mdiotree]]
+			set ip_tree [tree_append $ip_tree [gen_mdiotree $slave]]
 
 			lappend node $ip_tree
 		}
@@ -1590,7 +1589,7 @@ proc gener_slave {node slave intc} {
 			set ip_tree [tree_append $ip_tree [list "#size-cells" int "0"]]
 			set phy_name "phy$phy_count"
 			set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
-			set ip_tree [tree_append $ip_tree [gen_ps7_phytree]]
+			set ip_tree [tree_append $ip_tree [gen_mdiotree $slave]]
 
 			lappend node $ip_tree
 		}
@@ -2613,42 +2612,48 @@ proc scan_int_parameter_value {ip_handle name} {
 	return [expr $value]
 }
 
-proc gen_phytree {} {
+# generate structure for phy.
+# PARAMETER periph_type_overrides = {phy <IP_name> <phy_addr> <compatible>}
+proc gen_phytree {ip} {
 	variable phy_count
 
-	set phy_name [format_ip_name phy 7 "phy$phy_count"]
+	global overrides
+
+	set name [xget_hw_name $ip]
+	set type [xget_hw_value $ip]
+
+	# set default to 7
+	set phya 7
+	foreach over $overrides {
+		if {[lindex $over 0] == "phy"} {
+			if { [xget_hw_name $ip] == [lindex $over 1] } {
+				set phya [lindex $over 2]
+			} else {
+				puts "PHY: Not valid PHY addr for this ip: $name/$type"
+			}
+		}
+	}
+
+	set phy_name [format_ip_name phy $phya "phy$phy_count"]
 	set phy_tree [list $phy_name tree {}]
-	set phy_tree [tree_append $phy_tree [list "reg" int 7]]
+	set phy_tree [tree_append $phy_tree [list "reg" int $phya]]
 	set phy_tree [tree_append $phy_tree [list "device_type" string "ethernet-phy"]]
-	set phy_tree [tree_append $phy_tree [list "compatible" string "marvell,88e1111"]]
+
+	if { [info exists over] && "[lindex $over 3]" != "" } {
+		set phy_tree [tree_append $phy_tree [list "compatible" string "[lindex $over 3]"]]
+	} else {
+		set phy_tree [tree_append $phy_tree [list "compatible" string "marvell,88e1111"]]
+	}
 
 	incr phy_count
 	return $phy_tree
 }
 
-# FIXME: Hack for ZC702 to append the subnode
-proc gen_ps7_phytree {} {
+proc gen_mdiotree {ip} {
 	set mdio_tree [list "mdio" tree {}]
 	set mdio_tree [tree_append $mdio_tree [list \#size-cells int 0]]
 	set mdio_tree [tree_append $mdio_tree [list \#address-cells int 1]]
-
-	variable phy_count
-
-	set phy_name [format_ip_name phy 7 "phy$phy_count"]
-	set phy_tree [list $phy_name tree {}]
-	set phy_tree [tree_append $phy_tree [list "reg" hexinttuple 7]]
-	set phy_tree [tree_append $phy_tree [list "device_type" string "ethernet-phy"]]
-	set phy_tree [tree_append $phy_tree [list "compatible" string "marvell,88e1116r"]]
-
-	incr phy_count
-	return [tree_append $mdio_tree $phy_tree]
-}
-
-proc gen_mdiotree {} {
-	set mdio_tree [list "mdio" tree {}]
-	set mdio_tree [tree_append $mdio_tree [list \#size-cells int 0]]
-	set mdio_tree [tree_append $mdio_tree [list \#address-cells int 1]]
-	return [tree_append $mdio_tree [gen_phytree]]
+	return [tree_append $mdio_tree [gen_phytree $ip]]
 }
 
 proc format_name {par_name} {
