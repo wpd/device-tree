@@ -2194,7 +2194,22 @@ proc gen_memories {tree hwproc_handle} {
 				}
 				incr memory_count
 			}
-			"ps7_ddr" -
+			"ps7_ddr" {
+				# FIXME: this is workaround for 14.1 as it does not report correct base address
+				set EDK_VER [ exec xps -v | grep "Xilinx EDK" | cut -d " " -f 3 ]
+				set subnode {}
+				if { $EDK_VER == "14.1" } {
+					set baseaddr 0
+				} else {
+					set baseaddr [scan_int_parameter_value $slave "C_S_AXI_BASEADDR"]
+				}
+				set highaddr [scan_int_parameter_value $slave "C_S_AXI_HIGHADDR"]
+				set highaddr [expr $highaddr + 1]
+				lappend subnode [list "device_type" string "memory"]
+				lappend subnode [list "reg" hexinttuple [list $baseaddr $highaddr]]
+				lappend tree [list [format_ip_name "memory" $baseaddr $name] tree $subnode]
+				incr memory_count
+			}
 			"axi_v6_ddrx" -
 			"axi_7series_ddrx" {
 				lappend tree [memory $slave "S_AXI_" ""]
