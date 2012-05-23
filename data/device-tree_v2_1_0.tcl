@@ -2870,7 +2870,11 @@ proc gen_interrupt_property {tree slave intc interrupt_port_list} {
 
 		if {![string match $irq "-1"]} {
 			set irq_type [get_intr_type $slave $in]
-			lappend interrupt_list $irq $irq_type
+			if { "[xget_hw_value $intc]" == "ps7_scugic" } {
+				lappend interrupt_list 0 $irq $irq_type
+			} else {
+				lappend interrupt_list $irq $irq_type
+			}
 		}
 	}
 	if {[llength $interrupt_list] != 0} {
