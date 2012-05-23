@@ -802,11 +802,12 @@ proc slave_ll_temac_port {slave intc index} {
 	#
 	variable ethernet_count
 	variable alias_node_list
-	set alias_node [list ethernet$ethernet_count aliasref $name $ethernet_count]
+	set subnode_name [format "%s_%s" $name "ETHERNET"]
+	set alias_node [list ethernet$ethernet_count aliasref $subnode_name $ethernet_count]
 	lappend alias_node_list $alias_node
 	incr ethernet_count
 
-	set ip_tree [slaveip_basic $slave $intc "" [format_ip_name "ethernet" $baseaddr]]
+	set ip_tree [slaveip_basic $slave $intc "" [format_ip_name "ethernet" $baseaddr $subnode_name]]
 	set ip_tree [tree_append $ip_tree [list "device_type" string "network"]]
 	variable mac_count
 	set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 0x00 0x00 $mac_count]]]
