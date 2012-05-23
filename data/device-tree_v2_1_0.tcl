@@ -2144,7 +2144,7 @@ proc gen_memories {tree hwproc_handle} {
 	set memory_count 0
 	set baseaddr [expr ${main_memory_start}]
 	set memsize [expr ${main_memory_size}]
-	if {$baseaddr > 0 && $memsize > 0} {
+	if {$baseaddr >= 0 && $memsize > 0} {
 		# Manual memory setup
 		set subnode {}
 		set devtype "memory"
