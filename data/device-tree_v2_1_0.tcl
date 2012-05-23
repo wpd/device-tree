@@ -1565,6 +1565,21 @@ proc gener_slave {node slave intc} {
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 			lappend node $ip_tree
 		}
+		"logi3d" -
+		"logiwin" -
+		"logibmp" -
+		"logibitblt" -
+		"logicvc" {
+			set params ""
+			if { "$type" == "logicvc" } {
+				set params "C_VMEM_BASEADDR C_VMEM_HIGHADDR"
+			}
+			if { "$type" == "logibitblt" } {
+				set params "C_BB_BASEADDR C_BB_HIGHADDR"
+			}
+			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" "[default_parameters $slave] $params" "REGS_"]
+			lappend node $ip_tree
+		}
 		"ps7_nand" {
 			# just C_S_AXI_BASEADDR  C_S_AXI_HIGHADDR C_NAND_CLK_FREQ_HZ C_NAND_MODE C_INTERCONNECT_S_AXI_MASTERS HW_VER INSTANCE
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
