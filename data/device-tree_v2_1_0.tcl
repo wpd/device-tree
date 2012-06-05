@@ -2625,10 +2625,12 @@ proc gen_phytree {ip} {
 
 	# set default to 7
 	set phya 7
+	set phy_chip "marvell,88e1111"
 	foreach over $overrides {
 		if {[lindex $over 0] == "phy"} {
 			if { [xget_hw_name $ip] == [lindex $over 1] } {
 				set phya [lindex $over 2]
+				set phy_chip [lindex $over 3]
 			} else {
 				puts "PHY: Not valid PHY addr for this ip: $name/$type"
 			}
@@ -2639,12 +2641,7 @@ proc gen_phytree {ip} {
 	set phy_tree [list $phy_name tree {}]
 	set phy_tree [tree_append $phy_tree [list "reg" int $phya]]
 	set phy_tree [tree_append $phy_tree [list "device_type" string "ethernet-phy"]]
-
-	if { [info exists over] && "[lindex $over 3]" != "" } {
-		set phy_tree [tree_append $phy_tree [list "compatible" string "[lindex $over 3]"]]
-	} else {
-		set phy_tree [tree_append $phy_tree [list "compatible" string "marvell,88e1111"]]
-	}
+	set phy_tree [tree_append $phy_tree [list "compatible" string "$phy_chip"]]
 
 	incr phy_count
 	return $phy_tree
