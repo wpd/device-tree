@@ -1595,6 +1595,9 @@ proc gener_slave {node slave intc} {
 #				puts "$i [xget_hw_name $i] -- $signals --"
 #			}
 
+			# Replace _ with - in type to be compatible
+			regsub -all "_" $type "-" type
+
 			# Add interrupt distributor because it is not detected
 			set tree [list "$name: $type@f8f01000" tree \
 					[list \
