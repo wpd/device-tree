@@ -260,19 +260,42 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 				set tree [tree_append $tree [list ranges empty empty]]
 				# Add intc node because it is not detected
 				set tree [tree_append $tree \
-					[list "intc: interrupt-controller@f8f01000" tree \
+					[list "gic: interrupt-controller@f8f01000" tree \
 						[list \
-							[list "compatible" stringtuple "arm,gic" ] \
-							[list "reg" hexinttuple [list "0xF8F01000" "0x1000"] ] \
-							[list "#interrupt-cells" inttuple "2" ] \
+							[list "compatible" stringtuple "arm,cortex-a9-gic" ] \
+							[list "reg" hexdoubleinttuple [list "0xF8F01000" "0x1000" "0xF8F00100" "0x0100"] ] \
+							[list "#interrupt-cells" inttuple "3" ] \
 							[list "interrupt-controller" empty empty ] \
+						] \
+					] \
+				]
+				set tree [tree_append $tree \
+					[list "pl310: pl310-controller@f8f02000" tree \
+						[list \
+							[list "compatible" stringtuple "arm,pl310-cache" ] \
+							[list "reg" hexinttuple [list "0xF8F02000" "0x1000"] ] \
+							[list "cache-level" inttuple "2" ] \
+							[list "arm,data-latency" inttuple [list "3" "2" "2"] ] \
+							[list "arm,tag-latency" inttuple [list "3" "2" "2"] ] \
+							[list "interrupts" inttuple "0 34 4" ] \
+							[list "cache-unified" empty empty ] \
+						] \
+					] \
+				]
+				set tree [tree_append $tree \
+					[list "xadc: xadc@f8007100" tree \
+						[list \
+							[list "compatible" stringtuple "xlnx,ps7-xadc-1.00.a" ] \
+							[list "reg" hexinttuple [list "0xF8007100" "0x20"] ] \
+							[list "interrupts" inttuple "0 7 0" ] \
 						] \
 					] \
 				]
 
 				lappend ip_tree $tree
+
 			}
-			lappend toplevel [list "interrupt-parent" labelref [list "intc"] ]
+			lappend toplevel [list "interrupt-parent" labelref [list "gic"] ]
 			lappend toplevel [list "compatible" stringtuple [list "xlnx,zynq-zc702"] ]
 		}
 		default {
@@ -294,7 +317,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 
 	lappend toplevel [list \#size-cells int 1]
 	lappend toplevel [list \#address-cells int 1]
-	lappend toplevel [list model string "testing"]
+	lappend toplevel [list model string "Xilinx Zynq ZC702"]
 	lappend toplevel [list chosen tree $chosen]
 
 	#
@@ -526,6 +549,7 @@ proc slaveip_explicit_baseaddr {slave intc devicetype params baseaddr highaddr {
 }
 
 proc slaveip_basic {slave intc params nodename {other_compatibles {}} } {
+	variable ps7_cortexa9_clk
 	set name [xget_hw_name $slave]
 	set type [xget_hw_value $slave]
 
@@ -536,6 +560,9 @@ proc slaveip_basic {slave intc params nodename {other_compatibles {}} } {
 
 	# Generate the parameters
 	set ip_node [gen_params $ip_node $slave $params]
+	if {$ps7_cortexa9_clk != 0} {
+		lappend ip_node [list "interrupt-parent" labelref [list "gic"] ]
+	}
 
 	return [list $nodename tree $ip_node]
 }
@@ -842,9 +869,9 @@ proc gener_slave {node slave intc} {
 			set ip_tree [tree_append $ip_tree [list "clock" int [xget_sw_parameter_value $slave "C_UART_CLK_FREQ_HZ"]]]
 
 			if { "$name" == "ps7_uart_0" } {
-				set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "59 0"]]
+				set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 27 0"]]
 			} elseif { "$name" == "ps7_uart_1" } {
-				set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "82 0"]]
+				set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 50 0"]]
 			}
 
 			incr serial_count
@@ -869,14 +896,14 @@ proc gener_slave {node slave intc} {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			# use TCL table
 			switch -exact $name {
-				"ps7_scutimer_0" { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "29 0"]]
+				"ps7_scutimer_0" { #set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 29 0"]]
 						   set ip_tree [tree_append $ip_tree [list "clock-frequency" int [expr $ps7_cortexa9_clk/2]]] }
-				"ps7_scuwdt_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "30 0"]]
+				"ps7_scuwdt_0"	 { #set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 30 0"]]
 						   set ip_tree [tree_append $ip_tree [list "clock-frequency" int [expr $ps7_cortexa9_clk/2]]] }
-				"ps7_dev_cfg_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "40 0"]] }
-				"ps7_wdt_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "41 0"]]
+				"ps7_dev_cfg_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 8 0"]] }
+				"ps7_wdt_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 9 0"]]
 						   set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_WDT_CLK_FREQ_HZ"]]]}
-				"ps7_qspi_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "51 0"]]
+				"ps7_qspi_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 19 0"]]
 						   set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_QSPI_CLK_FREQ_HZ"]]]
 						   set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
 						   set ip_tree [tree_append $ip_tree [list "num-chip-select" int 1]]
@@ -888,8 +915,8 @@ proc gener_slave {node slave intc} {
 						   }
 						   set ip_tree [tree_append $ip_tree [list "is-dual" int $is_dual]]
 						   incr ps7_spi_count }
-				"ps7_gpio_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "52 0"]] }
-				"ps7_usb_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "53 0"]]
+				"ps7_gpio_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 20 0"]] }
+				"ps7_usb_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 21 0"]]
 						   set ip_tree [tree_append $ip_tree [list "dr_mode" string "host"]]
 						   set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]] }
 				"ps7_i2c_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "57 0"]]
@@ -897,25 +924,25 @@ proc gener_slave {node slave intc} {
 						   set ip_tree [tree_append $ip_tree [list "i2c-clk" int 400000]]
 						   set ip_tree [tree_append $ip_tree [list "bus-id" int $ps7_i2c_count]] }
 						   incr ps7_i2c_count
-				"ps7_spi_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "58 0"]]
+				"ps7_spi_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 26 0"]]
 						   set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_SPI_CLK_FREQ_HZ"]]]
 						   set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
 						   set ip_tree [tree_append $ip_tree [list "num-chip-select" int 4]]
 						   incr ps7_spi_count }
-				"ps7_can_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "60 0"]] }
-				"ps7_usb_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "76 0"]]
+				"ps7_can_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 28 0"]] }
+				"ps7_usb_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 44 0"]]
 						   set ip_tree [tree_append $ip_tree [list "dr_mode" string "device"]]
 						   set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]] }
-				"ps7_i2c_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "80 0"]]
+				"ps7_i2c_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 48 0"]]
 						   set ip_tree [tree_append $ip_tree [list "input-clk" int $ps7_cortexa9_1x_clk]]
 						   set ip_tree [tree_append $ip_tree [list "i2c-clk" int 400000]]
 						   set ip_tree [tree_append $ip_tree [list "bus-id" int $ps7_i2c_count]] }
-				"ps7_spi_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "81 0"]]
+				"ps7_spi_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 49 0"]]
 						   set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_SPI_CLK_FREQ_HZ"]]]
 						   set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
 						   set ip_tree [tree_append $ip_tree [list "num-chip-select" int 4]]
 						   incr ps7_spi_count }
-				"ps7_can_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "83 0"]] }
+				"ps7_can_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 51 0"]] }
 			}
 			lappend node $ip_tree
 		}
@@ -927,12 +954,13 @@ proc gener_slave {node slave intc} {
 			set ip_node {}
 			set nodename [format_ip_name $type $baseaddr $name]
 			lappend ip_node [gen_compatible_property $name $type $hw_ver ""]
+			lappend ip_node [list "interrupt-parent" labelref [list "gic"] ]
 			set tree [list $nodename tree $ip_node]
 			set ip_tree [tree_append $tree [gen_reg_property $name $baseaddr $highaddr]]
 
 			switch -exact $name {
-				"ps7_ttc_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "42 0 43 0 44 0"]] }
-				"ps7_ttc_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "69 0 70 0 71 0"]] }
+				"ps7_ttc_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" ttcinttuple "0 10 0 0 11 0 0 12 0"]] }
+				"ps7_ttc_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" ttcinttuple "0 37 0 0 38 0 0 39 0"]] }
 			}
 			set ip_tree [tree_append $ip_tree [list "clock-frequency-timer0" int [xget_sw_parameter_value $slave "C_TTC_CLK0_FREQ_HZ"]]]
 			set ip_tree [tree_append $ip_tree [list "clock-frequency-timer1" int [xget_sw_parameter_value $slave "C_TTC_CLK1_FREQ_HZ"]]]
@@ -948,11 +976,12 @@ proc gener_slave {node slave intc} {
 			set ip_node {}
 			set nodename [format_ip_name $type $baseaddr $name]
 			lappend ip_node [gen_compatible_property $name $type $hw_ver ""]
+			lappend ip_node [list "interrupt-parent" labelref [list "gic"] ]
 			set tree [list $nodename tree $ip_node]
 			set ip_tree [tree_append $tree [gen_reg_property $name $baseaddr $highaddr]]
 			switch -exact $name {
-				"ps7_ethernet_0" { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "54 0"]] }
-				"ps7_ethernet_1" { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "77 0"]] }
+				"ps7_ethernet_0" { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 22 0"]] }
+				"ps7_ethernet_1" { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 45 0"]] }
 			}
 			set phy_name "phy$phy_count"
 		   	set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
@@ -967,11 +996,11 @@ proc gener_slave {node slave intc} {
 			lappend node $ip_tree
 		}
 		"ps7_sdio" {
-			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "generic-sdhci"]
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "xlnx,ps7-sdhci-1.00.a generic-sdhci"]
 			if { $name == "ps7_sd_0" } {
-				set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "56 0"]]
+				set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 24 0"]]
 			} elseif { $name == "ps7_sd_1" } {
-				set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "79 0"]]
+				set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 47 0"]]
 			}
 			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_SDIO_CLK_FREQ_HZ"]]]
 			lappend node $ip_tree
@@ -2294,6 +2323,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 	if {$hw_ver != ""} {
 		set namewithver [format "%s_%s" $type $hw_ver]
 		set clist [list [format_xilinx_name "$namewithver"]]
+
 		regexp {([^\.]*)} $hw_ver hw_ver_wildcard
 		set namewithwildcard [format "%s_%s" $type $hw_ver_wildcard]
 		if { [info exists compatible_list($namewithver)] } {              # Check exact match
@@ -2385,6 +2415,7 @@ proc gen_reg_property {nodename baseaddr highaddr {name "reg"}} {
 }
 
 proc write_value {file indent type value} {
+	set cntr 0
 	if {[catch {
 		if {$type == "int"} {
 			puts -nonewline $file "= <[format %d $value]>"
@@ -2397,12 +2428,44 @@ proc write_value {file indent type value} {
 				puts -nonewline $file "[format %d $element] "
 			}
 			puts -nonewline $file ">"
+		} elseif {$type == "ttcinttuple"} {
+			set cntr 0
+			puts -nonewline $file "= < "
+			foreach element $value {
+				puts -nonewline $file "[format %d $element] "
+				incr cntr
+				if {$cntr == 3 || $cntr == 6} {
+					puts -nonewline $file " >"
+					puts -nonewline $file ","
+					puts -nonewline $file "< "
+				}
+				if {$cntr == 9} {
+					break;
+				}
+			}
+			puts -nonewline $file " >"
 		} elseif {$type == "hexinttuple"} {
 			puts -nonewline $file "= < "
 			foreach element $value {
 				puts -nonewline $file "0x[format %x $element] "
 			}
 			puts -nonewline $file ">"
+		} elseif {$type == "hexdoubleinttuple"} {
+			set cntr 0
+			puts -nonewline $file "= < "
+			foreach element $value {
+				puts -nonewline $file "0x[format %x $element] "
+				incr cntr
+				if {$cntr == 2} {
+					puts -nonewline $file " >"
+					puts -nonewline $file ","
+					puts -nonewline $file "< "
+				}
+				if {$cntr == 4} {
+					break;
+				}
+			}
+			puts -nonewline $file " >"
 		} elseif {$type == "bytesequence"} {
 			puts -nonewline $file "= \[ "
 			foreach element $value {
