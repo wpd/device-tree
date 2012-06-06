@@ -2869,13 +2869,6 @@ proc gen_interrupt_property {tree slave intc interrupt_port_list} {
 		if {![string match $irq "-1"]} {
 			set irq_type [get_intr_type $slave $in]
 			if { "[xget_hw_value $intc]" == "ps7_scugic" } {
-				# the shared peripheral interrupts on both A9 starts from 32
-				# Linux skips SGI and PPI interrupts which is 32 in sum
-				# and PL interrupts are assigned from top to down (91-84 then
-				# 68-61 in EDK).
-				if { [expr "$irq >= 61 && $irq <= 68"] || [expr "$irq >= 84 && $irq <= 91"] } {
-					set irq [expr "$irq - 32"]
-				}
 				lappend interrupt_list 0 $irq $irq_type
 			} else {
 				lappend interrupt_list $irq $irq_type
