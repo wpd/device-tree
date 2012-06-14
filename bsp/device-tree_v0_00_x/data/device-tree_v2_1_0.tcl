@@ -276,7 +276,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 							[list "reg" hexinttuple [list "0xF8F02000" "0x1000"] ] \
 							[list "cache-level" inttuple "2" ] \
 							[list "arm,data-latency" inttuple [list "3" "2" "2"] ] \
-							[list "arm,tag-latency" inttuple [list "3" "2" "2"] ] \
+							[list "arm,tag-latency" inttuple [list "2" "2" "2"] ] \
 							[list "interrupts" inttuple "0 34 4" ] \
 							[list "cache-unified" empty empty ] \
 						] \
