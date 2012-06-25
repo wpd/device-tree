@@ -1125,6 +1125,8 @@ proc gener_slave {node slave intc} {
 			# MS silly use just clock-frequency which is standard
 			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [scan_int_parameter_value $slave "C_UART_CLK_FREQ_HZ"]]]
 			set ip_tree [tree_append $ip_tree [list "clock" int [scan_int_parameter_value $slave "C_UART_CLK_FREQ_HZ"]]]
+			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
+			set ip_tree [tree_append $ip_tree [list "current-speed" int "115200"]]
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 
 			lappend node $ip_tree
@@ -1184,7 +1186,7 @@ proc gener_slave {node slave intc} {
 
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "serial" [default_parameters $slave] "" "" [list "ns16550a"] ]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
-			set ip_tree [tree_append $ip_tree [list "current-speed" int "9600"]]
+			set ip_tree [tree_append $ip_tree [list "current-speed" int "115200"]]
 
 			# The 16550 cores usually use the bus clock as the baud
 			# reference, but can also take an external reference clock.
