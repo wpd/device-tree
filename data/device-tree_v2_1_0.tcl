@@ -193,7 +193,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			set intc [get_handle_to_intc $proc_handle "Interrupt"]
 			set toplevel [gen_microblaze $toplevel $hwproc_handle [default_parameters $hwproc_handle]]
 
-			
+
 			# Microblaze v8 has AXI and/or PLB. xget_hw_busif_handle returns
 			# a valid handle for both these bus ifs, even if they are not
 			# connected. The better way of checking if a bus is connected
@@ -567,7 +567,7 @@ proc get_intc_signals {intc} {
 		# offset in signal area - store missing IRQs for both PL parts
 		set offset1 ""
 		set offset2 ""
-		
+
 		# two different behavior depends on No signals
 		if { "$len" > "8" } {
 			set signal2 [lrange $int_lines 0 7 ]
