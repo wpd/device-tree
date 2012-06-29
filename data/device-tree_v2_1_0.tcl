@@ -1353,9 +1353,9 @@ proc gener_slave {node slave intc} {
 			set ip_tree [list $ip_name tree $ip_node]
 			set mhs_handle [xget_hw_parent_handle $slave]
 			# See what the axi ethernet is connected to.
-			set axiethernet_busif_handle [xget_hw_busif_handle $slave "AXI_STR_TXD"]
+			set axiethernet_busif_handle [xget_hw_busif_handle $slave "AXI_STR_RXD"]
 			set axiethernet_name [xget_hw_value $axiethernet_busif_handle]
-			set axiethernet_ip_handle [xget_hw_connected_busifs_handle $mhs_handle $axiethernet_name "INITIATOR"]
+			set axiethernet_ip_handle [xget_hw_connected_busifs_handle $mhs_handle $axiethernet_name "TARGET"]
 			set axiethernet_ip_handle_name [xget_hw_name $axiethernet_ip_handle]
 			set connected_ip_handle [xget_hw_parent_handle $axiethernet_ip_handle]
 			set connected_ip_name [xget_hw_name $connected_ip_handle]
@@ -1652,9 +1652,9 @@ proc gener_slave {node slave intc} {
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave]]
 			set mhs_handle [xget_hw_parent_handle $slave]
 			# See what the axi dma is connected to.
-			set axidma_busif_handle [xget_hw_busif_handle $slave "S_AXIS_S2MM"]
+			set axidma_busif_handle [xget_hw_busif_handle $slave "M_AXIS_MM2S"]
 			set axidma_name [xget_hw_value $axidma_busif_handle]
-			set axidma_ip_handle [xget_hw_connected_busifs_handle $mhs_handle $axidma_name "INITIATOR"]
+			set axidma_ip_handle [xget_hw_connected_busifs_handle $mhs_handle $axidma_name "TARGET"]
 			set axidma_ip_handle_name [xget_hw_name $axidma_ip_handle]
 			set connected_ip_handle [xget_hw_parent_handle $axidma_ip_handle]
 			set connected_ip_name [xget_hw_name $connected_ip_handle]
