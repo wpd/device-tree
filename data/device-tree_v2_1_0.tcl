@@ -1108,7 +1108,6 @@ proc gener_slave {node slave intc} {
 		}
 		"ps7_uart" {
 			set ip_tree [slaveip $slave $intc "serial" [default_parameters $slave] "S_AXI_" "xlnx,xuartps"]
-			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
 
 			variable alias_node_list
 			global consoleip
