@@ -1073,6 +1073,28 @@ proc gener_slave {node slave intc} {
 
 	set name [xget_hw_name $slave]
 	set type [xget_hw_value $slave]
+
+	# Ignore IP through overides
+	# Command: "ip -ignore <IP name> "
+	global overrides
+	foreach i $overrides {
+		# skip others overrides
+		if { [lindex "$i" 0] != "ip" } {
+			continue;
+		}
+		# Compatible command have at least 4 elements in the list
+		if { [llength $i] != 3 } {
+			error "Wrong compatible override command string - $i"
+		}
+		# Check command and then IP name
+		if { [string match [lindex "$i" 1] "-ignore"] } {
+			if { [string match [lindex "$i" 2] "$name"] } {
+				puts "Ignoring $node"
+				return $node
+			}
+		}
+	}
+
 	switch -exact $type {
 		"opb_intc" -
 		"xps_intc" -
@@ -1849,7 +1871,7 @@ proc gener_slave {node slave intc} {
 			set ipifbar [ scan_int_parameter_value $slave "C_MEM1_BASEADDR" ]
 			set ipif_highaddr [ scan_int_parameter_value $slave "C_MEM1_HIGHADDR" ]
 			set space_code "0x02000000"
-			
+
 			set ranges [lappend ranges $space_code 0 $ipifbar $ipifbar 0 [ expr $ipif_highaddr - $ipifbar + 1 ]]
 
 			set ip_tree [tree_append $ip_tree [ list "ranges" hexinttuple $ranges ]]
