@@ -46,6 +46,7 @@ variable bus_count 0
 variable mac_count 0
 variable gpio_names {}
 variable overrides {}
+variable microblaze_system_timer ""
 
 variable serial_count 0
 variable sysace_count 0
@@ -233,6 +234,11 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 				}
 			}
 			lappend toplevel [list "compatible" stringtuple [list "xlnx,microblaze"] ]
+
+			variable microblaze_system_timer
+			if { [llength $microblaze_system_timer] == 0 } {
+				error "Microblaze requires to setup system timer. Please setup it!"
+			}
 		}
 		"ppc405" -
 		"ppc405_virtex4" {
@@ -1266,6 +1272,8 @@ proc gener_slave {node slave intc} {
 				if { $irq == "-1" } {
 					error "Linux requires dual channel timer with interrupt connected. Please configure the $name to interrupt"
 				}
+				variable microblaze_system_timer
+				set microblaze_system_timer $timer
 			} else {
 				set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "timer" [default_parameters $slave] ]
 			}
