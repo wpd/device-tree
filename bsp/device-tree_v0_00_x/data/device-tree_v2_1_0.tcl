@@ -1254,6 +1254,10 @@ proc gener_slave {node slave intc} {
 
 			set tmp [scan_int_parameter_value $slave "C_NUM_FSTORES"]
 			set mytree [tree_append $mytree [list "xlnx,num-fstores" hexint $tmp]]
+
+			set tmp [scan_int_parameter_value $slave "C_FLUSH_ON_FSYNC"]
+			set mytree [tree_append $mytree [list "xlnx,flush-fsync" hexint $tmp]]
+
 			set mytree [tree_append $mytree [gen_ranges_property $slave $baseaddr $highaddr $baseaddr]]
 			set mytree [tree_append $mytree [gen_reg_property $hw_name $baseaddr $highaddr]]
 
