@@ -2327,10 +2327,10 @@ proc gen_memories {tree hwproc_handle} {
 				incr memory_count
 			}
 			"ps7_ddr" {
-				# FIXME: this is workaround for 14.1 as it does not report correct base address
-				set EDK_VER [ exec xps -v | grep "Xilinx EDK" | cut -d " " -f 3 ]
+				# FIXME: this is workaround for 14.1/14.2 as it does not report correct base address
+				set XIL_VER [xget_swverandbld]
 				set subnode {}
-				if { $EDK_VER == "14.1" } {
+				if { [regexp -all -- 14.\[1|2\] $XIL_VER] } {
 					set baseaddr 0
 				} else {
 					set baseaddr [scan_int_parameter_value $slave "C_S_AXI_BASEADDR"]
