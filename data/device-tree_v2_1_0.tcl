@@ -1131,7 +1131,7 @@ proc gener_slave {node slave intc} {
 						set ip_tree [tree_append $ip_tree [list "port-number" int $serial_count]]
 					}
 				} else {
-					set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "serial" [default_parameters $slave] "" "" "" ]
+					set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "serial" [default_parameters $slave] "" "" "xlnx,xps-uartlite-1.00.a" ]
 				}
 			} else {
 				# EDK 11.4 disables PLB connection when USE_UART is disabled that's why whole node won't be generated
