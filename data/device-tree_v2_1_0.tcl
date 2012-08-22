@@ -530,7 +530,7 @@ proc led_gpio {} {
 proc valid_gpio {name} {
 	global gpio_names
 	foreach gpio_desc $gpio_names {
-		if { [lindex $gpio_desc 0] == "$name" } {
+		if { [string match -nocase [lindex $gpio_desc 0] "$name" ] } {
 			return $gpio_desc
 		}
 	}
