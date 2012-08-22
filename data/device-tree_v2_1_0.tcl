@@ -112,6 +112,12 @@ proc generate {os_handle} {
 	set consoleip [xget_sw_parameter_value $os_handle "stdout"]
 	global overrides
 	set overrides [xget_sw_parameter_value $os_handle "periph_type_overrides"]
+	# FIXME - Xilinx 14.2 changed the TCL API and IP names are returned
+	# lowercase.  Must lowercase the override string to match
+	puts [xget_swverandbld]
+	if {[regexp -all {14.[1|2]} [xget_swverandbld]]} {
+		set overrides [string tolower $overrides]
+	}
 	# Format override string to list format
 	set overrides [string map { "\}\{" "\} \{" } $overrides]
 
