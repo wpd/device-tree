@@ -199,6 +199,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 				lappend ip_tree $tree
 			}
 			lappend toplevel [list "compatible" stringtuple [list "xlnx,microblaze"] ]
+			lappend toplevel [list model string "Xilinx MicroBlaze"]
 		}
 		"ppc405" -
 		"ppc405_virtex4" {
@@ -227,6 +228,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			}
 
 			lappend toplevel [list "compatible" stringtuple [list "xlnx,virtex405" "xlnx,virtex"] ]
+			lappend toplevel [list model string "Xilinx PPC Virtex405"]
 		}
 		"ppc440_virtex5" {
 			set intc [get_handle_to_intc $proc_handle "EICC440EXTIRQ"]
@@ -247,6 +249,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			lappend toplevel [list "compatible" stringtuple [list "xlnx,virtex440" "xlnx,virtex"] ]
 			set cpu_name [xget_hw_name $hwproc_handle]
 			lappend toplevel [list "dcr-parent" labelref $cpu_name]
+			lappend toplevel [list model string "Xilinx PPC Virtex440"]
 		}
 		"ps7_cortexa9" {
 			set toplevel [gen_cortexa9 $toplevel $hwproc_handle [default_parameters $hwproc_handle]]
@@ -309,6 +312,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			}
 			lappend toplevel [list "interrupt-parent" labelref [list "gic"] ]
 			lappend toplevel [list "compatible" stringtuple [list "xlnx,zynq-zc702"] ]
+			lappend toplevel [list model string "Xilinx Zynq ZC702"]
 		}
 		default {
 			error "unsupported CPU"
@@ -329,7 +333,6 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 
 	lappend toplevel [list \#size-cells int 1]
 	lappend toplevel [list \#address-cells int 1]
-	lappend toplevel [list model string "Xilinx Zynq ZC702"]
 	lappend toplevel [list chosen tree $chosen]
 
 	#
