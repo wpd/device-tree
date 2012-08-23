@@ -112,14 +112,9 @@ proc generate {os_handle} {
 	set consoleip [xget_sw_parameter_value $os_handle "stdout"]
 	global overrides
 	set overrides [xget_sw_parameter_value $os_handle "periph_type_overrides"]
-	# FIXME - Xilinx 14.2 changed the TCL API and IP names are returned
-	# lowercase.  Must lowercase the override string to match
-	puts [xget_swverandbld]
-	if {[regexp -all {14.[1|2]} [xget_swverandbld]]} {
-		set overrides [string tolower $overrides]
-	}
 	# Format override string to list format
 	set overrides [string map { "\}\{" "\} \{" } $overrides]
+	edk_override_update
 
 	global main_memory
 	set main_memory [xget_sw_parameter_value $os_handle "main_memory"]
@@ -142,6 +137,27 @@ proc generate {os_handle} {
 	set buses {}
 
 	generate_device_tree "xilinx.dts" $bootargs $consoleip
+}
+
+proc edk_override_update {} {
+	global overrides
+
+	# FIXME - Xilinx 14.2 changed the TCL API and IP names are returned
+	# lowercase.  Must lowercase the override string to match
+	if { [xget_swverandbld]  >= "14.2" } {
+		foreach over $overrides {
+			set ipname [string tolower [lindex $over 1]]
+			lset over 1 $ipname
+			if { [info exists new_overrides] } {
+				set new_overrides [list $over $new_overrides]
+			} else {
+				set new_overrides [list $over]
+			}
+		}
+		if { [info exists new_overrides] } {
+			set overrides $new_overrides
+		}
+	}
 }
 
 proc generate_device_tree {filepath bootargs {consoleip ""}} {
