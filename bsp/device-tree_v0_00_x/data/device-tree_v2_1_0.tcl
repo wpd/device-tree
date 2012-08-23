@@ -289,7 +289,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 							[list "cache-level" inttuple "2" ] \
 							[list "arm,data-latency" inttuple [list "3" "2" "2"] ] \
 							[list "arm,tag-latency" inttuple [list "2" "2" "2"] ] \
-							[list "interrupts" inttuple "0 34 4" ] \
+							[list "interrupts" inttuple "0 2 4" ] \
 							[list "cache-unified" empty empty ] \
 						] \
 					] \
@@ -299,7 +299,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 						[list \
 							[list "compatible" stringtuple "xlnx,ps7-xadc-1.00.a" ] \
 							[list "reg" hexinttuple [list "0xF8007100" "0x20"] ] \
-							[list "interrupts" inttuple "0 7 0" ] \
+							[list "interrupts" inttuple "0 7 4" ] \
 						] \
 					] \
 				]
@@ -477,19 +477,35 @@ proc get_intr {ip_handle intc port_name} {
 	}
 }
 
-proc get_intr_type {ip_handle port_name} {
+proc get_intr_type {ip_handle port_name intc} {
 	set ip_name [xget_hw_name $ip_handle]
 	set port_handle [xget_hw_port_handle $ip_handle "$port_name"]
 	set sensitivity [xget_hw_subproperty_value $port_handle "SENSITIVITY"];
 	# Follow the openpic specification
 	if { [string compare -nocase $sensitivity "EDGE_FALLING"] == 0 } {
-		return 3;
+		if { "[xget_hw_value $intc]" == "ps7_scugic" } {
+			return 2;
+		} else {
+			return 3;
+		}
 	} elseif { [string compare -nocase $sensitivity "EDGE_RISING"] == 0 } {
-		return 0;
+		if { "[xget_hw_value $intc]" == "ps7_scugic" } {
+			return 1;
+		} else {
+			return 0;
+		}
 	} elseif { [string compare -nocase $sensitivity "LEVEL_HIGH"] == 0 } {
-		return 2;
+		if { "[xget_hw_value $intc]" == "ps7_scugic" } {
+			return 4;
+		} else {
+			return 2;
+		}
 	} elseif { [string compare -nocase $sensitivity "LEVEL_LOW"] == 0 } {
-		return 1;
+		if { "[xget_hw_value $intc]" == "ps7_scugic" } {
+			return 8;
+		} else {
+			return 1;
+		}
 	} else {
 		error "Unknown interrupt sensitivity on port $port_name of $ip_name was $sensitivity"
 	}
@@ -964,18 +980,21 @@ proc gener_slave {node slave intc} {
 		"ps7_smcc" -
 		"ps7_iop_bus_config" -
 		"ps7_ddrc" -
+		"ps7_ram" -
+		"ps7_dma" -
 		"ps7_dev_cfg" {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			# use TCL table
 			switch -exact $name {
-				"ps7_scutimer_0" { #set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 29 0"]]
+				"ps7_scutimer_0" { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "1 13 0x301"]]
 						   set ip_tree [tree_append $ip_tree [list "clock-frequency" int [expr $ps7_cortexa9_clk/2]]] }
-				"ps7_scuwdt_0"	 { #set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 30 0"]]
+				"ps7_scuwdt_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "1 14 0x301"]]
 						   set ip_tree [tree_append $ip_tree [list "clock-frequency" int [expr $ps7_cortexa9_clk/2]]] }
-				"ps7_dev_cfg_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 8 0"]] }
-				"ps7_wdt_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 9 0"]]
+				"ps7_dev_cfg_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 8 4"]] }
+
+				"ps7_wdt_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 9 4"]]
 						   set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_WDT_CLK_FREQ_HZ"]]]}
-				"ps7_qspi_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 19 0"]]
+				"ps7_qspi_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 19 4"]]
 						   set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_QSPI_CLK_FREQ_HZ"]]]
 						   set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
 						   set ip_tree [tree_append $ip_tree [list "num-chip-select" int 1]]
@@ -987,34 +1006,34 @@ proc gener_slave {node slave intc} {
 						   }
 						   set ip_tree [tree_append $ip_tree [list "is-dual" int $is_dual]]
 						   incr ps7_spi_count }
-				"ps7_gpio_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 20 0"]] }
-				"ps7_usb_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 21 0"]]
+				"ps7_gpio_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 20 4"]] }
+				"ps7_usb_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 21 4"]]
 						   set ip_tree [tree_append $ip_tree [list "dr_mode" string "host"]]
 						   set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]] }
-				"ps7_i2c_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "57 0"]]
+				"ps7_i2c_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 25 4"]]
 						   set ip_tree [tree_append $ip_tree [list "input-clk" int $ps7_cortexa9_1x_clk]]
 						   set ip_tree [tree_append $ip_tree [list "i2c-clk" int 400000]]
 						   set ip_tree [tree_append $ip_tree [list "bus-id" int $ps7_i2c_count]] }
 						   incr ps7_i2c_count
-				"ps7_spi_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 26 0"]]
+				"ps7_spi_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 26 4"]]
 						   set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_SPI_CLK_FREQ_HZ"]]]
 						   set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
 						   set ip_tree [tree_append $ip_tree [list "num-chip-select" int 4]]
 						   incr ps7_spi_count }
-				"ps7_can_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 28 0"]] }
-				"ps7_usb_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 44 0"]]
+				"ps7_can_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 28 4"]] }
+				"ps7_usb_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 44 4"]]
 						   set ip_tree [tree_append $ip_tree [list "dr_mode" string "device"]]
 						   set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]] }
-				"ps7_i2c_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 48 0"]]
+				"ps7_i2c_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 48 4"]]
 						   set ip_tree [tree_append $ip_tree [list "input-clk" int $ps7_cortexa9_1x_clk]]
 						   set ip_tree [tree_append $ip_tree [list "i2c-clk" int 400000]]
 						   set ip_tree [tree_append $ip_tree [list "bus-id" int $ps7_i2c_count]] }
-				"ps7_spi_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 49 0"]]
+				"ps7_spi_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 49 4"]]
 						   set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_SPI_CLK_FREQ_HZ"]]]
 						   set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
 						   set ip_tree [tree_append $ip_tree [list "num-chip-select" int 4]]
 						   incr ps7_spi_count }
-				"ps7_can_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 51 0"]] }
+				"ps7_can_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 51 4"]] }
 			}
 			lappend node $ip_tree
 		}
@@ -1031,8 +1050,8 @@ proc gener_slave {node slave intc} {
 			set ip_tree [tree_append $tree [gen_reg_property $name $baseaddr $highaddr]]
 
 			switch -exact $name {
-				"ps7_ttc_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" ttcinttuple "0 10 0 0 11 0 0 12 0"]] }
-				"ps7_ttc_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" ttcinttuple "0 37 0 0 38 0 0 39 0"]] }
+				"ps7_ttc_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" ttcinttuple "0 10 4 0 11 4 0 12 4"]] }
+				"ps7_ttc_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" ttcinttuple "0 37 4 0 38 4 0 39 4"]] }
 			}
 			set ip_tree [tree_append $ip_tree [list "clock-frequency-timer0" int [xget_sw_parameter_value $slave "C_TTC_CLK0_FREQ_HZ"]]]
 			set ip_tree [tree_append $ip_tree [list "clock-frequency-timer1" int [xget_sw_parameter_value $slave "C_TTC_CLK1_FREQ_HZ"]]]
@@ -1052,8 +1071,8 @@ proc gener_slave {node slave intc} {
 			set tree [list $nodename tree $ip_node]
 			set ip_tree [tree_append $tree [gen_reg_property $name $baseaddr $highaddr]]
 			switch -exact $name {
-				"ps7_ethernet_0" { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 22 0"]] }
-				"ps7_ethernet_1" { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 45 0"]] }
+				"ps7_ethernet_0" { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 22 4"]] }
+				"ps7_ethernet_1" { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 45 4"]] }
 			}
 			set phy_name "phy$phy_count"
 		   	set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
@@ -1070,9 +1089,9 @@ proc gener_slave {node slave intc} {
 		"ps7_sdio" {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "xlnx,ps7-sdhci-1.00.a generic-sdhci"]
 			if { $name == "ps7_sd_0" } {
-				set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 24 0"]]
+				set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 24 4"]]
 			} elseif { $name == "ps7_sd_1" } {
-				set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 47 0"]]
+				set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 47 4"]]
 			}
 			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_SDIO_CLK_FREQ_HZ"]]]
 			lappend node $ip_tree
@@ -1634,7 +1653,8 @@ proc gener_slave {node slave intc} {
 			#this is handled by proc gen_cortexa9. don't do anything here
 		}
 		default {
-			if {$type != "ps7_ram" && $type != "ps7_scugic" &&  $type != "ps7_dma" && $type != "ps7_slcr"} {
+
+			if {$type != "ps7_scugic" && $type != "ps7_slcr"} {
 				# *Most* IP should be handled by this default case.
 				if {[catch {lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] "" ]} {error}]} {
 					debug warning "Warning: Default slave handling for unknown IP $name ($type) Failed...  It won't show up in the device tree."
@@ -2526,7 +2546,11 @@ proc gen_interrupt_property {tree slave intc interrupt_port_list} {
 	}
 	if {[llength $interrupt_list] != 0} {
 		set tree [tree_append $tree [list "interrupts" inttuple $interrupt_list]]
-		set tree [tree_append $tree [list "interrupt-parent" labelref $intc_name]]
+		if { "[xget_hw_value $intc]" == "ps7_scugic" } {
+			set tree [tree_append $tree [list "interrupt-parent" labelref [list "gic"]]]
+		} else {
+			set tree [tree_append $tree [list "interrupt-parent" labelref $intc_name]]
+		}
 	}
 	return $tree
 }
