@@ -250,13 +250,25 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 		}
 		"ps7_cortexa9" {
 			set toplevel [gen_cortexa9 $toplevel $hwproc_handle [default_parameters $hwproc_handle]]
+			# MS: This is nasty hack how to get all slave IPs
+			# What I do is that load all IPs from M_AXI_DP and then pass all IPs
+			# in bus_bridge then handle the rest of IPs
+			set ips [xget_hw_proc_slave_periphs $hwproc_handle]
+
+			# FIXME uses axi_ifs instead of ips and remove that param from bus_bridge
+			global axi_ifs
+			set axi_ifs ""
+
+			# Find out GIC
+			foreach i $ips {
+				if { "[xget_hw_value $i]" == "ps7_scugic" } {
+					set intc "$i"
+				}
+			}
+
 			set bus_name [xget_hw_busif_value $hwproc_handle "M_AXI_DP"]
 			if { [string compare -nocase $bus_name ""] != 0 } {
-				# add all IPs connected to main AXI bus
-				global axi_ifs
-				set axi_ifs [xget_hw_connected_busifs_handle $mhs_handle $bus_name "*"]
-
-				set tree [bus_bridge $hwproc_handle "" 0 "M_AXI_DP"]
+				set tree [bus_bridge $hwproc_handle $intc 0 "M_AXI_DP" $ips]
 				set tree [tree_append $tree [list ranges empty empty]]
 				# Add intc node because it is not detected
 				set tree [tree_append $tree \
@@ -379,7 +391,67 @@ proc headerc {ufile generator_version} {
 }
 
 proc get_intc_signals {intc} {
-	set signals [split [xget_hw_port_value $intc "intr"] "&"]
+	# MS the simplest way to detect ARM is through intc type
+	if { "[xget_hw_value $intc]" == "ps7_scugic" } {
+		# MS here is small complication because INTC from FPGA
+		# are divided to two separate segments. That's why
+		# I generate two silly offsets to setup correct location
+		# for both segments.
+		# FPGA 7-0 - irq 61 - 68
+		# FPGA 15-8 - irq 84 - 91
+
+		set int_lines "[split [xget_hw_port_value $intc "IRQ_F2P"] "&"]"
+
+		# len of signals
+		set len [llength $int_lines]
+		if { "$len" > "16" } {
+			error "Too many interrupt lines connected to Zynq GIC"
+		}
+
+		# skip the first 32 interrupts because of Linux
+		# and generate numbers till the first fpga area
+		# top to down 60 - 32
+		set linux_irq_offset 32
+		for {set x 60} {$x >= $linux_irq_offset} { set x [expr $x - 1] } {
+			lappend pl1 $x
+		}
+
+		# offset between fpga 7-0 and 15-8 is fixed
+		# top to down 83 - 69
+		for {set x 83} {$x >= 69} { set x [expr $x - 1] } {
+			lappend pl2 $x
+		}
+
+		# offset in signal area - store missing IRQs for both PL parts
+		set offset1 ""
+		set offset2 ""
+
+		# two different behavior depends on No signals
+		if { "$len" > "8" } {
+			set signal2 [lrange $int_lines 0 7 ]
+			set signal1 [lrange $int_lines 8 $len ]
+			# generate missing IRQ signals in signal1 area
+			for {set x [expr 60 + [expr 8 - [expr $len - 8]]]} {$x >= 61 } { set x [expr $x - 1]} {
+				lappend offset1 $x
+			}
+		} else {
+			set signal2 $int_lines
+			# generate missing IRQ signals in signal2 area
+			for {set x [expr 83 + [expr 8 - $len]]} {$x >= 84 } { set x [expr $x - 1]} {
+				lappend offset2 $x
+			}
+			set signal1 ""
+			# there is no signal if IRQ is less then 9 - generate all missing IRQs
+			for {set x 68} {$x >= 61} { set x [expr $x - 1] } {
+				lappend offset1 $x
+			}
+		}
+		# Compose signal string with this layout from top to down
+		set signals "$signal2 $offset2 $pl2 $signal1 $offset1 $pl1"
+	} else {
+		set signals [split [xget_hw_port_value $intc "intr"] "&"]
+	}
+
 	set intc_signals {}
 	foreach signal $signals {
 		lappend intc_signals [string trim $signal]
@@ -388,7 +460,7 @@ proc get_intc_signals {intc} {
 }
 
 # Get interrupt number
-proc get_intr {ip_handle intc intc_value port_name} {
+proc get_intr {ip_handle intc port_name} {
 	if {![string match "" $intc] && ![string match -nocase "none" $intc]} {
 		set intc_signals [get_intc_signals $intc]
 		set port_handle [xget_hw_port_handle $ip_handle "$port_name"]
@@ -1988,7 +2060,7 @@ proc bus_is_connected {slave face} {
 # baseaddr     : The base address of the address range of this bus.
 # face : The name of the port of the slave that is connected to the
 # bus.
-proc bus_bridge {slave intc_handle baseaddr face} {
+proc bus_bridge {slave intc_handle baseaddr face {ps_ifs ""}} {
 	debug handles "+++++++++++ $slave ++++++++"
 	set busif_handle [xget_hw_busif_handle $slave $face]
 	if {[llength $busif_handle] == 0} {
@@ -2069,6 +2141,24 @@ proc bus_bridge {slave intc_handle baseaddr face} {
 			}
 		}
 	}
+
+	foreach if $ps_ifs {
+		#debug ip "-slave [xget_hw_name $if]"
+		#debug handles "  handle: $if"
+
+
+		# If its not already in the list, and its not the bridge, then
+		# append it.
+		if {$if != $slave} {
+			if {[lsearch $bus_ip_handles $if] == -1} {
+			puts "ip=[xget_hw_name $if]"
+				lappend bus_ip_handles $if
+			} else {
+				#debug ip "IP $if [xget_hw_name $if] is already appended - skip it"
+			}
+		}
+	}
+
 	# A list of all the IP that have been generated already.
 	variable periphery_array
 
@@ -2420,16 +2510,18 @@ proc gen_ranges_property_list {slave rangelist} {
 }
 
 proc gen_interrupt_property {tree slave intc interrupt_port_list} {
-	set pocet [scan_int_parameter_value $intc "C_NUM_INTR_INPUTS"]
-	set pocet [expr $pocet - 1]
 	set intc_name [xget_hw_name $intc]
 	set interrupt_list {}
 	foreach in $interrupt_port_list {
-		set irq [get_intr $slave $intc $pocet $in]
+		set irq [get_intr $slave $intc $in]
 
 		if {![string match $irq "-1"]} {
-			set irq_type [get_intr_type $slave $in]
-			lappend interrupt_list $irq $irq_type
+			set irq_type [get_intr_type $slave $in $intc]
+			if { "[xget_hw_value $intc]" == "ps7_scugic" } {
+				lappend interrupt_list 0 $irq $irq_type
+			} else {
+				lappend interrupt_list $irq $irq_type
+			}
 		}
 	}
 	if {[llength $interrupt_list] != 0} {
