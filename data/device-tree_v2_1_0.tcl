@@ -1587,10 +1587,10 @@ proc gener_slave {node slave intc} {
 					# Set the SPI Flash chip select
 					lappend subnode [list "reg" hexinttuple [list $flash_memory_bank]]
 					# Set the SPI Flash clock frequency, assume it will be
-					# half of the QSPI controller frequency.
+					# 1/4 of the QSPI controller frequency.
 					# Note this is not the actual maximum SPI flash frequency
 					# as we can't know.
-					lappend subnode [list [format_name "spi-max-frequency"] int [expr [xget_sw_parameter_value $slave "C_QSPI_CLK_FREQ_HZ"]/2]]
+					lappend subnode [list [format_name "spi-max-frequency"] int [expr [xget_sw_parameter_value $slave "C_QSPI_CLK_FREQ_HZ"]/4]]
 					set ip_tree [tree_append $ip_tree [list [format_ip_name $type $flash_memory_bank "primary_flash"] tree $subnode]]
 				}
 			}
