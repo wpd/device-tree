@@ -996,7 +996,9 @@ proc gener_slave {node slave intc} {
 				"ps7_dev_cfg_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 8 4"]] }
 
 				"ps7_wdt_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 9 4"]]
-						   set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_WDT_CLK_FREQ_HZ"]]]}
+						   set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_WDT_CLK_FREQ_HZ"]]]
+						   set ip_tree [tree_append $ip_tree [list "reset" int 0]]
+						   set ip_tree [tree_append $ip_tree [list "timeout" int 10]]}
 				"ps7_qspi_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 19 4"]]
 						   set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_QSPI_CLK_FREQ_HZ"]]]
 						   set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
