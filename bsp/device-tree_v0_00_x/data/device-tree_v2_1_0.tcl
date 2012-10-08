@@ -51,7 +51,6 @@ set alias_node_list {}
 set ps7_cortexa9_clk 0
 set ps7_cortexa9_1x_clk 0
 set ps7_spi_count 0
-set ps7_i2c_count 0
 
 set dma_device_id 0
 set vdma_device_id 0
@@ -651,9 +650,6 @@ proc slaveip_basic {slave intc params nodename {other_compatibles {}} } {
 
 	# Generate the parameters
 	set ip_node [gen_params $ip_node $slave $params]
-	if {$ps7_cortexa9_clk != 0} {
-		lappend ip_node [list "interrupt-parent" labelref [list "gic"] ]
-	}
 
 	return [list $nodename tree $ip_node]
 }
@@ -862,7 +858,6 @@ proc gener_slave {node slave intc} {
 	variable ps7_cortexa9_clk
 	variable ps7_cortexa9_1x_clk
 	variable ps7_spi_count
-	variable ps7_i2c_count
 
 	set name [xget_hw_name $slave]
 	set type [xget_hw_value $slave]
@@ -970,9 +965,6 @@ proc gener_slave {node slave intc} {
 			lappend node $ip_tree
 		}
 		"ps7_wdt" -
-		"ps7_usb" -
-		"ps7_gpio" -
-		"ps7_i2c" -
 		"ps7_nand" -
 		"ps7_qspi" -
 		"ps7_qspi_linear" -
@@ -1011,28 +1003,12 @@ proc gener_slave {node slave intc} {
 						   }
 						   set ip_tree [tree_append $ip_tree [list "is-dual" int $is_dual]]
 						   incr ps7_spi_count }
-				"ps7_gpio_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 20 4"]] }
-				"ps7_usb_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 21 4"]]
-						   set ip_tree [tree_append $ip_tree [list "dr_mode" string "host"]]
-						   set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]] }
-				"ps7_i2c_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 25 4"]]
-						   set ip_tree [tree_append $ip_tree [list "input-clk" int $ps7_cortexa9_1x_clk]]
-						   set ip_tree [tree_append $ip_tree [list "i2c-clk" int 400000]]
-						   set ip_tree [tree_append $ip_tree [list "bus-id" int $ps7_i2c_count]] }
-						   incr ps7_i2c_count
 				"ps7_spi_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 26 4"]]
 						   set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_SPI_CLK_FREQ_HZ"]]]
 						   set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
 						   set ip_tree [tree_append $ip_tree [list "num-chip-select" int 4]]
 						   incr ps7_spi_count }
 				"ps7_can_0"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 28 4"]] }
-				"ps7_usb_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 44 4"]]
-						   set ip_tree [tree_append $ip_tree [list "dr_mode" string "device"]]
-						   set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]] }
-				"ps7_i2c_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 48 4"]]
-						   set ip_tree [tree_append $ip_tree [list "input-clk" int $ps7_cortexa9_1x_clk]]
-						   set ip_tree [tree_append $ip_tree [list "i2c-clk" int 400000]]
-						   set ip_tree [tree_append $ip_tree [list "bus-id" int $ps7_i2c_count]] }
 				"ps7_spi_1"	 { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 49 4"]]
 						   set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_SPI_CLK_FREQ_HZ"]]]
 						   set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
@@ -1064,6 +1040,84 @@ proc gener_slave {node slave intc} {
 			lappend node $ip_tree
 
 		}
+		"ps7_i2c" {
+			set ip_tree {}
+			set baseaddr [scan_int_parameter_value $slave "C_S_AXI_BASEADDR"]
+			set highaddr [scan_int_parameter_value $slave "C_S_AXI_HIGHADDR"]
+			set hw_ver [xget_hw_parameter_value $slave "HW_VER"]
+			set ip_node {}
+			set nodename [format_ip_name $type $baseaddr $name]
+			lappend ip_node [gen_compatible_property $name $type $hw_ver ""]
+			lappend ip_node [list "interrupt-parent" labelref [list "gic"] ]
+			set tree [list $nodename tree $ip_node]
+			set ip_tree [tree_append $tree [gen_reg_property $name $baseaddr $highaddr]]
+
+			switch -exact $name {
+				"ps7_i2c_0"      { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 25 4"]]
+						   set ip_tree [tree_append $ip_tree [list "bus-id" int 0]] }
+				"ps7_i2c_1"      { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 48 4"]]
+						   set ip_tree [tree_append $ip_tree [list "bus-id" int 1]] }
+                        }
+			set ip_tree [tree_append $ip_tree [list "input-clk" int $ps7_cortexa9_1x_clk]]
+			set ip_tree [tree_append $ip_tree [list "i2c-clk" int 400000]]
+			set reset [xget_sw_parameter_value $slave "C_I2C_RESET"]
+			if {$reset == -1} {
+				set reset 0xffffffff
+			} else {
+				set reset [string trim [lindex [split $reset " "] 1]]
+			}
+				set ip_tree [tree_append $ip_tree [list "i2c-reset" hexint $reset]]
+			lappend node $ip_tree
+		}
+		"ps7_gpio" {
+			set ip_tree {}
+			set baseaddr [scan_int_parameter_value $slave "C_S_AXI_BASEADDR"]
+			set highaddr [scan_int_parameter_value $slave "C_S_AXI_HIGHADDR"]
+			set hw_ver [xget_hw_parameter_value $slave "HW_VER"]
+			set ip_node {}
+			set count 32
+			set nodename [format_ip_name $type $baseaddr $name]
+			lappend ip_node [gen_compatible_property $name $type $hw_ver ""]
+			lappend ip_node [list "interrupt-parent" labelref [list "gic"] ]
+			set tree [list $nodename tree $ip_node]
+			set ip_tree [tree_append $tree [gen_reg_property $name $baseaddr $highaddr]]
+			set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 20 4"]]
+			set ip_tree [tree_append $ip_tree [list "emio-gpio-width" int [xget_sw_parameter_value $slave "C_EMIO_GPIO_WIDTH"]]]
+			set gpiomask [xget_sw_parameter_value $slave "C_MIO_GPIO_MASK"]
+			set mask [expr {$gpiomask & 0xffffffff}]
+			set ip_tree [tree_append $ip_tree [list "gpio-mask-low" hexint $mask]]
+			set mask [expr {$gpiomask>>$count}]
+			set mask [expr {$mask & 0xffffffff}]
+			set ip_tree [tree_append $ip_tree [list "gpio-mask-high" hexint $mask]]
+			lappend node $ip_tree
+		}
+		"ps7_usb" {
+			set ip_tree {}
+			set baseaddr [scan_int_parameter_value $slave "C_S_AXI_BASEADDR"]
+			set highaddr [scan_int_parameter_value $slave "C_S_AXI_HIGHADDR"]
+			set hw_ver [xget_hw_parameter_value $slave "HW_VER"]
+			set ip_node {}
+			set nodename [format_ip_name $type $baseaddr $name]
+			lappend ip_node [gen_compatible_property $name $type $hw_ver ""]
+			lappend ip_node [list "interrupt-parent" labelref [list "gic"] ]
+			set tree [list $nodename tree $ip_node]
+			set ip_tree [tree_append $tree [gen_reg_property $name $baseaddr $highaddr]]
+
+			switch -exact $name {
+				"ps7_usb_0"      { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 21 4"]] }
+				"ps7_usb_1"      { set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "0 44 4"]] }
+                        }
+			set ip_tree [tree_append $ip_tree [list "dr_mode" string "device"]]
+			set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]]
+			set reset [xget_sw_parameter_value $slave "C_USB_RESET"]
+			if {$reset == -1} {
+				set reset 0xffffffff
+			} else {
+				set reset [string trim [lindex [split $reset " "] 1]]
+			}
+				set ip_tree [tree_append $ip_tree [list "usb-reset" hexint $reset]]
+			lappend node $ip_tree
+		}
 		"ps7_ethernet" {
 			set ip_tree {}
 			set baseaddr [scan_int_parameter_value $slave "C_S_AXI_BASEADDR"]
@@ -1089,6 +1143,13 @@ proc gener_slave {node slave intc} {
 		   	set ip_tree [tree_append $ip_tree [list "xlnx,slcr-div1-10Mbps" int [xget_sw_parameter_value $slave "C_ENET_SLCR_10Mbps_DIV1"]]]
 		   	set ip_tree [tree_append $ip_tree [list "xlnx,ptp-enet-clock" int $ps7_cortexa9_1x_clk]]
 			set ip_tree [tree_append $ip_tree [gen_mdiotree $name]]
+			set reset [xget_sw_parameter_value $slave "C_ENET_RESET"]
+			if {$reset == -1} {
+				set reset 0xffffffff
+			} else {
+				set reset [string trim [lindex [split $reset " "] 1]]
+			}
+				set ip_tree [tree_append $ip_tree [list "enet-reset" hexint $reset]]
 			lappend node $ip_tree
 		}
 		"ps7_sdio" {
