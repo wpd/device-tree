@@ -109,6 +109,13 @@ proc generate {os_handle} {
 	while {[regsub {^([;]?[.]+)([;])} $bootargs {\1,} bootargs]} {}
 
 	set consoleip [xget_sw_parameter_value $os_handle "console device"]
+
+	# for 14.2 and newer, the console device IP instance is now only lower case
+	# so try to help the user (even though the MHS instance is mixed case)
+
+	if { [xget_swverandbld]  >= "14.2" } {
+		set consoleip [string tolower $consoleip]
+	}
 	generate_device_tree "xilinx.dts" $bootargs $consoleip
 }
 
