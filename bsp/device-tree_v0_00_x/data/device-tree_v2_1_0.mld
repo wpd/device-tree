@@ -32,6 +32,6 @@ OPTION COMPILE_BSP = FALSE;
 
 PARAMETER name = bootargs, desc = "Booting arguments", type = string, default = "console=ttyS0 root=/dev/ram";
 
-PARAMETER name = console device, desc = "Instance name of IP core for boot console (e.g. RS232_Uart_1, not xps_uart16550)", type = string, default = "";
+PARAMETER name = console device, desc = "Instance name of IP core for boot console (e.g. RS232_Uart_1, not xps_uart16550)", type = peripheral_instance, range=(opb_uartlite, xps_uartlite, xps_uart16550, opb_uart16550, opb_mdm, plb_uart16550, axi_uart16550, axi_uartlite, ps7_uart), default = "";
 
 END OS
