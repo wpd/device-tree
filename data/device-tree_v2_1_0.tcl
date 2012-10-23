@@ -1044,7 +1044,7 @@ proc check_console_irq {slave intc} {
 
 proc zynq_irq {ip_tree intc name } {
 	array set zynq_irq_list [ list \
-		{ps7_scutimer_0} {1 11 0} \
+		{ps7_scutimer_0} {1 13 0} \
 		{nFIQFIXME} {1 12 0} \
 		{cpu_timerFIXME} {1 13 0} \
 		{ps7_scuwdt_0} {1 14 0} \
@@ -1557,7 +1557,9 @@ proc gener_slave {node slave intc} {
 
 			if { "$name" == "ps7_scutimer_0" } {
 				variable ps7_cortexa9_clk
+				set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "arm,cortex-a9-twd-timer"]
 				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [expr $ps7_cortexa9_clk/2]]]
+				set ip_tree [zynq_irq $ip_tree $intc $name]
 			}
 
 			if { "$name" == "ps7_qspi_0" } {
