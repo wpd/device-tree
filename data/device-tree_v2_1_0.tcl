@@ -342,7 +342,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 
 			set bus_name [xget_hw_busif_value $hwproc_handle "M_AXI_DP"]
 			if { [string compare -nocase $bus_name ""] != 0 } {
-				set tree [bus_bridge $hwproc_handle $intc 0 "M_AXI_DP" "" $ips]
+				set tree [bus_bridge $hwproc_handle $intc 0 "M_AXI_DP" "" $ips "ps7_dmac"]
 				set tree [tree_append $tree [list ranges empty empty]]
 				lappend ip_tree $tree
 			}
@@ -1095,30 +1095,34 @@ proc zynq_irq {ip_tree intc name } {
 	return $ip_tree
 }
 
-proc gener_slave {node slave intc} {
+proc gener_slave {node slave intc {force_type ""}} {
 	variable phy_count
 	variable mac_count
 
-	set name [xget_hw_name $slave]
-	set type [xget_hw_value $slave]
+	if { [llength $force_type] != 0 } {
+		set type $force_type
+	} else {
+		set name [xget_hw_name $slave]
+		set type [xget_hw_value $slave]
 
-	# Ignore IP through overides
-	# Command: "ip -ignore <IP name> "
-	global overrides
-	foreach i $overrides {
-		# skip others overrides
-		if { [lindex "$i" 0] != "ip" } {
-			continue;
-		}
-		# Compatible command have at least 4 elements in the list
-		if { [llength $i] != 3 } {
-			error "Wrong compatible override command string - $i"
-		}
-		# Check command and then IP name
-		if { [string match [lindex "$i" 1] "-ignore"] } {
-			if { [string match [lindex "$i" 2] "$name"] } {
-				puts "Ignoring $node"
-				return $node
+		# Ignore IP through overides
+		# Command: "ip -ignore <IP name> "
+		global overrides
+		foreach i $overrides {
+			# skip others overrides
+			if { [lindex "$i" 0] != "ip" } {
+				continue;
+			}
+			# Compatible command have at least 4 elements in the list
+			if { [llength $i] != 3 } {
+				error "Wrong compatible override command string - $i"
+			}
+			# Check command and then IP name
+			if { [string match [lindex "$i" 1] "-ignore"] } {
+				if { [string match [lindex "$i" 2] "$name"] } {
+					puts "Ignoring $node"
+					return $node
+				}
 			}
 		}
 	}
@@ -1714,6 +1718,19 @@ proc gener_slave {node slave intc} {
 			lappend node $tree
 
 #			lappend node [gen_intc $slave "" "interrupt-controller" [default_parameters $slave] "S_AXI_" "arm,gic"]
+		}
+		"ps7_dmac" {
+			set tree [list "ps7_dmac_0: ps7-dmac@f8f02000" tree \
+					[list \
+						[list "compatible" stringtuple "arm,pl310-cache"] \
+						[list "cache-unified" empty empty ] \
+						[list "cache-level" inttuple "2" ] \
+						[list "reg" hexinttuple [list "0xF8F02000" "0x1000"] ] \
+						[list "arm,data-latency" inttuple [list "3" "2" "2"] ] \
+						[list "arm,tag-latency" inttuple [list "2" "2" "2"] ] \
+					] \
+				]
+			lappend node $tree
 		}
 		"ps7_trace" -
 		"ps7_ddr" {
@@ -2516,7 +2533,7 @@ proc bus_is_connected {slave face} {
 # baseaddr     : The base address of the address range of this bus.
 # face : The name of the port of the slave that is connected to the
 # bus.
-proc bus_bridge {slave intc_handle baseaddr face {handle ""} {ps_ifs ""}} {
+proc bus_bridge {slave intc_handle baseaddr face {handle ""} {ps_ifs ""} {force_ips ""}} {
 	debug handles "+++++++++++ $slave ++++++++"
 	set busif_handle [xget_hw_busif_handle $slave $face]
 	if {[llength $handle] != 0} {
@@ -2668,6 +2685,11 @@ proc bus_bridge {slave intc_handle baseaddr face {handle ""} {ps_ifs ""}} {
 			set bus_node [gener_slave $bus_node $ip $intc_handle]
 			lappend periphery_array $ip
 		}
+	}
+
+	# Force nodes to bus $force_ips is list of IP types
+	foreach ip $force_ips {
+		set bus_node [gener_slave $bus_node "" $intc_handle $ip]
 	}
 
 	# I have to generate led description on the same level as gpio node is
