@@ -1044,9 +1044,9 @@ proc check_console_irq {slave intc} {
 
 proc zynq_irq {ip_tree intc name } {
 	array set zynq_irq_list [ list \
-		{ps7_scutimer_0} {1 13 0} \
+		{cpu_timerFIXME} {1 11 0} \
 		{nFIQFIXME} {1 12 0} \
-		{cpu_timerFIXME} {1 13 0} \
+		{ps7_scutimer_0} {1 13 0} \
 		{ps7_scuwdt_0} {1 14 0} \
 		{nIRQFIXME} {1 15 0} \
 		{ps7_core_parity} {0 1 0 0 2 0} \
