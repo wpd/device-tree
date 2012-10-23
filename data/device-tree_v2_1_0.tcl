@@ -1519,10 +1519,22 @@ proc gener_slave {node slave intc} {
 		"xps_usb_host" {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "usb" [default_parameters $slave] "SPLB_" "" [list "usb-ehci"]]
 		}
+		"ps7_gpio" {
+			set count 32
+			set ip_tree [slaveip $slave $intc "" "" "S_AXI_" ""]
+			set ip_tree [tree_append $ip_tree [list "emio-gpio-width" int [xget_sw_parameter_value $slave "C_EMIO_GPIO_WIDTH"]]]
+			set gpiomask [xget_sw_parameter_value $slave "C_MIO_GPIO_MASK"]
+			set mask [expr {$gpiomask & 0xffffffff}]
+			set ip_tree [tree_append $ip_tree [list "gpio-mask-low" hexint $mask]]
+			set mask [expr {$gpiomask>>$count}]
+			set mask [expr {$mask & 0xffffffff}]
+			set ip_tree [tree_append $ip_tree [list "gpio-mask-high" hexint $mask]]
+			set ip_tree [zynq_irq $ip_tree $intc $name]
+			lappend node $ip_tree
+		}
 		"ps7_wdt" -
 		"ps7_usb" -
 		"ps7_ttc" -
-		"ps7_gpio" -
 		"ps7_i2c" -
 		"ps7_qspi" -
 		"ps7_spi" -
