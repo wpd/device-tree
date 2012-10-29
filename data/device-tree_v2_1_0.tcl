@@ -1924,6 +1924,17 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			lappend node $ip_tree
 		}
+		# assume sram_0 is NOR flash and sram_1 is SRAM
+		"ps7_nor" -
+		"ps7_sram" {
+			if { $name == "ps7_sram_0" || $name == "ps7_nor_0" } {
+				set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "cfi-flash"]
+				set ip_tree [tree_append $ip_tree [list "bank-width" int 1]]
+			} elseif { $name == "ps7_sram_1" } {
+				set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			}
+			lappend node $ip_tree
+		}
 		"ps7_scugic" {
 			# FIXME this node should be provided by SDK and not to compose it by hand
 
