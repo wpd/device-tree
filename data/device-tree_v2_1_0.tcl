@@ -1556,13 +1556,18 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 			lappend node $ip_tree
 		}
+		"ps7_can" {
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			# use TCL table
+			set ip_tree [zynq_irq $ip_tree $intc $name]
+			lappend node $ip_tree
+		}
 		"ps7_wdt" -
 		"ps7_usb" -
 		"ps7_ttc" -
 		"ps7_i2c" -
 		"ps7_qspi" -
 		"ps7_spi" -
-		"ps7_can" -
 		"ps7_smcc" -
 		"ps7_iop_bus_config" -
 		"ps7_slcr" -
