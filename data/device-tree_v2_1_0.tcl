@@ -1440,6 +1440,21 @@ proc gener_slave {node slave intc {force_type ""}} {
 		"xps_tft" {
 			lappend node [slaveip_dcr_or_plb $slave $intc "tft" [default_parameters $slave]]
 		}
+		"logi3d" -
+		"logiwin" -
+		"logibmp" -
+		"logibitblt" -
+		"logicvc" {
+			set params ""
+			if { "$type" == "logicvc" } {
+				set params "C_VMEM_BASEADDR C_VMEM_HIGHADDR"
+			}
+			if { "$type" == "logibitblt" } {
+				set params "C_BB_BASEADDR C_BB_HIGHADDR"
+			}
+			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" "[default_parameters $slave] $params" "REGS_"]
+			lappend node $ip_tree
+		}
 		"plb_tft_cntlr_ref" -
 		"plb_dvi_cntlr_ref" {
 			# We handle this specially, since it is a DCR slave.
@@ -1672,21 +1687,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "generic-sdhci"]
 			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_SDIO_CLK_FREQ_HZ"]]]
 			set ip_tree [zynq_irq $ip_tree $intc $name]
-			lappend node $ip_tree
-		}
-		"logi3d" -
-		"logiwin" -
-		"logibmp" -
-		"logibitblt" -
-		"logicvc" {
-			set params ""
-			if { "$type" == "logicvc" } {
-				set params "C_VMEM_BASEADDR C_VMEM_HIGHADDR"
-			}
-			if { "$type" == "logibitblt" } {
-				set params "C_BB_BASEADDR C_BB_HIGHADDR"
-			}
-			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" "[default_parameters $slave] $params" "REGS_"]
 			lappend node $ip_tree
 		}
 		"ps7_nand" {
