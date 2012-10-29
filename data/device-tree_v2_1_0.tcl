@@ -1445,6 +1445,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 		"logibmp" {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "" "[default_parameters $slave]" "REGS_"]
 		}
+		"logibayer" -
 		"logicvc" {
 			set params "C_VMEM_BASEADDR C_VMEM_HIGHADDR"
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "" "[default_parameters $slave] $params" "REGS_"]
