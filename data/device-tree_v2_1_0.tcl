@@ -1543,6 +1543,22 @@ proc gener_slave {node slave intc {force_type ""}} {
 		"xps_usb_host" {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "usb" [default_parameters $slave] "SPLB_" "" [list "usb-ehci"]]
 		}
+		"ps7_can" -
+		"ps7_smcc" -
+		"ps7_iop_bus_config" -
+		"ps7_slcr" -
+		"ps7_sram" -
+		"ps7_qspi_linear" -
+		"ps7_ram" -
+		"ps7_dma" -
+		"ps7_ddrc" -
+		"ps7_dev_cfg" {
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			# use TCL table
+			set ip_tree [zynq_irq $ip_tree $intc $name]
+
+			lappend node $ip_tree
+		}
 		"ps7_gpio" {
 			set count 32
 			set ip_tree [slaveip $slave $intc "" "" "S_AXI_" ""]
@@ -1554,136 +1570,147 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set mask [expr {$mask & 0xffffffff}]
 			set ip_tree [tree_append $ip_tree [list "gpio-mask-high" hexint $mask]]
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+
+			set ip_tree [tree_append $ip_tree [list "#gpio-cells" int "2"]]
+			set ip_tree [tree_append $ip_tree [list "gpio-controller" empty empty]]
+
 			lappend node $ip_tree
 		}
-		"ps7_can" {
-			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
-			# use TCL table
-			set ip_tree [zynq_irq $ip_tree $intc $name]
-			lappend node $ip_tree
-		}
-		"ps7_wdt" -
-		"ps7_usb" -
-		"ps7_ttc" -
-		"ps7_i2c" -
-		"ps7_qspi" -
-		"ps7_spi" -
-		"ps7_smcc" -
-		"ps7_iop_bus_config" -
-		"ps7_slcr" -
-		"ps7_sram" -
-		"ps7_qspi_linear" -
-		"ps7_ram" -
-		"ps7_dma" -
-		"ps7_ddrc" -
-		"ps7_scuwdt" -
-		"ps7_scutimer" -
-		"ps7_dev_cfg" {
+		"ps7_i2c" {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 
-			if { "$name" == "ps7_i2c_0" || "$name" == "ps7_i2c_1" } {
-				variable ps7_i2c_count
-				variable ps7_cortexa9_clk
-				set ip_tree [tree_append $ip_tree [list "input-clk" int [expr $ps7_cortexa9_clk/6]]]
-				set ip_tree [tree_append $ip_tree [list "i2c-clk" int 400000]]
-				set ip_tree [tree_append $ip_tree [list "bus-id" int $ps7_i2c_count]]
-				incr ps7_i2c_count
+			variable ps7_i2c_count
+			variable ps7_cortexa9_clk
+			set ip_tree [tree_append $ip_tree [list "input-clk" int [expr $ps7_cortexa9_clk/6]]]
+			set ip_tree [tree_append $ip_tree [list "i2c-clk" int 400000]]
+			set ip_tree [tree_append $ip_tree [list "bus-id" int $ps7_i2c_count]]
+			incr ps7_i2c_count
+
+			lappend node $ip_tree
+		}
+		"ps7_ttc" {
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			# use TCL table
+			set ip_tree [zynq_irq $ip_tree $intc $name]
+
+			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_TTC_CLK0_FREQ_HZ"]]]
+			set ip_tree [tree_append $ip_tree [list "clock-frequency-timer0" int [xget_sw_parameter_value $slave "C_TTC_CLK0_FREQ_HZ"]]]
+			set ip_tree [tree_append $ip_tree [list "clock-frequency-timer1" int [xget_sw_parameter_value $slave "C_TTC_CLK0_FREQ_HZ"]]]
+			set ip_tree [tree_append $ip_tree [list "clock-frequency-timer2" int [xget_sw_parameter_value $slave "C_TTC_CLK0_FREQ_HZ"]]]
+
+			lappend node $ip_tree
+		}
+		"ps7_scutimer" {
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			# use TCL table
+			set ip_tree [zynq_irq $ip_tree $intc $name]
+
+			variable ps7_cortexa9_clk
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "arm,cortex-a9-twd-timer"]
+			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [expr $ps7_cortexa9_clk/2]]]
+			set ip_tree [zynq_irq $ip_tree $intc $name]
+
+			lappend node $ip_tree
+		}
+		"ps7_qspi" {
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			# use TCL table
+			set ip_tree [zynq_irq $ip_tree $intc $name]
+
+			variable ps7_spi_count
+			set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_QSPI_CLK_FREQ_HZ"]]]
+			set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
+			set ip_tree [tree_append $ip_tree [list "num-chip-select" int 1]]
+			set qspi_mode [xget_sw_parameter_value $slave "C_QSPI_MODE"]
+			if { $qspi_mode == 2} {
+				set is_dual 1
+			} else {
+				set is_dual 0
+			}
+			set ip_tree [tree_append $ip_tree [list "is-dual" int $is_dual]]
+			incr ps7_spi_count
+
+			# We will handle SPI FLASH here
+			global flash_memory flash_memory_bank
+
+			if {[string match -nocase $flash_memory $name]} {
+				# Add the address-cells and size-cells to make the DTC compiler stop outputing warning
+				set ip_tree [tree_append $ip_tree [list "#address-cells" int "1"]]
+				set ip_tree [tree_append $ip_tree [list "#size-cells" int "0"]]
+				# If it is a SPI FLASH, we will add a SPI Flash
+				# subnode to the SPI controller
+				set subnode {}
+				# Set the SPI Flash chip select
+				lappend subnode [list "reg" hexinttuple [list $flash_memory_bank]]
+				# Set the SPI Flash clock frequency, assume it will be
+				# 1/4 of the QSPI controller frequency.
+				# Note this is not the actual maximum SPI flash frequency
+				# as we can't know.
+				lappend subnode [list [format_name "spi-max-frequency"] int [expr [xget_sw_parameter_value $slave "C_QSPI_CLK_FREQ_HZ"]/4]]
+				set ip_tree [tree_append $ip_tree [list [format_ip_name $type $flash_memory_bank "primary_flash"] tree $subnode]]
 			}
 
-			if { "$name" == "ps7_ttc_0" || "$name" == "ps7_ttc_1" } {
-				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_TTC_CLK0_FREQ_HZ"]]]
-				set ip_tree [tree_append $ip_tree [list "clock-frequency-timer0" int [xget_sw_parameter_value $slave "C_TTC_CLK0_FREQ_HZ"]]]
-				set ip_tree [tree_append $ip_tree [list "clock-frequency-timer1" int [xget_sw_parameter_value $slave "C_TTC_CLK0_FREQ_HZ"]]]
-				set ip_tree [tree_append $ip_tree [list "clock-frequency-timer2" int [xget_sw_parameter_value $slave "C_TTC_CLK0_FREQ_HZ"]]]
-			}
+			lappend node $ip_tree
+		}
+		"ps7_wdt" {
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			# use TCL table
+			set ip_tree [zynq_irq $ip_tree $intc $name]
 
-			if { "$name" == "ps7_scutimer_0" } {
-				variable ps7_cortexa9_clk
-				set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "arm,cortex-a9-twd-timer"]
-				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [expr $ps7_cortexa9_clk/2]]]
-				set ip_tree [zynq_irq $ip_tree $intc $name]
-			}
+			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_WDT_CLK_FREQ_HZ"]]]
+			set ip_tree [tree_append $ip_tree [list "device_type" string "watchdog"]]
 
-			if { "$name" == "ps7_qspi_0" } {
-				variable ps7_spi_count
-				set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_QSPI_CLK_FREQ_HZ"]]]
-				set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
-				set ip_tree [tree_append $ip_tree [list "num-chip-select" int 1]]
-				set qspi_mode [xget_sw_parameter_value $slave "C_QSPI_MODE"]
-				if { $qspi_mode == 2} {
-					set is_dual 1
-				} else {
-					set is_dual 0
-				}
-				set ip_tree [tree_append $ip_tree [list "is-dual" int $is_dual]]
-				incr ps7_spi_count
+			lappend node $ip_tree
+		}
+		"ps7_scuwdt" {
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			# use TCL table
+			set ip_tree [zynq_irq $ip_tree $intc $name]
 
-				# We will handle SPI FLASH here
-				global flash_memory flash_memory_bank
+			variable ps7_cortexa9_clk
+			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [expr $ps7_cortexa9_clk/2]]]
+			set ip_tree [tree_append $ip_tree [list "device_type" string "watchdog"]]
 
-				if {[string match -nocase $flash_memory $name]} {
-					# Add the address-cells and size-cells to make the DTC compiler stop outputing warning
-					set ip_tree [tree_append $ip_tree [list "#address-cells" int "1"]]
-					set ip_tree [tree_append $ip_tree [list "#size-cells" int "0"]]
-					# If it is a SPI FLASH, we will add a SPI Flash
-					# subnode to the SPI controller
-					set subnode {}
-					# Set the SPI Flash chip select
-					lappend subnode [list "reg" hexinttuple [list $flash_memory_bank]]
-					# Set the SPI Flash clock frequency, assume it will be
-					# 1/4 of the QSPI controller frequency.
-					# Note this is not the actual maximum SPI flash frequency
-					# as we can't know.
-					lappend subnode [list [format_name "spi-max-frequency"] int [expr [xget_sw_parameter_value $slave "C_QSPI_CLK_FREQ_HZ"]/4]]
-					set ip_tree [tree_append $ip_tree [list [format_ip_name $type $flash_memory_bank "primary_flash"] tree $subnode]]
-				}
-			}
+			lappend node $ip_tree
+		}
+		"ps7_usb" {
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			# use TCL table
+			set ip_tree [zynq_irq $ip_tree $intc $name]
 
-			if { "$name" == "ps7_wdt_0" } {
-				set ip_tree [tree_append $ip_tree [list "device_type" string "watchdog"]]
-				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_WDT_CLK_FREQ_HZ"]]]
-			}
-			if { "$name" == "ps7_scuwdt_0" } {
-				variable ps7_cortexa9_clk
-				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [expr $ps7_cortexa9_clk/2]]]
-				set ip_tree [tree_append $ip_tree [list "device_type" string "watchdog"]]
-			}
+			set ip_tree [tree_append $ip_tree [list "dr_mode" string "host"]]
+			set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]]
 
-			if { "$name" == "ps7_usb_0" || "$name" == "ps7_usb_1" } {
-				set ip_tree [tree_append $ip_tree [list "dr_mode" string "host"]]
-				set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]]
-			}
+			lappend node $ip_tree
+		}
+		"ps7_spi" {
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			# use TCL table
+			set ip_tree [zynq_irq $ip_tree $intc $name]
 
-			if { "$name" == "ps7_gpio_0" } {
-				set ip_tree [tree_append $ip_tree [list "#gpio-cells" int "2"]]
-				set ip_tree [tree_append $ip_tree [list "gpio-controller" empty empty]]
-			}
+			variable ps7_spi_count
+			set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_SPI_CLK_FREQ_HZ"]]]
+			set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
+			set ip_tree [tree_append $ip_tree [list "num-chip-select" int 4]]
+			incr ps7_spi_count
+			# We will handle SPI FLASH here
+			global flash_memory flash_memory_bank
 
-			if { "$name" == "ps7_spi_0" || "$name" == "ps7_spi_1" } {
-				variable ps7_spi_count
-				set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_SPI_CLK_FREQ_HZ"]]]
-				set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
-				set ip_tree [tree_append $ip_tree [list "num-chip-select" int 4]]
-				incr ps7_spi_count
-				# We will handle SPI FLASH here
-				global flash_memory flash_memory_bank
-
-				if {[string match -nocase $flash_memory $name]} {
-					# Add the address-cells and size-cells to make the DTC compiler stop outputing warning
-					set ip_tree [tree_append $ip_tree [list "#address-cells" int "1"]]
-					set ip_tree [tree_append $ip_tree [list "#size-cells" int "0"]]
-					# If it is a SPI FLASH, we will add a SPI Flash
-					# subnode to the SPI controller
-					set subnode {}
-					# Set the SPI Flash chip select
-					lappend subnode [list "reg" hexinttuple [list $flash_memory_bank]]
-					# Set the SPI Flash clock freqeuncy
-					# hardcode this spi-max-frequency (based on board_zc770_xm010.c)
-					lappend subnode [list [format_name "spi-max-frequency"] int 75000000]
-					set ip_tree [tree_append $ip_tree [list [format_ip_name $type $flash_memory_bank "primary_flash"] tree $subnode]]
-				}
+			if {[string match -nocase $flash_memory $name]} {
+				# Add the address-cells and size-cells to make the DTC compiler stop outputing warning
+				set ip_tree [tree_append $ip_tree [list "#address-cells" int "1"]]
+				set ip_tree [tree_append $ip_tree [list "#size-cells" int "0"]]
+				# If it is a SPI FLASH, we will add a SPI Flash
+				# subnode to the SPI controller
+				set subnode {}
+				# Set the SPI Flash chip select
+				lappend subnode [list "reg" hexinttuple [list $flash_memory_bank]]
+				# Set the SPI Flash clock freqeuncy
+				# hardcode this spi-max-frequency (based on board_zc770_xm010.c)
+				lappend subnode [list [format_name "spi-max-frequency"] int 75000000]
+				set ip_tree [tree_append $ip_tree [list [format_ip_name $type $flash_memory_bank "primary_flash"] tree $subnode]]
 			}
 
 			lappend node $ip_tree
