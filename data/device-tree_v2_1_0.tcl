@@ -61,6 +61,8 @@ variable ps7_i2c_count 0
 variable ps7_cortexa9_clk 0
 variable ps7_cortexa9_1x_clk 0
 
+variable simple_version 0
+
 #
 # How to use generate_device_tree() from another MLD
 #
@@ -109,6 +111,7 @@ proc device_tree_drc {os_handle} {
 
 proc generate {os_handle} {
 	variable  device_tree_generator_version
+	variable simple_version
 
 	debug info "\#--------------------------------------"
 	debug info "\# device-tree BSP generate..."
@@ -117,6 +120,12 @@ proc generate {os_handle} {
 	set bootargs [xget_sw_parameter_value $os_handle "bootargs"]
 	global consoleip
 	set consoleip [xget_sw_parameter_value $os_handle "stdout"]
+	if {[llength $consoleip] == 0} {
+		set consoleip [xget_sw_parameter_value $os_handle "console device"]
+		variable simple_version
+		set simple_version "1"
+	}
+
 	global overrides
 	set overrides [xget_sw_parameter_value $os_handle "periph_type_overrides"]
 	# Format override string to list format
@@ -139,6 +148,11 @@ proc generate {os_handle} {
 	set flash_memory_bank [xget_sw_parameter_value $os_handle "flash_memory_bank"]
 	global timer
 	set timer [xget_sw_parameter_value $os_handle "timer"]
+
+	if { "$simple_version" == "1" } {
+		set main_memory_start -1
+		set main_memory_size 0
+	}
 
 	global buses
 	set buses {}
@@ -217,8 +231,12 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 		"microblaze" {
 			# Microblaze linux system requires dual-channel timer
 			global timer
-			if { [string match "" $timer] || [string match "none" $timer] } {
-				error "No timer is specified in the system. Linux requires dual channel timer."
+			variable simple_version
+
+			if { "$simple_version" != "1" } {
+				if { [string match "" $timer] || [string match "none" $timer] } {
+					error "No timer is specified in the system. Linux requires dual channel timer."
+				}
 			}
 
 			set intc [get_handle_to_intc $proc_handle "Interrupt"]
@@ -269,8 +287,10 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			}
 
 			variable microblaze_system_timer
-			if { [llength $microblaze_system_timer] == 0 } {
-				error "Microblaze requires to setup system timer. Please setup it!"
+			if { "$simple_version" != "1" } {
+				if { [llength $microblaze_system_timer] == 0 } {
+					error "Microblaze requires to setup system timer. Please setup it!"
+				}
 			}
 		}
 		"ppc405" -
@@ -2658,8 +2678,11 @@ proc gen_memories {tree hwproc_handle} {
 	foreach slave $ip_handles {
 		set name [xget_hw_name $slave]
 		set type [xget_hw_value $slave]
-		if {![string match $name $main_memory]} {
-			continue;
+
+		if {![string match "" $main_memory] && ![string match -nocase "none" $main_memory]} {
+			if {![string match $name $main_memory]} {
+				continue;
+			}
 		}
 		switch $type {
 			"axi_bram_ctrl" -
