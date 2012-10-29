@@ -95,10 +95,16 @@ variable ps7_cortexa9_1x_clk 0
 #     device_tree::generate_device_tree "linux/arch/powerpc/boot/dts/$dts_name" $kcmd_line
 #
 
+# For calling from top level BSP
 proc bsp_drc {os_handle} {
 	debug info "\#--------------------------------------"
 	debug info "\# device-tree BSP DRC..."
 	debug info "\#--------------------------------------"
+}
+
+# If standalone purpose
+proc device_tree_drc {os_handle} {
+	bsp_drc $os_handle
 }
 
 proc generate {os_handle} {
