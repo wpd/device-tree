@@ -1442,19 +1442,18 @@ proc gener_slave {node slave intc {force_type ""}} {
 		}
 		"logi3d" -
 		"logiwin" -
-		"logibmp" -
-		"logibitblt" -
-		"logicvc" {
-			set params ""
-			if { "$type" == "logicvc" } {
-				set params "C_VMEM_BASEADDR C_VMEM_HIGHADDR"
-			}
-			if { "$type" == "logibitblt" } {
-				set params "C_BB_BASEADDR C_BB_HIGHADDR"
-			}
-			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" "[default_parameters $slave] $params" "REGS_"]
-			lappend node $ip_tree
+		"logibmp" {
+			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "" "[default_parameters $slave]" "REGS_"]
 		}
+		"logicvc" {
+			set params "C_VMEM_BASEADDR C_VMEM_HIGHADDR"
+			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "" "[default_parameters $slave] $params" "REGS_"]
+		}
+		"logibitblt" {
+			set params "C_BB_BASEADDR C_BB_HIGHADDR"
+			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "" "[default_parameters $slave] $params" "REGS_"]
+		}
+
 		"plb_tft_cntlr_ref" -
 		"plb_dvi_cntlr_ref" {
 			# We handle this specially, since it is a DCR slave.
