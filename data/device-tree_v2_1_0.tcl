@@ -1172,30 +1172,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 			}
 			lappend node $ip_tree
 		}
-		"ps7_uart" {
-			set ip_tree [slaveip $slave $intc "serial" [default_parameters $slave] "S_AXI_" "xlnx,xuartps"]
-
-			variable alias_node_list
-			global consoleip
-			if {[string match -nocase $name $consoleip]} {
-				lappend alias_node_list [list serial0 aliasref $name 0]
-				set ip_tree [tree_append $ip_tree [list "port-number" int 0]]
-			} else {
-				variable serial_count
-				incr serial_count
-				lappend alias_node_list [list serial$serial_count aliasref $name $serial_count]
-				set ip_tree [tree_append $ip_tree [list "port-number" int $serial_count]]
-			}
-
-			# MS silly use just clock-frequency which is standard
-			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [scan_int_parameter_value $slave "C_UART_CLK_FREQ_HZ"]]]
-			set ip_tree [tree_append $ip_tree [list "clock" int [scan_int_parameter_value $slave "C_UART_CLK_FREQ_HZ"]]]
-			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
-			set ip_tree [tree_append $ip_tree [list "current-speed" int "115200"]]
-			set ip_tree [zynq_irq $ip_tree $intc $name]
-
-			lappend node $ip_tree
-		}
 		"xps_uartlite" -
 		"opb_uartlite" -
 		"axi_uartlite" {
@@ -1278,6 +1254,30 @@ proc gener_slave {node slave intc {force_type ""}} {
 			}
 			lappend node $ip_tree
 			#"BAUDRATE DATA_BITS CLK_FREQ ODD_PARITY USE_PARITY"]
+		}
+		"ps7_uart" {
+			set ip_tree [slaveip $slave $intc "serial" [default_parameters $slave] "S_AXI_" "xlnx,xuartps"]
+
+			variable alias_node_list
+			global consoleip
+			if {[string match -nocase $name $consoleip]} {
+				lappend alias_node_list [list serial0 aliasref $name 0]
+				set ip_tree [tree_append $ip_tree [list "port-number" int 0]]
+			} else {
+				variable serial_count
+				incr serial_count
+				lappend alias_node_list [list serial$serial_count aliasref $name $serial_count]
+				set ip_tree [tree_append $ip_tree [list "port-number" int $serial_count]]
+			}
+
+			# MS silly use just clock-frequency which is standard
+			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [scan_int_parameter_value $slave "C_UART_CLK_FREQ_HZ"]]]
+			set ip_tree [tree_append $ip_tree [list "clock" int [scan_int_parameter_value $slave "C_UART_CLK_FREQ_HZ"]]]
+			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
+			set ip_tree [tree_append $ip_tree [list "current-speed" int "115200"]]
+			set ip_tree [zynq_irq $ip_tree $intc $name]
+
+			lappend node $ip_tree
 		}
 		"xps_timebase_wdt" -
 		"axi_timebase_wdt" {
