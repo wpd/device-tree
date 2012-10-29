@@ -2178,6 +2178,28 @@ proc gener_slave {node slave intc {force_type ""}} {
 
 			lappend node $tree
 		}
+		"axi_pcie" {
+			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] ]
+			set ip_tree [tree_append $ip_tree [list \#address-cells int 2]]
+			set ip_tree [tree_append $ip_tree [list \#size-cells int 2]]
+			# 64-bit high address.
+			set high_64bit 0x00000000
+			set ranges {}
+			set ranges_list [axipcie_ranges $slave "C_AXIBAR_NUM" "C_AXIBAR_%d" "C_AXIBAR2PCIEBAR_%d" "C_AXIBAR_HIGHADDR_%d"]
+			foreach range $ranges_list {
+				set range_type [lindex $range 0]
+				set axi_baseaddr [lindex $range 1]
+				set child_baseaddr [lindex $range 1]
+				set pcie_baseaddr [lindex $range 2]
+				set axi_highaddr [lindex $range 3]
+				set size [validate_ranges_property $slave $axi_baseaddr $axi_highaddr $child_baseaddr]
+				lappend ranges $range_type $high_64bit $pcie_baseaddr $axi_baseaddr $high_64bit \
+						 $high_64bit $size
+			}
+			# FIX pcieinttuple
+			set ip_tree [tree_append $ip_tree [list "ranges" pcieinttuple $ranges]]
+			lappend node $ip_tree
+		}
 		"pcie_ipif_slave" {
 			# We can automatically generate the ranges property, but that's about it
 			# the interrupt-map encodes board-level info that cannot be
@@ -2999,6 +3021,22 @@ proc default_ranges {ip_handle num_ranges_name range_base_name_template range_hi
 	return $ranges_list
 }
 
+proc axipcie_ranges {ip_handle num_ranges_name axi_base_name_template pcie_base_name_template axi_high_name_template} {
+	set count [scan_int_parameter_value $ip_handle $num_ranges_name]
+	if { [llength $count] == 0 } {
+		set count 1
+	}
+	set ranges_list {}
+	for {set x 0} {$x < $count} {incr x} {
+		set range_type 0x00000002
+		set axi_baseaddr [scan_int_parameter_value $ip_handle [format $axi_base_name_template $x]]
+		set pcie_baseaddr [scan_int_parameter_value $ip_handle [format $pcie_base_name_template $x]]
+		set axi_highaddr [scan_int_parameter_value $ip_handle [format $axi_high_name_template $x]]
+		lappend ranges_list [list $range_type $axi_baseaddr $pcie_baseaddr $axi_highaddr]
+	}
+	return $ranges_list
+}
+
 # Return a list of all the parameter names for the given ip that
 # should be reported in the device tree for generic IP. This list
 # includes all the parameter names, except those that are handled
@@ -3365,6 +3403,12 @@ proc write_value {file indent type value} {
 			puts -nonewline $file "= < "
 			foreach element $value {
 				puts -nonewline $file "[format %d $element] "
+			}
+			puts -nonewline $file ">"
+		} elseif {$type == "pcieinttuple"} {
+			puts -nonewline $file "= < "
+			foreach element $value {
+				puts -nonewline $file "0x[format %08x $element] "
 			}
 			puts -nonewline $file ">"
 		} elseif {$type == "hexinttuple"} {
