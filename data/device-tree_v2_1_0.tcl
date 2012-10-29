@@ -1437,6 +1437,20 @@ proc gener_slave {node slave intc {force_type ""}} {
 
 			lappend node $ip_tree
 		}
+		"axi_dma" {
+			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave]]
+			set mhs_handle [xget_hw_parent_handle $slave]
+			# See what the axi dma is connected to.
+			set axidma_busif_handle [xget_hw_busif_handle $slave "M_AXIS_MM2S"]
+			set axidma_name [xget_hw_value $axidma_busif_handle]
+			set axidma_ip_handle [xget_hw_connected_busifs_handle $mhs_handle $axidma_name "TARGET"]
+			set axidma_ip_handle_name [xget_hw_name $axidma_ip_handle]
+			set connected_ip_handle [xget_hw_parent_handle $axidma_ip_handle]
+			set connected_ip_name [xget_hw_name $connected_ip_handle]
+			set connected_ip_type [xget_hw_value $connected_ip_handle]
+			set ip_tree [tree_append $ip_tree [list "axistream-connected" labelref $connected_ip_name]]
+			lappend node $ip_tree
+		}
 		"xps_tft" {
 			lappend node [slaveip_dcr_or_plb $slave $intc "tft" [default_parameters $slave]]
 		}
@@ -1805,20 +1819,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 		}
 		"axi_fifo_mm_s" {
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave]]
-			lappend node $ip_tree
-		}
-		"axi_dma" {
-			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave]]
-			set mhs_handle [xget_hw_parent_handle $slave]
-			# See what the axi dma is connected to.
-			set axidma_busif_handle [xget_hw_busif_handle $slave "M_AXIS_MM2S"]
-			set axidma_name [xget_hw_value $axidma_busif_handle]
-			set axidma_ip_handle [xget_hw_connected_busifs_handle $mhs_handle $axidma_name "TARGET"]
-			set axidma_ip_handle_name [xget_hw_name $axidma_ip_handle]
-			set connected_ip_handle [xget_hw_parent_handle $axidma_ip_handle]
-			set connected_ip_name [xget_hw_name $connected_ip_handle]
-			set connected_ip_type [xget_hw_value $connected_ip_handle]
-			set ip_tree [tree_append $ip_tree [list "axistream-connected" labelref $connected_ip_name]]
 			lappend node $ip_tree
 		}
 		"plb_bram_if_cntlr" -
