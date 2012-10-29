@@ -1852,6 +1852,8 @@ proc gener_slave {node slave intc {force_type ""}} {
 
 			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_WDT_CLK_FREQ_HZ"]]]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "watchdog"]]
+			set ip_tree [tree_append $ip_tree [list "reset" int 0]]
+			set ip_tree [tree_append $ip_tree [list "timeout" int 10]]
 
 			lappend node $ip_tree
 		}
