@@ -434,7 +434,12 @@ proc post_generate {lib_handle} {
 proc prj_dir {} {
 	# board_name comes from toplevel BSP context
 	global board_name
-	return $board_name
+
+	if { [info exists board_name] } {
+
+		return $board_name
+	}
+	return [file tail [file normalize [file join .. .. ..]]]
 }
 
 proc headerc {ufile generator_version} {
