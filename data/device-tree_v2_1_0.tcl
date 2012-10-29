@@ -2353,7 +2353,7 @@ proc gen_microblaze {tree hwproc_handle params} {
 	lappend cpus_node [list [format_ip_name "cpu" $cpunumber  $cpu_name] "tree" "$proc_node"]
 	lappend cpus_node [list \#size-cells int 0]
 	lappend cpus_node [list \#address-cells int 1]
-	set cpunumber [expr $cpunumber + 1]
+	incr cpunumber
 	lappend cpus_node [list \#cpus hexint "$cpunumber" ]
 	lappend tree [list cpus tree "$cpus_node"]
 	return $tree
