@@ -1793,14 +1793,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [tree_append $ip_tree [list "bus-id" int $ps7_i2c_count]]
 			incr ps7_i2c_count
 
-			set reset [xget_sw_parameter_value $slave "C_I2C_RESET"]
-			if {$reset == -1} {
-				set reset 0xffffffff
-			} else {
-				set reset [string trim [lindex [split $reset " "] 1]]
-			}
-			set ip_tree [tree_append $ip_tree [list "i2c-reset" hexint $reset]]
-
 			lappend node $ip_tree
 		}
 		"ps7_ttc" {
@@ -1897,14 +1889,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 
 			set ip_tree [tree_append $ip_tree [list "dr_mode" string "host"]]
 			set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]]
-
-			set reset [xget_sw_parameter_value $slave "C_USB_RESET"]
-			if {$reset == -1} {
-				set reset 0xffffffff
-			} else {
-				set reset [string trim [lindex [split $reset " "] 1]]
-			}
-			set ip_tree [tree_append $ip_tree [list "usb-reset" hexint $reset]]
 
 			lappend node $ip_tree
 		}
