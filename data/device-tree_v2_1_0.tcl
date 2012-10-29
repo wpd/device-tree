@@ -59,6 +59,7 @@ variable ps7_i2c_count 0
 
 # FIXME it will be better not to use it
 variable ps7_cortexa9_clk 0
+variable ps7_cortexa9_1x_clk 0
 
 #
 # How to use generate_device_tree() from another MLD
@@ -2010,6 +2011,9 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
 			set ip_tree [tree_append $ip_tree [gen_mdiotree $slave]]
 
+			variable ps7_cortexa9_1x_clk
+			set ip_tree [tree_append $ip_tree [list "xlnx,ptp-enet-clock" int $ps7_cortexa9_1x_clk]]
+
 			lappend node $ip_tree
 		}
 		"axi_fifo_mm_s" {
@@ -2391,6 +2395,7 @@ proc gen_cortexa9 {tree hwproc_handle params} {
 	set out ""
 	variable cpunumber
 	variable ps7_cortexa9_clk
+	variable ps7_cortexa9_1x_clk
 	set cpus_node {}
 
 	set mhs_handle [xget_hw_parent_handle $hwproc_handle]
@@ -2408,6 +2413,7 @@ proc gen_cortexa9 {tree hwproc_handle params} {
 		lappend proc_node [gen_compatible_property $cpu_type $cpu_type $hw_ver]
 
 		set ps7_cortexa9_clk [xget_sw_parameter_value $hwproc_handle "C_CPU_CLK_FREQ_HZ"]
+		set ps7_cortexa9_1x_clk [xget_sw_parameter_value $hwproc_handle "C_CPU_1X_CLK_FREQ_HZ"]
 		lappend proc_node [list clock-frequency int $ps7_cortexa9_clk]
 		lappend proc_node [list timebase-frequency int [expr $ps7_cortexa9_clk/2]]
 		lappend proc_node [list reg int $cpunumber]
