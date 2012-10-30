@@ -275,6 +275,9 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 		}
 		"ppc405" -
 		"ppc405_virtex4" {
+			global timer
+			set timer ""
+
 			set intc [get_handle_to_intc $proc_handle "EICC405EXTINPUTIRQ"]
 			set toplevel [gen_ppc405 $toplevel $hwproc_handle [default_parameters $hwproc_handle]]
 			set busif_handle [xget_hw_busif_handle $hwproc_handle "DPLB"]
@@ -313,6 +316,9 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			}
 		}
 		"ppc440_virtex5" {
+			global timer
+			set timer ""
+
 			set intc [get_handle_to_intc $proc_handle "EICC440EXTIRQ"]
 			set toplevel [gen_ppc440 $toplevel $hwproc_handle $intc [default_parameters $hwproc_handle]]
 			set tree [bus_bridge $hwproc_handle $intc 0 "MPLB"]
@@ -340,6 +346,9 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			}
 		}
 		"ps7_cortexa9" {
+			global timer
+			set timer ""
+
 			set toplevel [gen_cortexa9 $toplevel $hwproc_handle [default_parameters $hwproc_handle]]
 			# MS: This is nasty hack how to get all slave IPs
 			# What I do is that load all IPs from M_AXI_DP and then pass all IPs
