@@ -2298,9 +2298,12 @@ proc gener_slave {node slave intc {force_type ""}} {
 			# FIXME: multiple ranges!
 			set baseaddr [scan_int_parameter_value $slave "C_S_AXI_RNG00_BASEADDR"]
 			set tree [bus_bridge $slave $intc $baseaddr "M_AXI"]
-			set ranges_list [default_ranges $slave "C_S_AXI_NUM_ADDR_RANGES" "C_S_AXI_RNG%02d_BASEADDR" "C_S_AXI_RNG%02d_HIGHADDR"]
-			set tree [tree_append $tree [gen_ranges_property_list $slave $ranges_list]]
-			lappend node $tree
+
+			if {[llength $tree] != 0} {
+				set ranges_list [default_ranges $slave "C_S_AXI_NUM_ADDR_RANGES" "C_S_AXI_RNG%02d_BASEADDR" "C_S_AXI_RNG%02d_HIGHADDR"]
+				set tree [tree_append $tree [gen_ranges_property_list $slave $ranges_list]]
+				lappend node $tree
+			}
 		}
 		"microblaze" {
 			debug ip "Other Microblaze CPU $name=$type"
