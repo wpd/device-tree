@@ -2715,10 +2715,11 @@ proc gen_memories {tree hwproc_handle} {
 				incr memory_count
 			}
 			"ps7_ddr" {
-				# FIXME: this is workaround for 14.1/14.2 as it does not report correct base address
+				# FIXME: this is workaround for 14.1/14.2/14.3 tools to
+				# generate correct base memory address for ps7_ddr
 				set XIL_VER [xget_swverandbld]
 				set subnode {}
-				if { [regexp -all -- 14.\[1|2\] $XIL_VER] } {
+				if { [regexp -all -- 14.\[1|2|3\] $XIL_VER] } {
 					set baseaddr 0
 				} else {
 					set baseaddr [scan_int_parameter_value $slave "C_S_AXI_BASEADDR"]
