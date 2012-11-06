@@ -170,7 +170,7 @@ proc edk_override_update {} {
 			set ipname [string tolower [lindex $over 1]]
 			lset over 1 $ipname
 			if { [info exists new_overrides] } {
-				set new_overrides [list $over $new_overrides]
+				lappend new_overrides $over
 			} else {
 				set new_overrides [list $over]
 			}
