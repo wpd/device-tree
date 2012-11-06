@@ -169,8 +169,13 @@ proc edk_override_update {} {
 		set allover $overrides
 		set overrides ""
 		foreach over $allover {
-			set ipname [string tolower [lindex $over 1]]
-			lset over 1 $ipname
+			if { "[string first "-" [lindex $over 1]]" == "0" } {
+				set ipname [string tolower [lindex $over 2]]
+				lset over 2 $ipname
+			} else {
+				set ipname [string tolower [lindex $over 1]]
+				lset over 1 $ipname
+			}
 			lappend overrides $over
 		}
 	}
