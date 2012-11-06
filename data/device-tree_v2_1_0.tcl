@@ -166,17 +166,12 @@ proc edk_override_update {} {
 	# FIXME - Xilinx 14.2 changed the TCL API and IP names are returned
 	# lowercase.  Must lowercase the override string to match
 	if { [xget_swverandbld]  >= "14.2" } {
-		foreach over $overrides {
+		set allover $overrides
+		set overrides ""
+		foreach over $allover {
 			set ipname [string tolower [lindex $over 1]]
 			lset over 1 $ipname
-			if { [info exists new_overrides] } {
-				lappend new_overrides $over
-			} else {
-				set new_overrides [list $over]
-			}
-		}
-		if { [info exists new_overrides] } {
-			set overrides $new_overrides
+			lappend overrides $over
 		}
 	}
 }
