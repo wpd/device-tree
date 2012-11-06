@@ -1989,7 +1989,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			# Add interrupt distributor because it is not detected
 			set tree [list "$name: $type@f8f01000" tree \
 					[list \
-						[list "compatible" stringtuple [list "arm,cortex-a9-gic" "arm,gic" ]] \
+						[gen_compatible_property $name $type [xget_hw_parameter_value $slave "HW_VER"] "arm,cortex-a9-gic arm,gic" ] \
 						[list "reg" hexinttuple [list "0xF8F01000" "0x1000" "0xF8F00100" "0x100"] ] \
 						[list "#interrupt-cells" inttuple "3" ] \
 						[list "#address-cells" inttuple "2" ] \
@@ -2006,7 +2006,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 		"ps7_dmac" {
 			set tree [list "ps7_dmac_0: ps7-dmac@f8f02000" tree \
 					[list \
-						[list "compatible" stringtuple "arm,pl310-cache"] \
+						[gen_compatible_property "ps7_dmac" "ps7_dmac" "1.00.a" "arm,pl310-cache" ] \
 						[list "cache-unified" empty empty ] \
 						[list "cache-level" inttuple "2" ] \
 						[list "reg" hexinttuple [list "0xF8F02000" "0x1000"] ] \
@@ -2019,7 +2019,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 		"ps7_xadc" {
 			set tree [list "ps7_xadc: ps7_xadc@f8007100" tree \
 					[list \
-						[list "compatible" stringtuple "xlnx,ps7-xadc-1.00.a" ] \
+						[gen_compatible_property "ps7_xadc" "ps7_xadc" "1.00.a" ] \
 						[list "reg" hexinttuple [list "0xF8007100" "0x20"] ] \
 						[list "interrupts" inttuple "0 7 4" ] \
 					] \
