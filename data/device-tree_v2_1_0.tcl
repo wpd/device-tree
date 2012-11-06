@@ -2406,7 +2406,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			}
 		}
 	}
-	return $node
+	return [dts_override $node]
 }
 
 proc memory {slave baseaddr_prefix params} {
@@ -3435,6 +3435,61 @@ proc gen_reg_property {nodename baseaddr highaddr {name "reg"}} {
 		error "Bad highaddr for $nodename"
 	}
 	return [list $name hexinttuple [list $baseaddr $size]]
+}
+
+proc dts_override {root} {
+	#PARAMETER periph_type_overrides = {dts <IP_name> <parameter> <value_type> <value>}
+	global overrides
+
+	foreach iptree $root {
+		if {[lindex $iptree 1] != "tree"} {
+			error {"tree_append called on $iptree, which is not a tree."}
+		}
+
+		set name [lindex $iptree 0]
+		set name_list [split $name ":"]
+		set hw_name [lindex $name_list 0]
+		set node [lindex $iptree 2]
+
+		foreach over $overrides {
+			if {[lindex $over 0] == "dts"} {
+				if { [llength $over] != 5 } {
+					error "Wrong compatible override command string - $over"
+				}
+
+				if { $hw_name == [lindex $over 1] } {
+					set over_parameter [lindex $over 2]
+					set over_type [lindex $over 3]
+					set over_value [lindex $over 4]
+					set idx 0
+					set node_found 0
+					set new_node ""
+					foreach list $node {
+						set node_parameter [lindex $list 0]
+						if { $over_parameter == $node_parameter } {
+							set new_node "$over_parameter $over_type $over_value"
+							set node [lreplace $node $idx $idx $new_node ]
+							set node_found 1
+						}
+						incr idx
+					}
+
+					if { $node_found == 0 } {
+						set new_node "$over_parameter $over_type $over_value"
+						set node [linsert $node $idx $new_node ]
+					}
+				}
+			}
+		}
+		set new_tree [list $name tree $node]
+		if { [info exists new_root] } {
+			lappend new_root $new_tree
+		} else {
+			set new_root [list $new_tree]
+		}
+	}
+
+	return $new_root
 }
 
 proc write_value {file indent type value} {
