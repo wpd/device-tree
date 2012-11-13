@@ -3494,7 +3494,11 @@ proc dts_override {root} {
 		}
 	}
 
-	return $new_root
+	if { [info exists new_root] } {
+		return $new_root
+	} else {
+		return $root
+	}
 }
 
 proc write_value {file indent type value} {
