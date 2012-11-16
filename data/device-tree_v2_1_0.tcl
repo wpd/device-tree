@@ -388,7 +388,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 
 			set bus_name [xget_hw_busif_value $hwproc_handle "M_AXI_DP"]
 			if { [string compare -nocase $bus_name ""] != 0 } {
-				set tree [bus_bridge $hwproc_handle $intc 0 "M_AXI_DP" "" $ips "ps7_dmac ps7_xadc"]
+				set tree [bus_bridge $hwproc_handle $intc 0 "M_AXI_DP" "" $ips "ps7_pl310 ps7_xadc"]
 				set tree [tree_append $tree [list ranges empty empty]]
 				lappend ip_tree $tree
 			}
@@ -2003,10 +2003,10 @@ proc gener_slave {node slave intc {force_type ""}} {
 
 #			lappend node [gen_intc $slave "" "interrupt-controller" [default_parameters $slave] "S_AXI_" "arm,gic"]
 		}
-		"ps7_dmac" {
-			set tree [list "ps7_dmac_0: ps7-dmac@f8f02000" tree \
+		"ps7_pl310" {
+			set tree [list "ps7_pl310_0: ps7-pl310@f8f02000" tree \
 					[list \
-						[gen_compatible_property "ps7_dmac" "ps7_dmac" "1.00.a" "arm,pl310-cache" ] \
+						[gen_compatible_property "ps7_pl310" "ps7_pl310" "1.00.a" "arm,pl310-cache" ] \
 						[list "cache-unified" empty empty ] \
 						[list "cache-level" inttuple "2" ] \
 						[list "reg" hexinttuple [list "0xF8F02000" "0x1000"] ] \
