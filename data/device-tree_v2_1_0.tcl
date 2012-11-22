@@ -2715,15 +2715,10 @@ proc gen_memories {tree hwproc_handle} {
 				incr memory_count
 			}
 			"ps7_ddr" {
-				# FIXME: this is workaround for 14.1/14.2/14.3 tools to
+				# FIXME: this is workaround for Xilinx tools to
 				# generate correct base memory address for ps7_ddr
-				set XIL_VER [xget_swverandbld]
 				set subnode {}
-				if { [regexp -all -- 14.\[1|2|3\] $XIL_VER] } {
-					set baseaddr 0
-				} else {
-					set baseaddr [scan_int_parameter_value $slave "C_S_AXI_BASEADDR"]
-				}
+				set baseaddr 0
 				set highaddr [scan_int_parameter_value $slave "C_S_AXI_HIGHADDR"]
 				set highaddr [expr $highaddr + 1]
 				lappend subnode [list "device_type" string "memory"]
