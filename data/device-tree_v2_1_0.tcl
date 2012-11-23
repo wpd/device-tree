@@ -3501,7 +3501,8 @@ proc write_value {file indent type value} {
 		if {$type == "int"} {
 			puts -nonewline $file "= <[format %d $value]>"
 		} elseif {$type == "hexint"} {
-			puts -nonewline $file "= <0x[format %x $value]>"
+			# Mask down to 32-bits
+			puts -nonewline $file "= <0x[format %x [expr $value & 0xffffffff]]>"
 		} elseif {$type == "empty"} {
 		} elseif {$type == "inttuple"} {
 			puts -nonewline $file "= < "
@@ -3518,7 +3519,8 @@ proc write_value {file indent type value} {
 		} elseif {$type == "hexinttuple"} {
 			puts -nonewline $file "= < "
 			foreach element $value {
-				puts -nonewline $file "0x[format %x $element] "
+				# Mask down to 32-bits
+				puts -nonewline $file "0x[format %x [expr $element & 0xffffffff]] "
 			}
 			puts -nonewline $file ">"
 		} elseif {$type == "bytesequence"} {
