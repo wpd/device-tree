@@ -1782,7 +1782,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 		"ps7_slcr" -
 		"ps7_sram" -
 		"ps7_qspi_linear" -
-		"ps7_ram" -
 		"ps7_dma" -
 		"ps7_ddrc" -
 		"ps7_dev_cfg" {
@@ -2070,7 +2069,8 @@ proc gener_slave {node slave intc {force_type ""}} {
 		"ppc440mc_ddr2" -
 		"axi_s6_ddrx" -
 		"axi_v6_ddrx" -
-		"axi_7series_ddrx" {
+		"axi_7series_ddrx" -
+		"ps7_ram" {
 			# Do nothing..  this is handled by the 'memory' special case.
 		}
 		"opb_emc" -
