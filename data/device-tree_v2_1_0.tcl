@@ -704,22 +704,36 @@ proc get_intr {ip_handle intc port_name} {
 	}
 }
 
-proc get_intr_type {ip_handle port_name} {
+proc get_intr_type {intc ip_handle port_name} {
 	set ip_name [xget_hw_name $ip_handle]
 	set port_handle [xget_hw_port_handle $ip_handle "$port_name"]
 	set sensitivity [xget_hw_subproperty_value $port_handle "SENSITIVITY"];
-	# Follow the openpic specification
-	if { [string compare -nocase $sensitivity "EDGE_FALLING"] == 0 } {
-		return 3;
-	} elseif { [string compare -nocase $sensitivity "EDGE_RISING"] == 0 } {
-		return 0;
-	} elseif { [string compare -nocase $sensitivity "LEVEL_HIGH"] == 0 } {
-		return 2;
-	} elseif { [string compare -nocase $sensitivity "LEVEL_LOW"] == 0 } {
-		return 1;
+
+	if { "[xget_hw_value $intc]" == "ps7_scugic" } {
+		# Follow the openpic specification
+		if { [string compare -nocase $sensitivity "EDGE_FALLING"] == 0 } {
+			return 2;
+		} elseif { [string compare -nocase $sensitivity "EDGE_RISING"] == 0 } {
+			return 1;
+		} elseif { [string compare -nocase $sensitivity "LEVEL_HIGH"] == 0 } {
+			return 4;
+		} elseif { [string compare -nocase $sensitivity "LEVEL_LOW"] == 0 } {
+			return 8;
+		}
 	} else {
-		error "Unknown interrupt sensitivity on port $port_name of $ip_name was $sensitivity"
+		# Follow the openpic specification
+		if { [string compare -nocase $sensitivity "EDGE_FALLING"] == 0 } {
+			return 3;
+		} elseif { [string compare -nocase $sensitivity "EDGE_RISING"] == 0 } {
+			return 0;
+		} elseif { [string compare -nocase $sensitivity "LEVEL_HIGH"] == 0 } {
+			return 2;
+		} elseif { [string compare -nocase $sensitivity "LEVEL_LOW"] == 0 } {
+			return 1;
+		}
 	}
+
+	error "Unknown interrupt sensitivity on port $port_name of $ip_name was $sensitivity"
 }
 
 # Generate a template for a compound slave, such as the ll_temac or
@@ -1101,45 +1115,45 @@ proc check_console_irq {slave intc} {
 
 proc zynq_irq {ip_tree intc name } {
 	array set zynq_irq_list [ list \
-		{cpu_timerFIXME} {1 11 0} \
-		{nFIQFIXME} {1 12 0} \
-		{ps7_scutimer_0} {1 13 0x300} \
-		{ps7_scuwdt_0} {1 14 0x300} \
-		{nIRQFIXME} {1 15 0} \
-		{ps7_core_parity} {0 1 0 0 2 0} \
-		{ps7_l2cc} {0 3 0} \
-		{ps7_ocm} {0 4 0} \
-		{ps7_ecc} {0 5 0} \
-		{ps7_pmu} {0 6 0} \
-		{ps7_xdac} {0 7 0} \
-		{ps7_dev_cfg_0} {0 8 0} \
-		{ps7_wdt_0} {0 9 0} \
-		{ps7_ttc_0} {0 10 0 0 11 0 0 12 0} \
-		{ps7_dma_s} {0 13 0 0 14 0 0 15 0 0 16 0 0 17 0 0 40 0 0 41 0 0 42 0 0 43 0} \
-		{ps7_dma_ns} {0 13 0 0 14 0 0 15 0 0 16 0 0 17 0 0 40 0 0 41 0 0 42 0 0 43 0} \
-		{smcFIXME} {0 18 0} \
-		{ps7_qspi_0} {0 19 0} \
-		{ps7_gpio_0} {0 20 0} \
-		{ps7_usb_0} {0 21 0} \
-		{ps7_ethernet_0} {0 22 0} \
-		{ps7_ethernet_wake0FIXME} {0 23 0} \
-		{ps7_sd_0} {0 24 0} \
-		{ps7_i2c_0} {0 25 0} \
-		{ps7_spi_0} {0 26 0} \
-		{ps7_uart_0} {0 27 0} \
-		{ps7_can_0} {0 28 0} \
-		{ps7_fpga_7_0FIXME} {0 29 0 0 30 0 0 31 0 0 32 0 0 33 0 0 34 0 0 35 0 0 36 0} \
-		{ps7_ttc_1} {0 37 0 0 38 0 0 39 0} \
-		{ps7_usb_1} {0 44 0} \
-		{ps7_ethernet_1} {0 45 0} \
-		{ps7_ethernet_wake1FIXME} {0 46 0} \
-		{ps7_sd_1} {0 47 0} \
-		{ps7_i2c_1} {0 48 0} \
-		{ps7_spi_1} {0 49 0} \
-		{ps7_uart_1} {0 50 0} \
-		{ps7_can_1} {0 51 0} \
-		{ps7_fpga_irq_15_8FIXME} {0 52 0 0 53 0 0 54 0 0 55 0 0 56 0 0 57 0 0 58 0 0 59 0} \
-		{scu_parityFIXME} {0 60 0} \
+		{cpu_timerFIXME} {1 11 1} \
+		{nFIQFIXME} {1 12 8} \
+		{ps7_scutimer_0} {1 13 0x301} \
+		{ps7_scuwdt_0} {1 14 0x301} \
+		{nIRQFIXME} {1 15 8} \
+		{ps7_core_parity} {0 1 1 0 2 1} \
+		{ps7_l2cc} {0 3 4} \
+		{ps7_ocm} {0 4 4} \
+		{ps7_ecc} {0 5 4} \
+		{ps7_pmu} {0 6 4} \
+		{ps7_xdac} {0 7 4} \
+		{ps7_dev_cfg_0} {0 8 4} \
+		{ps7_wdt_0} {0 9 4} \
+		{ps7_ttc_0} {0 10 4 0 11 4 0 12 4} \
+		{ps7_dma_s} {0 13 4 0 14 4 0 15 4 0 16 4 0 17 4 0 40 4 0 41 4 0 42 4 0 43 4} \
+		{ps7_dma_ns} {0 13 4 0 14 4 0 15 4 0 16 4 0 17 4 0 40 4 0 41 4 0 42 4 0 43 4} \
+		{smcFIXME} {0 18 4} \
+		{ps7_qspi_0} {0 19 4} \
+		{ps7_gpio_0} {0 20 4} \
+		{ps7_usb_0} {0 21 4} \
+		{ps7_ethernet_0} {0 22 4} \
+		{ps7_ethernet_wake0FIXME} {0 23 4} \
+		{ps7_sd_0} {0 24 4} \
+		{ps7_i2c_0} {0 25 4} \
+		{ps7_spi_0} {0 26 4} \
+		{ps7_uart_0} {0 27 4} \
+		{ps7_can_0} {0 28 4} \
+		{ps7_fpga_7_0FIXME} {0 29 4 0 34 0 0 31 4 0 32 4 0 33 4 0 34 4 0 35 4 0 36 4} \
+		{ps7_ttc_1} {0 37 4 0 38 4 0 39 4} \
+		{ps7_usb_1} {0 44 4} \
+		{ps7_ethernet_1} {0 45 4} \
+		{ps7_ethernet_wake1FIXME} {0 46 4} \
+		{ps7_sd_1} {0 47 4} \
+		{ps7_i2c_1} {0 48 4} \
+		{ps7_spi_1} {0 49 4} \
+		{ps7_uart_1} {0 50 4} \
+		{ps7_can_1} {0 51 4} \
+		{ps7_fpga_irq_15_8FIXME} {0 52 4 0 53 4 0 54 4 0 55 4 0 56 4 0 57 4 0 58 4 0 59 4} \
+		{scu_parityFIXME} {0 60 1} \
 	]
 
 	if { [info exists zynq_irq_list($name)] } {
@@ -3408,7 +3422,7 @@ proc gen_interrupt_property {tree slave intc interrupt_port_list} {
 		set irq [get_intr $slave $intc $in]
 
 		if {![string match $irq "-1"]} {
-			set irq_type [get_intr_type $slave $in]
+			set irq_type [get_intr_type $intc $slave $in]
 			if { "[xget_hw_value $intc]" == "ps7_scugic" } {
 				lappend interrupt_list 0 $irq $irq_type
 			} else {
