@@ -629,10 +629,31 @@ proc get_intc_signals {intc} {
 
 		set int_lines "[split [xget_hw_port_value $intc "IRQ_F2P"] "&"]"
 
-		# len of signals
-		set len [llength $int_lines]
-		if { "$len" > "16" } {
+		set fpga_irq_id 0
+		set irq_signals {}
+		for {set x 0} {$x < [llength $int_lines]} {incr x} {
+				set e [string trim [lindex ${int_lines} $x]]
+				if { [string range $e 0 1] == "0b" } {
+					# Sometimes there could be 0 instead of a physical interrupt signal
+					set siglength [ expr [string length $e] - 2 ]
+					for {set y 0} {$y < ${siglength}} {incr y} {
+						lappend irq_signals 0
+					}
+				} elseif { [string range $e 0 1] == "0x" } {
+					# Sometimes there could be 0 instead of a physical interrupt signal
+					error "This interrupt signal is a hex digit, cannot detect the length of it"
+				} else {
+					# actual interrupt signal
+					lappend irq_signals $e
+				}
+		}
+		if { [llength $irq_signals] > 16 } {
 			error "Too many interrupt lines connected to Zynq GIC"
+		}
+
+		# append the missing irq bits
+		for {set x [llength ${irq_signals}]} {$x < 16} {incr x} {
+			lappend irq_signals 0
 		}
 
 		# skip the first 32 interrupts because of Linux
@@ -649,32 +670,8 @@ proc get_intc_signals {intc} {
 			lappend pl2 $x
 		}
 
-		# offset in signal area - store missing IRQs for both PL parts
-		set offset1 ""
-		set offset2 ""
-
-		# two different behavior depends on No signals
-		if { "$len" > "8" } {
-			set signal2 [lrange $int_lines 0 7 ]
-			set signal1 [lrange $int_lines 8 $len ]
-			# generate missing IRQ signals in signal1 area
-			for {set x [expr 60 + [expr 8 - [expr $len - 8]]]} {$x >= 61 } { set x [expr $x - 1]} {
-				lappend offset1 $x
-			}
-		} else {
-			set signal2 $int_lines
-			# generate missing IRQ signals in signal2 area
-			for {set x [expr 83 + [expr 8 - $len]]} {$x >= 84 } { set x [expr $x - 1]} {
-				lappend offset2 $x
-			}
-			set signal1 ""
-			# there is no signal if IRQ is less then 9 - generate all missing IRQs
-			for {set x 68} {$x >= 61} { set x [expr $x - 1] } {
-				lappend offset1 $x
-			}
-		}
 		# Compose signal string with this layout from top to down
-		set signals "$signal2 $offset2 $pl2 $signal1 $offset1 $pl1"
+		set signals "[lrange ${irq_signals} 0 7] $pl2 [lrange ${irq_signals} 8 15] $pl1"
 	} else {
 		set signals [split [xget_hw_port_value $intc "intr"] "&"]
 	}
