@@ -1776,13 +1776,18 @@ proc gener_slave {node slave intc {force_type ""}} {
 		"xps_usb_host" {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "usb" [default_parameters $slave] "SPLB_" "" [list "usb-ehci"]]
 		}
+		"ps7_dma" {
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "arm,pl330"]
+			# use TCL table
+			set ip_tree [zynq_irq $ip_tree $intc $name]
+			lappend node $ip_tree
+		}
 		"ps7_can" -
 		"ps7_smcc" -
 		"ps7_iop_bus_config" -
 		"ps7_slcr" -
 		"ps7_sram" -
 		"ps7_qspi_linear" -
-		"ps7_dma" -
 		"ps7_ddrc" -
 		"ps7_dev_cfg" {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
