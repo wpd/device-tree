@@ -2236,7 +2236,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 		}
 		"axi_pcie" {
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] ]
-			set ip_tree [tree_append $ip_tree [list \#address-cells int 2]]
+			set ip_tree [tree_append $ip_tree [list \#address-cells int 3]]
 			set ip_tree [tree_append $ip_tree [list \#size-cells int 2]]
 			# 64-bit high address.
 			set high_64bit 0x00000000
@@ -2249,11 +2249,9 @@ proc gener_slave {node slave intc {force_type ""}} {
 				set pcie_baseaddr [lindex $range 2]
 				set axi_highaddr [lindex $range 3]
 				set size [validate_ranges_property $slave $axi_baseaddr $axi_highaddr $child_baseaddr]
-				lappend ranges $range_type $high_64bit $pcie_baseaddr $axi_baseaddr $high_64bit \
-						 $high_64bit $size
+				lappend ranges $range_type $high_64bit $pcie_baseaddr $axi_baseaddr $high_64bit $size
 			}
-			# FIX pcieinttuple
-			set ip_tree [tree_append $ip_tree [list "ranges" pcieinttuple $ranges]]
+			set ip_tree [tree_append $ip_tree [list "ranges" hexinttuple $ranges]]
 			lappend node $ip_tree
 		}
 		"pcie_ipif_slave" {
@@ -3088,7 +3086,7 @@ proc axipcie_ranges {ip_handle num_ranges_name axi_base_name_template pcie_base_
 	}
 	set ranges_list {}
 	for {set x 0} {$x < $count} {incr x} {
-		set range_type 0x00000002
+		set range_type 0x02000000
 		set axi_baseaddr [scan_int_parameter_value $ip_handle [format $axi_base_name_template $x]]
 		set pcie_baseaddr [scan_int_parameter_value $ip_handle [format $pcie_base_name_template $x]]
 		set axi_highaddr [scan_int_parameter_value $ip_handle [format $axi_high_name_template $x]]
@@ -3524,12 +3522,6 @@ proc write_value {file indent type value} {
 			puts -nonewline $file "= < "
 			foreach element $value {
 				puts -nonewline $file "[format %d $element] "
-			}
-			puts -nonewline $file ">"
-		} elseif {$type == "pcieinttuple"} {
-			puts -nonewline $file "= < "
-			foreach element $value {
-				puts -nonewline $file "0x[format %08x $element] "
 			}
 			puts -nonewline $file ">"
 		} elseif {$type == "hexinttuple"} {
