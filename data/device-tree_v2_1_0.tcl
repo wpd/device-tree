@@ -1843,11 +1843,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 
-			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_TTC_CLK0_FREQ_HZ"]]]
-			set ip_tree [tree_append $ip_tree [list "clock-frequency-timer0" int [xget_sw_parameter_value $slave "C_TTC_CLK0_FREQ_HZ"]]]
-			set ip_tree [tree_append $ip_tree [list "clock-frequency-timer1" int [xget_sw_parameter_value $slave "C_TTC_CLK0_FREQ_HZ"]]]
-			set ip_tree [tree_append $ip_tree [list "clock-frequency-timer2" int [xget_sw_parameter_value $slave "C_TTC_CLK0_FREQ_HZ"]]]
-
 			lappend node $ip_tree
 		}
 		"ps7_scutimer" {
