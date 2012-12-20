@@ -1118,6 +1118,7 @@ proc zynq_irq {ip_tree intc name } {
 		{ps7_scuwdt_0} {1 14 0x301} \
 		{nIRQFIXME} {1 15 8} \
 		{ps7_core_parity} {0 1 1 0 2 1} \
+		{ps7_pl310} {0 2 4} \
 		{ps7_l2cc} {0 3 4} \
 		{ps7_ocm} {0 4 4} \
 		{ps7_ecc} {0 5 4} \
@@ -1167,6 +1168,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 	variable mac_count
 
 	if { [llength $force_type] != 0 } {
+		set name $force_type
 		set type $force_type
 	} else {
 		set name [xget_hw_name $slave]
@@ -2023,6 +2025,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 						[list "arm,tag-latency" inttuple [list "2" "2" "2"] ] \
 					] \
 				]
+			set tree [zynq_irq $tree $intc $name]
 			lappend node $tree
 		}
 		"ps7_xadc" {
