@@ -54,6 +54,9 @@ variable ethernet_count 0
 variable alias_node_list {}
 variable phy_count 0
 
+variable vdma_device_id 0
+variable dma_device_id 0
+
 variable ps7_spi_count 0
 variable ps7_i2c_count 0
 
