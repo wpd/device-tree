@@ -1798,10 +1798,30 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 			lappend node $ip_tree
 		}
+		"ps7_slcr" {
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "xlnx,zynq-slcr"]
+			# use TCL table
+			set ip_tree [zynq_irq $ip_tree $intc $name]
+
+			set clock_tree [list "clocks" tree {}]
+			set clock_tree [tree_append $clock_tree [list "#address-cells" int "1"]]
+			set clock_tree [tree_append $clock_tree [list "#size-cells" int "0"]]
+
+			# PS_CLK node creation
+			set subclk_tree [list "ps_clk: ps_clk" tree {}]
+			set subclk_tree [tree_append $subclk_tree [list "#clock-cells" int "0"]]
+			set subclk_tree [tree_append $subclk_tree [list "compatible" stringtuple "fixed-clock"]]
+			set subclk_tree [tree_append $subclk_tree [list "clock-output-names" stringtuple "PS_CLK"]]
+			set subclk_tree [tree_append $subclk_tree [list "clock-frequency" int "33333333"]]
+
+			set clock_tree [tree_append $clock_tree $subclk_tree]
+			set ip_tree [tree_append $ip_tree $clock_tree]
+
+			lappend node $ip_tree
+		}
 		"ps7_can" -
 		"ps7_smcc" -
 		"ps7_iop_bus_config" -
-		"ps7_slcr" -
 		"ps7_sram" -
 		"ps7_qspi_linear" -
 		"ps7_ddrc" -
