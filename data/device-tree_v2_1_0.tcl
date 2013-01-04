@@ -1338,8 +1338,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 			}
 
 			# MS silly use just clock-frequency which is standard
-			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [scan_int_parameter_value $slave "C_UART_CLK_FREQ_HZ"]]]
-			set ip_tree [tree_append $ip_tree [list "clock" int [scan_int_parameter_value $slave "C_UART_CLK_FREQ_HZ"]]]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
 			set ip_tree [tree_append $ip_tree [list "current-speed" int "115200"]]
 			set ip_tree [zynq_irq $ip_tree $intc $name]
@@ -1875,9 +1873,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 
-			variable ps7_cortexa9_clk
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "arm,cortex-a9-twd-timer"]
-			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [expr $ps7_cortexa9_clk/2]]]
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 
 			lappend node $ip_tree
@@ -1927,7 +1923,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 
-			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_WDT_CLK_FREQ_HZ"]]]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "watchdog"]]
 			set ip_tree [tree_append $ip_tree [list "reset" int 0]]
 			set ip_tree [tree_append $ip_tree [list "timeout" int 10]]
@@ -1939,8 +1934,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 
-			variable ps7_cortexa9_clk
-			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [expr $ps7_cortexa9_clk/2]]]
 			set ip_tree [tree_append $ip_tree [list "device_type" string "watchdog"]]
 
 			lappend node $ip_tree
@@ -1987,7 +1980,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 		}
 		"ps7_sdio" {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "generic-sdhci"]
-			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_SDIO_CLK_FREQ_HZ"]]]
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 			lappend node $ip_tree
 		}
@@ -2488,8 +2480,6 @@ proc gen_cortexa9 {tree hwproc_handle params} {
 
 		set ps7_cortexa9_clk [xget_sw_parameter_value $hwproc_handle "C_CPU_CLK_FREQ_HZ"]
 		set ps7_cortexa9_1x_clk [xget_sw_parameter_value $hwproc_handle "C_CPU_1X_CLK_FREQ_HZ"]
-		lappend proc_node [list clock-frequency int $ps7_cortexa9_clk]
-		lappend proc_node [list timebase-frequency int [expr $ps7_cortexa9_clk/2]]
 		lappend proc_node [list "reg" int $cpunumber]
 		lappend proc_node [list "i-cache-size" hexint [expr 0x8000]]
 		lappend proc_node [list "i-cache-line-size" hexint 32]
