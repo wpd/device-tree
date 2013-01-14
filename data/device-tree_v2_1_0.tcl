@@ -64,6 +64,8 @@ variable ps7_i2c_count 0
 variable ps7_cortexa9_clk 0
 variable ps7_cortexa9_1x_clk 0
 
+variable ps7_smcc_list {}
+
 variable simple_version 0
 
 #
@@ -1132,7 +1134,7 @@ proc zynq_irq {ip_tree intc name } {
 		{ps7_ttc_0} {0 10 4 0 11 4 0 12 4} \
 		{ps7_dma_s} {0 13 4 0 14 4 0 15 4 0 16 4 0 17 4 0 40 4 0 41 4 0 42 4 0 43 4} \
 		{ps7_dma_ns} {0 13 4 0 14 4 0 15 4 0 16 4 0 17 4 0 40 4 0 41 4 0 42 4 0 43 4} \
-		{smcFIXME} {0 18 4} \
+		{ps7_smcc} {0 18 4} \
 		{ps7_qspi_0} {0 19 4} \
 		{ps7_gpio_0} {0 20 4} \
 		{ps7_usb_0} {0 21 4} \
@@ -1818,9 +1820,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			lappend node $ip_tree
 		}
 		"ps7_can" -
-		"ps7_smcc" -
 		"ps7_iop_bus_config" -
-		"ps7_sram" -
 		"ps7_qspi_linear" -
 		"ps7_ddrc" -
 		"ps7_dev_cfg" {
@@ -1983,10 +1983,29 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 			lappend node $ip_tree
 		}
+		"ps7_smcc" {
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			# use TCL table
+			set ip_tree [zynq_irq $ip_tree $intc $type]
+
+			variable ps7_smcc_list
+			if {![string match "" $ps7_smcc_list]} {
+				set ip_tree [tree_append $ip_tree [list "#address-cells" int "1"]]
+				set ip_tree [tree_append $ip_tree [list "#size-cells" int "1"]]
+				set ip_tree [tree_append $ip_tree [list ranges empty empty]]
+
+				set ip_tree [tree_append $ip_tree $ps7_smcc_list]
+			}
+
+			lappend node $ip_tree
+		}
 		"ps7_nand" {
 			# just C_S_AXI_BASEADDR  C_S_AXI_HIGHADDR C_NAND_CLK_FREQ_HZ C_NAND_MODE C_INTERCONNECT_S_AXI_MASTERS HW_VER INSTANCE
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
-			lappend node $ip_tree
+
+			variable ps7_smcc_list
+
+			set ps7_smcc_list "$ps7_smcc_list $ip_tree"
 		}
 		# assume sram_0 is NOR flash and sram_1 is SRAM
 		"ps7_nor" -
@@ -1994,10 +2013,15 @@ proc gener_slave {node slave intc {force_type ""}} {
 			if { $name == "ps7_sram_0" || $name == "ps7_nor_0" } {
 				set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "cfi-flash"]
 				set ip_tree [tree_append $ip_tree [list "bank-width" int 1]]
+
+				regsub -all "ps7_sram" $ip_tree "ps7_nor" ip_tree
+				regsub -all "ps7-sram" $ip_tree "ps7-nor" ip_tree
 			} elseif { $name == "ps7_sram_1" } {
 				set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			}
-			lappend node $ip_tree
+
+			variable ps7_smcc_list
+			set ps7_smcc_list "$ps7_smcc_list $ip_tree"
 		}
 		"ps7_scugic" {
 			# FIXME this node should be provided by SDK and not to compose it by hand
@@ -2975,6 +2999,7 @@ proc bus_bridge {slave intc_handle baseaddr face {handle ""} {ps_ifs ""} {force_
 	set mdm {}
 	set uartlite {}
 	set fulluart {}
+	set ps_smcc {}
 	set sorted_ip {}
 	set console_type ""
 
@@ -2996,6 +3021,8 @@ proc bus_bridge {slave intc_handle baseaddr face {handle ""} {ps_ifs ""} {force_
 			lappend fulluart $ip
 		} elseif { [string first "mdm" "$type"] != -1 } {
 			lappend mdm $ip
+		} elseif { [string first "smcc" "$type"] != -1 } {
+			lappend ps_smcc $ip
 		} else {
 			lappend sorted_ip $ip
 		}
@@ -3003,9 +3030,9 @@ proc bus_bridge {slave intc_handle baseaddr face {handle ""} {ps_ifs ""} {force_
 
 	# This order will be in alias list
 	if { [string first "uart16550" "$console_type"] != -1 } {
-		set sorted_ip "$sorted_ip $fulluart $uartlite $mdm"
+		set sorted_ip "$sorted_ip $fulluart $uartlite $mdm $ps_smcc"
 	} else {
-		set sorted_ip "$sorted_ip $uartlite $fulluart $mdm"
+		set sorted_ip "$sorted_ip $uartlite $fulluart $mdm $ps_smcc"
 	}
 
 	# Start generating the node for the bus.
