@@ -374,7 +374,6 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 			global timer
 			set timer ""
 
-			set toplevel [gen_cortexa9 $toplevel $hwproc_handle [default_parameters $hwproc_handle]]
 			# MS: This is nasty hack how to get all slave IPs
 			# What I do is that load all IPs from M_AXI_DP and then pass all IPs
 			# in bus_bridge then handle the rest of IPs
@@ -390,6 +389,8 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 					set intc "$i"
 				}
 			}
+
+			set toplevel [gen_cortexa9 $toplevel $hwproc_handle $intc [default_parameters $hwproc_handle]]
 
 			set bus_name [xget_hw_busif_value $hwproc_handle "M_AXI_DP"]
 			if { [string compare -nocase $bus_name ""] != 0 } {
@@ -1126,8 +1127,7 @@ proc zynq_irq {ip_tree intc name } {
 		{ps7_pl310} {0 2 4} \
 		{ps7_l2cc} {0 3 4} \
 		{ps7_ocm} {0 4 4} \
-		{ps7_ecc} {0 5 4} \
-		{ps7_pmu} {0 6 4} \
+		{ps7_pmu} {0 5 4 0 6 4} \
 		{ps7_xdac} {0 7 4} \
 		{ps7_dev_cfg_0} {0 8 4} \
 		{ps7_wdt_0} {0 9 1} \
@@ -2481,7 +2481,7 @@ proc memory {slave baseaddr_prefix params} {
 	return [list [format_ip_name memory $baseaddr $name] tree $ip_node]
 }
 
-proc gen_cortexa9 {tree hwproc_handle params} {
+proc gen_cortexa9 {tree hwproc_handle intc params} {
 	set out ""
 	variable cpunumber
 	variable ps7_cortexa9_clk
@@ -2518,6 +2518,13 @@ proc gen_cortexa9 {tree hwproc_handle params} {
 	lappend cpus_node [list \#address-cells int 1]
 	lappend cpus_node [list \#cpus hexint "$cpunumber" ]
 	lappend tree [list cpus tree "$cpus_node"]
+
+	# Add PMU node
+	set ip_tree [list "pmu" tree ""]
+	set ip_tree [zynq_irq $ip_tree $intc "ps7_pmu"]
+	set ip_tree [tree_append $ip_tree [list "compatible" stringtuple "arm,cortex-a9-pmu"]]
+	lappend tree "$ip_tree"
+
 	return $tree
 }
 
