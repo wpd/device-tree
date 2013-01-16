@@ -2974,6 +2974,11 @@ proc bus_bridge {slave intc_handle baseaddr face {handle ""} {ps_ifs ""} {force_
 		debug ip "-slave [xget_hw_name $if] [xget_hw_value $if] [xget_hw_name $ip_handle]"
 		debug handles "  handle: $ip_handle"
 
+		# Do not generate ps7_dma type with name ps7_dma_ns
+		if { "[xget_hw_value $ip_handle]" == "ps7_dma" &&  "[xget_hw_name $ip_handle]" == "ps7_dma_ns" } {
+			continue
+		}
+
 		# If its not already in the list, and its not the bridge, then
 		# append it.
 		if {$ip_handle != $slave} {
@@ -2988,6 +2993,11 @@ proc bus_bridge {slave intc_handle baseaddr face {handle ""} {ps_ifs ""} {force_
 	foreach if $ps_ifs {
 		debug ip "-slave [xget_hw_name $if]"
 		debug handles "  handle: $if"
+
+		# Do not generate ps7_dma type with name ps7_dma_ns
+		if { "[xget_hw_value $if]" == "ps7_dma" &&  "[xget_hw_name $if]" == "ps7_dma_ns" } {
+			continue
+		}
 
 		# If its not already in the list, and its not the bridge, then
 		# append it.
