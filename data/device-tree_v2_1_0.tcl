@@ -2410,13 +2410,22 @@ proc gener_slave {node slave intc {force_type ""}} {
 			# check if is any parameter BASEADDR
 			set ip_params [xget_hw_parameter_handle $slave "*"]
 			set address_array {}
+			set ranges_list {}
 			puts [xget_hw_name $slave]
 			foreach par_name $ip_params {
 				# check all
 				set name [xget_hw_name $par_name]
 				set addrtype [xget_hw_subproperty_value $par_name "ADDRESS"]
 				if {[string compare -nocase $addrtype "BASE"] == 0} {
-					lappend address_array $par_name
+					set base [xget_hw_name $par_name]
+					set high [xget_hw_subproperty_value $par_name "PAIR"]
+					set baseaddr [scan_int_parameter_value $slave $base]
+					set highaddr [scan_int_parameter_value $slave $high]
+					if { "${baseaddr}" < "${highaddr}" } {
+						lappend address_array $par_name
+						# Also compound ranges list with all BASEADDR and HIGHADDR pairs
+						lappend ranges_list [list $baseaddr $highaddr $baseaddr]
+					}
 				}
 			}
 
@@ -2441,17 +2450,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 					lappend node $tree
 				}
 				default {
-					# Compound ranges list with all BASEADDR and HIGHADDR pairs
-					set ranges_list {}
-					foreach par_name $address_array {
-						set base [xget_hw_name $par_name]
-						set high [xget_hw_subproperty_value $par_name "PAIR"]
-						set baseaddr [scan_int_parameter_value $slave $base]
-						set highaddr [scan_int_parameter_value $slave $high]
-						if { "${baseaddr}" < "${highaddr}" } {
-							lappend ranges_list [list $baseaddr $highaddr $baseaddr]
-						}
-					}
 					# Use the first BASEADDR parameter to be in node name - order is directed by mpd
 					set tree [compound_slave $slave [xget_hw_name [lindex $address_array 0]]]
 					set tree [tree_append $tree [gen_ranges_property_list $slave $ranges_list]]
