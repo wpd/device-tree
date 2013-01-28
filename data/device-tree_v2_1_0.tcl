@@ -2520,6 +2520,7 @@ proc gen_cortexa9 {tree hwproc_handle intc params} {
 	# Add PMU node
 	set ip_tree [list "pmu" tree ""]
 	set ip_tree [zynq_irq $ip_tree $intc "ps7_pmu"]
+	set ip_tree [tree_append $ip_tree [list "reg" hexinttuple [list "0xF8891000" "0x1000" "0xF8893000" "0x1000"] ] ]
 	set ip_tree [tree_append $ip_tree [list "compatible" stringtuple "arm,cortex-a9-pmu"]]
 	lappend tree "$ip_tree"
 
