@@ -2030,6 +2030,11 @@ proc gener_slave {node slave intc {force_type ""}} {
 			# just C_S_AXI_BASEADDR  C_S_AXI_HIGHADDR C_NAND_CLK_FREQ_HZ C_NAND_MODE C_INTERCONNECT_S_AXI_MASTERS HW_VER INSTANCE
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 
+			global flash_memory
+			if {[ string match -nocase $name $flash_memory ]} {
+				set ip_tree [change_nodename $ip_tree $name "primary_flash"]
+			}
+
 			variable ps7_smcc_list
 
 			set ps7_smcc_list "$ps7_smcc_list $ip_tree"
