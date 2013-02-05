@@ -2039,17 +2039,18 @@ proc gener_slave {node slave intc {force_type ""}} {
 
 			set ps7_smcc_list "$ps7_smcc_list $ip_tree"
 		}
-		# assume sram_0 is NOR flash and sram_1 is SRAM
 		"ps7_nor" -
 		"ps7_sram" {
-			if { $name == "ps7_sram_0" || $name == "ps7_nor_0" } {
-				set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "cfi-flash"]
-				set ip_tree [tree_append $ip_tree [list "bank-width" int 1]]
+			# NOTE: For 14.4, the ps7_sram_* is refer to NOR flash not SRAM
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "cfi-flash"]
+			set ip_tree [tree_append $ip_tree [list "bank-width" int 1]]
 
-				regsub -all "ps7_sram" $ip_tree "ps7_nor" ip_tree
-				regsub -all "ps7-sram" $ip_tree "ps7-nor" ip_tree
-			} elseif { $name == "ps7_sram_1" } {
-				set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			regsub -all "ps7_sram" $ip_tree "ps7_nor" ip_tree
+			regsub -all "ps7-sram" $ip_tree "ps7-nor" ip_tree
+
+			global flash_memory
+			if {[ string match -nocase $name $flash_memory ]} {
+				set ip_tree [change_nodename $ip_tree $name "primary_flash"]
 			}
 
 			variable ps7_smcc_list
