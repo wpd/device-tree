@@ -3676,12 +3676,15 @@ proc tree_append {tree child_node} {
 proc write_nodes {indent file tree} {
 	set tree [lsort -index 0 $tree]
 	foreach node $tree {
-		if { [llength $node] == 3} {
-			set name [lindex $node 0]
-			set type [lindex $node 1]
-			set value [lindex $node 2]
-			puts -nonewline $file "[tt [expr $indent + 1]]$name "
-			write_value $file [expr $indent + 1] $type $value
+		if { [string match [expr [llength $node] % 3]  "0"] && [expr [llength $node] > 0]} {
+			set loop_count [expr [llength $node] / 3 ]
+			for { set i 0} { $i < $loop_count } { incr i } {
+				set name [lindex $node [expr $i * 3 ]]
+				set type [lindex $node [expr $i * 3 + 1]]
+				set value [lindex $node [expr $i * 3 + 2]]
+				puts -nonewline $file "[tt [expr $indent + 1]]$name "
+				write_value $file [expr $indent + 1] $type $value
+			}
 		} elseif { [string match [llength $node] "4"] && [string match [lindex $node 1] "aliasref"] } {
 			set name [lindex $node 0]
 			set type [lindex $node 1]
