@@ -1128,7 +1128,7 @@ proc zynq_irq {ip_tree intc name } {
 		{ps7_l2cc} {0 3 4} \
 		{ps7_ocm} {0 4 4} \
 		{ps7_pmu} {0 5 4 0 6 4} \
-		{ps7_xdac} {0 7 4} \
+		{ps7_xadc} {0 7 4} \
 		{ps7_dev_cfg_0} {0 8 4} \
 		{ps7_wdt_0} {0 9 1} \
 		{ps7_ttc_0} {0 10 4 0 11 4 0 12 4} \
@@ -2105,9 +2105,9 @@ proc gener_slave {node slave intc {force_type ""}} {
 					[list \
 						[gen_compatible_property "ps7_xadc" "ps7_xadc" "1.00.a" ] \
 						[list "reg" hexinttuple [list "0xF8007100" "0x20"] ] \
-						[list "interrupts" inttuple "0 7 4" ] \
 					] \
 				]
+			set tree [zynq_irq $tree $intc $name]
 			lappend node $tree
 		}
 		"ps7_trace" -
