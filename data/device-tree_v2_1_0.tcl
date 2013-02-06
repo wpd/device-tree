@@ -2101,7 +2101,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			lappend node $tree
 		}
 		"ps7_xadc" {
-			set tree [list "ps7_xadc: ps7_xadc@f8007100" tree \
+			set tree [list "ps7_xadc: ps7-xadc@f8007100" tree \
 					[list \
 						[gen_compatible_property "ps7_xadc" "ps7_xadc" "1.00.a" ] \
 						[list "reg" hexinttuple [list "0xF8007100" "0x20"] ] \
