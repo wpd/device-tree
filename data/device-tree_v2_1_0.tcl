@@ -1811,10 +1811,37 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set subclk_tree [list "ps_clk: ps_clk" tree {}]
 			set subclk_tree [tree_append $subclk_tree [list "#clock-cells" int "0"]]
 			set subclk_tree [tree_append $subclk_tree [list "compatible" stringtuple "fixed-clock"]]
-			set subclk_tree [tree_append $subclk_tree [list "clock-output-names" stringtuple "PS_CLK"]]
+			set subclk_tree [tree_append $subclk_tree [list "clock-output-names" stringtuple "ps_clk"]]
 			set subclk_tree [tree_append $subclk_tree [list "clock-frequency" int "33333333"]]
-
 			set clock_tree [tree_append $clock_tree $subclk_tree]
+
+			set subclk_tree [list "armpll: armpll" tree {}]
+			set subclk_tree [tree_append $subclk_tree [list "#clock-cells" int "0"]]
+			set subclk_tree [tree_append $subclk_tree [list "compatible" stringtuple "xlnx,zynq-pll"]]
+			set subclk_tree [tree_append $subclk_tree [list "clocks" labelref "ps_clk"]]
+			set subclk_tree [tree_append $subclk_tree [list "reg" hexinttuple [list "0x100" "0x110" "0x10c"]]]
+			set subclk_tree [tree_append $subclk_tree [list "lockbit" int "0"]]
+			set subclk_tree [tree_append $subclk_tree [list "clock-output-names" stringtuple "armpll"]]
+			set clock_tree [tree_append $clock_tree $subclk_tree]
+
+			set subclk_tree [list "ddrpll: ddrpll" tree {}]
+			set subclk_tree [tree_append $subclk_tree [list "#clock-cells" int "0"]]
+			set subclk_tree [tree_append $subclk_tree [list "compatible" stringtuple "xlnx,zynq-pll"]]
+			set subclk_tree [tree_append $subclk_tree [list "clocks" labelref "ps_clk"]]
+			set subclk_tree [tree_append $subclk_tree [list "reg" hexinttuple [list "0x104" "0x114" "0x10c"]]]
+			set subclk_tree [tree_append $subclk_tree [list "lockbit" int "1"]]
+			set subclk_tree [tree_append $subclk_tree [list "clock-output-names" stringtuple "ddrpll"]]
+			set clock_tree [tree_append $clock_tree $subclk_tree]
+
+			set subclk_tree [list "iopll: iopll" tree {}]
+			set subclk_tree [tree_append $subclk_tree [list "#clock-cells" int "0"]]
+			set subclk_tree [tree_append $subclk_tree [list "compatible" stringtuple "xlnx,zynq-pll"]]
+			set subclk_tree [tree_append $subclk_tree [list "clocks" labelref "ps_clk"]]
+			set subclk_tree [tree_append $subclk_tree [list "reg" hexinttuple [list "0x108" "0x118" "0x10c"]]]
+			set subclk_tree [tree_append $subclk_tree [list "lockbit" int "2"]]
+			set subclk_tree [tree_append $subclk_tree [list "clock-output-names" stringtuple "iopll"]]
+			set clock_tree [tree_append $clock_tree $subclk_tree]
+
 			set ip_tree [tree_append $ip_tree $clock_tree]
 
 			lappend node $ip_tree
