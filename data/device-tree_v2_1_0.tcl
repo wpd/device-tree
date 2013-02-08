@@ -2447,7 +2447,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 			puts [xget_hw_name $slave]
 			foreach par_name $ip_params {
 				# check all
-				set name [xget_hw_name $par_name]
 				set addrtype [xget_hw_subproperty_value $par_name "ADDRESS"]
 				if {[string compare -nocase $addrtype "BASE"] == 0} {
 					set base [xget_hw_name $par_name]
