@@ -2036,6 +2036,11 @@ proc gener_slave {node slave intc {force_type ""}} {
 			# just C_S_AXI_BASEADDR  C_S_AXI_HIGHADDR C_NAND_CLK_FREQ_HZ C_NAND_MODE C_INTERCONNECT_S_AXI_MASTERS HW_VER INSTANCE
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 
+			# FIXME: set reg size to 16MB. This is a workaround for 14.4
+			# tools provides the wrong high address of NAND
+			set baseaddr [scan_int_parameter_value $slave "C_S_AXI_BASEADDR"]
+			set ip_tree [tree_node_update $ip_tree "reg" [list "reg" hexinttuple [list $baseaddr "16777216" ]]]
+
 			global flash_memory
 			if {[ string match -nocase $name $flash_memory ]} {
 				set ip_tree [change_nodename $ip_tree $name "primary_flash"]
