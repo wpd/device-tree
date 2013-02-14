@@ -3681,6 +3681,28 @@ proc tree_append {tree child_node} {
 	return [list $name tree $node]
 }
 
+# tree: a tree triple
+# child_node_name: name of the childe node that will be updated
+# new_child_node: the new child_node node
+proc tree_node_update {tree child_node_name new_child_node} {
+	if {[lindex $tree 1] != "tree"} {
+		error {"tree_append called on $tree, which is not a tree."}
+	}
+	set name [lindex $tree 0]
+	set node [lindex $tree 2]
+	set new_node []
+
+	foreach p [lindex $tree 2] {
+		set node_name [lindex $p 0]
+		if { "[string compare $node_name $child_node_name ]" == "0" } {
+			lappend new_node $new_child_node
+		} else {
+			lappend new_node $p
+		}
+	}
+	return [list $name tree $new_node]
+}
+
 proc write_nodes {indent file tree} {
 	set tree [lsort -index 0 $tree]
 	foreach node $tree {
