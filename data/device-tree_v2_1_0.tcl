@@ -141,6 +141,9 @@ proc generate {os_handle} {
 	set main_memory [xget_sw_parameter_value $os_handle "main_memory"]
 	global main_memory_bank
 	set main_memory_bank [xget_sw_parameter_value $os_handle "main_memory_bank"]
+	if {[llength $main_memory_bank] == 0} {
+		set main_memory_bank 0
+	}
 	global main_memory_start
 	set main_memory_start [xget_sw_parameter_value $os_handle "main_memory_start"]
 	global main_memory_size
