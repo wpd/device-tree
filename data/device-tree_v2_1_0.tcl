@@ -2154,6 +2154,16 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave]]
 			lappend node $ip_tree
 		}
+		"ps7_ram" {
+			if {"$name" == "ps7_ram_0"} {
+				set ip_tree [slaveip $slave $intc "" "" "S_AXI_" "xlnx,ps7-ocm"]
+				set ip_tree [tree_node_update $ip_tree "reg" [list "reg" hexinttuple [list "0xfffc0000" "262144" ]]]
+				# use TCL table
+				set ip_tree [zynq_irq $ip_tree $intc $name]
+
+				lappend node $ip_tree
+			}
+		}
 		"plb_bram_if_cntlr" -
 		"opb_bram_if_cntlr" -
 		"axi_bram_ctrl" -
@@ -2168,8 +2178,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 		"ppc440mc_ddr2" -
 		"axi_s6_ddrx" -
 		"axi_v6_ddrx" -
-		"axi_7series_ddrx" -
-		"ps7_ram" {
+		"axi_7series_ddrx" {
 			# Do nothing..  this is handled by the 'memory' special case.
 		}
 		"opb_emc" -
