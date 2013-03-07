@@ -1443,16 +1443,16 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 0x00 0x00 $mac_count]]]
 			incr mac_count
 
-			#if {$type == "xps_ethernetlite" || $type == "axi_ethernetlite"} {
-			#	if {[parameter_exists $slave "C_INCLUDE_MDIO"]} {
-			#		set has_mdio [scan_int_parameter_value $slave "C_INCLUDE_MDIO"]
-			#		if {$has_mdio == 1} {
-			#			set phy_name "phy$phy_count"
-			#			set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
-			#			set ip_tree [tree_append $ip_tree [gen_mdiotree $slave]]
-			#		}
-			#	}
-			#}
+			if {$type == "xps_ethernetlite" || $type == "axi_ethernetlite"} {
+				if {[parameter_exists $slave "C_INCLUDE_MDIO"]} {
+					set has_mdio [scan_int_parameter_value $slave "C_INCLUDE_MDIO"]
+					if {$has_mdio == 1} {
+						set phy_name "phy$phy_count"
+						set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
+						set ip_tree [tree_append $ip_tree [gen_mdiotree $slave]]
+					}
+				}
+			}
 
 			lappend node $ip_tree
 		}
