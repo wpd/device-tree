@@ -1798,9 +1798,14 @@ proc gener_slave {node slave intc {force_type ""}} {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "usb" [default_parameters $slave] "SPLB_" "" [list "usb-ehci"]]
 		}
 		"ps7_dma" {
-			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "arm,pl330"]
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "arm,primecell arm,pl330"]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [tree_append $ip_tree [list "#dma-cells" int "1"]]
+			set ip_tree [tree_append $ip_tree [list "#dma-channels" int "8"]]
+			set ip_tree [tree_append $ip_tree [list "#dma-requests" int "4"]]
+			set ip_tree [tree_append $ip_tree [list "arm,primecell-periphid" hexint "0x00041330"]];
+
 			lappend node $ip_tree
 		}
 		"ps7_slcr" {
