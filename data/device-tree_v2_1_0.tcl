@@ -2998,9 +2998,12 @@ proc bus_bridge {slave intc_handle baseaddr face {handle ""} {ps_ifs ""} {force_
 				set devicetype "dcr"
 				set compatible_list [list "simple-bus"]
 			}
-			"ps7_axi_interconnect" -
 			"axi_interconnect" {
 				set devicetype "axi"
+				set compatible_list [list "simple-bus"]
+			}
+			"ps7_axi_interconnect" {
+				set devicetype "amba"
 				set compatible_list [list "simple-bus"]
 			}
 			default {
