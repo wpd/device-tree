@@ -1499,6 +1499,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set connected_ip_name [xget_hw_name $connected_ip_handle]
 			set connected_ip_type [xget_hw_value $connected_ip_handle]
 			set ip_tree [tree_append $ip_tree [list "axistream-connected" labelref $connected_ip_name]]
+			set ip_tree [tree_append $ip_tree [list "axistream-control-connected" labelref $connected_ip_name]]
 
 			set freq [get_clock_frequency $slave "S_AXI_ACLK"]
 			set ip_tree [tree_append $ip_tree [list "clock-frequency" int $freq]]
@@ -1519,6 +1520,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set connected_ip_name [xget_hw_name $connected_ip_handle]
 			set connected_ip_type [xget_hw_value $connected_ip_handle]
 			set ip_tree [tree_append $ip_tree [list "axistream-connected" labelref $connected_ip_name]]
+			set ip_tree [tree_append $ip_tree [list "axistream-control-connected" labelref $connected_ip_name]]
 			lappend node $ip_tree
 		}
 		# FIXME - this need to be check because can break axi ethernet implementation
