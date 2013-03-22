@@ -1472,6 +1472,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			# about the connected LL connection, and the dual cores.
 			lappend node [slave_ll_temac $slave $intc]
 		}
+		"axi_ethernet_buffer" -
 		"axi_ethernet" {
 			set name [xget_hw_name $slave]
 			set type [xget_hw_value $slave]
@@ -2219,7 +2220,8 @@ proc gener_slave {node slave intc {force_type ""}} {
 		"ppc440mc_ddr2" -
 		"axi_s6_ddrx" -
 		"axi_v6_ddrx" -
-		"axi_7series_ddrx" {
+		"axi_7series_ddrx" -
+		"mig_7series" {
 			# Do nothing..  this is handled by the 'memory' special case.
 		}
 		"opb_emc" -
@@ -2843,7 +2845,8 @@ proc gen_memories {tree hwproc_handle} {
 				# memory, and we can't currently handle non-contiguous memory
 				# regions.
 			}
-			"opb_sdram" {
+			"opb_sdram" -
+			"mig_7series" {
 				# Handle bankless memories.
 				lappend tree [memory $slave "" ""]
 				incr memory_count
@@ -3039,6 +3042,7 @@ proc bus_bridge {slave intc_handle baseaddr face {handle ""} {ps_ifs ""} {force_
 				set devicetype "dcr"
 				set compatible_list [list "simple-bus"]
 			}
+			"axi_crossbar" -
 			"axi_interconnect" {
 				set devicetype "axi"
 				set compatible_list [list "simple-bus"]
@@ -3457,6 +3461,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{xps_ll_temac} {xps_ll_temac_1.01.b xps_ll_temac_1.00.a} \
 		{xps_ll_fifo} {xps_ll_fifo_1.00.a} \
 		{axi_ethernet} {axi_ethernet_1.00.a} \
+		{axi_ethernet_buffer} {axi_ethernet_1.00.a} \
 		{axi_dma} {axi_dma_1.00.a} \
 		{xps_ps2} {xps_ps2_1.00.a} \
 		{xps_spi_2} {xps_spi_2.00.a} \
