@@ -797,15 +797,26 @@ proc append_dcr_interface {tree slave {dcr_baseaddr_prefix ""} } {
 proc slaveip_dcr_or_plb {slave intc devicetype params {baseaddr_prefix ""} {other_compatibles {}} } {
 	# Get the value of the parameter which indicates about the interface
 	# on which the core is connected.
-	set bus_name  [scan_int_parameter_value $slave "C_DCR_SPLB_SLAVE_IF"]
-
+	if {[parameter_exists $slave "C_DCR_SPLB_SLAVE_IF"] != 0} {
+		set bus_name  [scan_int_parameter_value $slave "C_DCR_SPLB_SLAVE_IF"]
+	} else {
+		# Default case is connected to the bus - for axi_tftcd
+		set bus_name "1"
+	}
 	# '1' indicates core connected on PLB bus directly
 	# '0' indicates core connected on DCR bus directly
 	if {$bus_name == "1"} {
 		if {[parameter_exists $slave "C_PLB_BASEADDR"] != 0} {
 			return [slaveip $slave $intc $devicetype $params "PLB_" $other_compatibles]
 		} else {
-			return [slaveip $slave $intc $devicetype $params "SPLB_" $other_compatibles]
+			if {[parameter_exists $slave "C_SPLB_BASEADDR"] != 0} {
+				return [slaveip $slave $intc $devicetype $params "SPLB_" $other_compatibles]
+			} else {
+				set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] $devicetype $params "S_AXI_" "" $other_compatibles]
+				# Necessary for linux driver probing because driver was designed for PPC DCR
+				set ip_tree [tree_append $ip_tree [list "xlnx,dcr-splb-slave-if" int $bus_name]]
+				return $ip_tree
+			}
 		}
 	} else {
 		# When the core is connected directly on the DCR bus
@@ -1691,6 +1702,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 
 			lappend node $mytree
 		}
+		"axi_tft" -
 		"xps_tft" {
 			lappend node [slaveip_dcr_or_plb $slave $intc "tft" [default_parameters $slave]]
 		}
@@ -3410,6 +3422,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{axi_gpio} {xps_gpio_1.00.a} \
 		{xps_hwicap} {xps_hwicap_1.00.a} \
 		{xps_tft} {xps_tft_1.00.a} \
+		{axi_tft} {xps_tft_1.00.a} \
 		{xps_iic} {xps_iic_2.00.a} \
 		{axi_iic} {xps_iic_2.00.a} \
 		{xps_intc} {xps_intc_1.00.a} \
