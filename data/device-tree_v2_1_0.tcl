@@ -2167,6 +2167,13 @@ proc gener_slave {node slave intc {force_type ""}} {
 			variable ps7_cortexa9_1x_clk
 			set ip_tree [tree_append $ip_tree [list "xlnx,ptp-enet-clock" int $ps7_cortexa9_1x_clk]]
 
+			set phymode [scan_int_parameter_value $slave "C_ETH_MODE"]
+			if { $phymode == 0 } {
+				set ip_tree [tree_append $ip_tree [list "phy-mode" string "gmii"]]
+			} else {
+				set ip_tree [tree_append $ip_tree [list "phy-mode" string "rgmii-id"]]
+			}
+
 			lappend node $ip_tree
 		}
 		"axi_fifo_mm_s" {
