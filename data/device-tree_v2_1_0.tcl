@@ -3304,7 +3304,7 @@ proc scan_int_parameter_value {ip_handle name} {
 
 # generate structure for phy.
 # PARAMETER periph_type_overrides = {phy <IP_name> <phy_addr> <compatible>}
-proc gen_phytree {ip} {
+proc gen_phytree {ip phya phy_chip} {
 	variable phy_count
 
 	global overrides
@@ -3312,9 +3312,6 @@ proc gen_phytree {ip} {
 	set name [xget_hw_name $ip]
 	set type [xget_hw_value $ip]
 
-	# set default to 7
-	set phya 7
-	set phy_chip "marvell,88e1111"
 	foreach over $overrides {
 		if {[lindex $over 0] == "phy"} {
 			if { [xget_hw_name $ip] == [lindex $over 1] } {
@@ -3337,10 +3334,13 @@ proc gen_phytree {ip} {
 }
 
 proc gen_mdiotree {ip} {
+	# set default to 7
+	set phya 7
+	set phy_chip "marvell,88e1111"
 	set mdio_tree [list "mdio" tree {}]
 	set mdio_tree [tree_append $mdio_tree [list \#size-cells int 0]]
 	set mdio_tree [tree_append $mdio_tree [list \#address-cells int 1]]
-	return [tree_append $mdio_tree [gen_phytree $ip]]
+	return [tree_append $mdio_tree [gen_phytree $ip $phya $phy_chip]]
 }
 
 proc format_name {par_name} {
