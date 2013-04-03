@@ -2162,7 +2162,22 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [tree_append $ip_tree [list "#size-cells" int "0"]]
 			set phy_name "phy$phy_count"
 			set ip_tree [tree_append $ip_tree [list "phy-handle" labelref $phy_name]]
-			set ip_tree [tree_append $ip_tree [gen_mdiotree $slave]]
+
+			set mdio_tree [list "mdio" tree {}]
+			set mdio_tree [tree_append $mdio_tree [list \#size-cells int 0]]
+			set mdio_tree [tree_append $mdio_tree [list \#address-cells int 1]]
+			set phya 7
+			set phy_chip "marvell,88e1116r"
+			set mdio_tree [tree_append $mdio_tree [gen_phytree $slave $phya $phy_chip]]
+
+			set phya [is_gmii2rgmii_conv_present $slave]
+			if { $phya != "-1" } {
+				set phy_name "phy$phy_count"
+				set ip_tree [tree_append $ip_tree [list "gmii2rgmii-phy-handle" labelref $phy_name]]
+				set phy_chip "xlnx,gmii2rgmii"
+				set mdio_tree [tree_append $mdio_tree [gen_phytree $slave $phya $phy_chip]]
+			}
+			set ip_tree [tree_append $ip_tree $mdio_tree]
 
 			variable ps7_cortexa9_1x_clk
 			set ip_tree [tree_append $ip_tree [list "xlnx,ptp-enet-clock" int $ps7_cortexa9_1x_clk]]
@@ -3850,4 +3865,36 @@ proc dma_channel_config {xdma addr mode intc slave devid} {
 	set chantree [gen_interrupt_property $chantree $slave $intc [list [format "%s_introut" $modelow]]]
 
 	return $chantree
+}
+
+proc is_gmii2rgmii_conv_present {slave} {
+	set port_value 0
+	set phy_addr -1
+	set ethernet_inst 1
+	set ipconv 0
+
+	# No any other way how to detect this convertor
+	set mhs_handle [xget_hw_parent_handle $slave]
+	set ips [xget_hw_ipinst_handle $mhs_handle "*"]
+	set ip_name [xget_hw_name $slave]
+	set tmp0 [string first $ethernet_inst $ip_name]
+
+	foreach ip $ips {
+		set ipname [xget_hw_name $ip]
+		set periph [xget_value $ip "value"]
+		if { [string compare -nocase $periph "gmii_to_rgmii"] == 0} {
+			set ipconv $ip
+			break
+		}
+	}
+	if { $ipconv != 0 }  {
+		set port_value [xget_hw_port_value $ipconv "gmii_txd"]
+		if { $port_value != 0 } {
+			set tmp1 [string first $ethernet_inst $port_value]
+			if { $tmp1 >= 0 && $tmp0 >= 0 } {
+				set phy_addr [scan_int_parameter_value $ipconv "C_PHYADDR"]
+			}
+		}
+	}
+	return $phy_addr
 }
