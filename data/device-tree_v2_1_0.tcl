@@ -3279,8 +3279,13 @@ proc default_parameters {ip_handle} {
 			"C_M*_AXIS*" -
 			"C_S*_AXIS*" -
 			"C_PRH*" -
+			"C_FAMILY" -
 			"HW_VER" {}
-			default { lappend params $par_name }
+			default {
+				if { [ regexp {^C_.+} $par_name ] } {
+					lappend params $par_name
+				}
+			}
 		}
 	}
 	return $params
