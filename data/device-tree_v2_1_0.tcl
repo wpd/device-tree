@@ -2493,7 +2493,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 		"axi_epc" -
 		"xps_epc" {
 			set tree [compound_slave $slave "C_PRH0_BASEADDR"]
-			set tree [tree_append $tree [list ranges empty empty]]
 
 			set epc_peripheral_num [xget_hw_parameter_value $slave "C_NUM_PERIPHERALS"]
 			for {set x 0} {$x < ${epc_peripheral_num}} {incr x} {
