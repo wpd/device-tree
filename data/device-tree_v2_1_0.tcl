@@ -1152,7 +1152,7 @@ proc zynq_irq {ip_tree intc name } {
 		{ps7_qspi_0} {0 19 4} \
 		{ps7_gpio_0} {0 20 4} \
 		{ps7_usb_0} {0 21 4} \
-		{ps7_ethernet_0} {0 22 1} \
+		{ps7_ethernet_0} {0 22 4} \
 		{ps7_ethernet_wake0FIXME} {0 23 1} \
 		{ps7_sd_0} {0 24 4} \
 		{ps7_i2c_0} {0 25 4} \
@@ -1162,7 +1162,7 @@ proc zynq_irq {ip_tree intc name } {
 		{ps7_fpga_7_0FIXME} {0 29 4 0 34 0 0 31 4 0 32 4 0 33 4 0 34 4 0 35 4 0 36 4} \
 		{ps7_ttc_1} {0 37 4 0 38 4 0 39 4} \
 		{ps7_usb_1} {0 44 4} \
-		{ps7_ethernet_1} {0 45 1} \
+		{ps7_ethernet_1} {0 45 4} \
 		{ps7_ethernet_wake1FIXME} {0 46 1} \
 		{ps7_sd_1} {0 47 4} \
 		{ps7_i2c_1} {0 48 4} \
