@@ -3879,17 +3879,14 @@ proc dma_channel_config {xdma addr mode intc slave devid} {
 proc is_gmii2rgmii_conv_present {slave} {
 	set port_value 0
 	set phy_addr -1
-	set ethernet_inst 1
 	set ipconv 0
 
 	# No any other way how to detect this convertor
 	set mhs_handle [xget_hw_parent_handle $slave]
 	set ips [xget_hw_ipinst_handle $mhs_handle "*"]
 	set ip_name [xget_hw_name $slave]
-	set tmp0 [string first $ethernet_inst $ip_name]
 
 	foreach ip $ips {
-		set ipname [xget_hw_name $ip]
 		set periph [xget_value $ip "value"]
 		if { [string compare -nocase $periph "gmii_to_rgmii"] == 0} {
 			set ipconv $ip
@@ -3899,9 +3896,18 @@ proc is_gmii2rgmii_conv_present {slave} {
 	if { $ipconv != 0 }  {
 		set port_value [xget_hw_port_value $ipconv "gmii_txd"]
 		if { $port_value != 0 } {
-			set tmp1 [string first $ethernet_inst $port_value]
-			if { $tmp1 >= 0 && $tmp0 >= 0 } {
-				set phy_addr [scan_int_parameter_value $ipconv "C_PHYADDR"]
+			set tmp [string first "ENET0" $port_value]
+			if { $tmp >= 0 } {
+				if { [string compare -nocase $ip_name "ps7_ethernet_0"] == 0} {
+					set phy_addr [scan_int_parameter_value $ipconv "C_PHYADDR"]
+				}
+			} else {
+				set tmp0 [string first "ENET1" $port_value]
+				if { $tmp0 >= 0 } {
+					if { [string compare -nocase $ip_name "ps7_ethernet_1"] == 0} {
+						set phy_addr [scan_int_parameter_value $ipconv "C_PHYADDR"]
+					}
+				}
 			}
 		}
 	}
