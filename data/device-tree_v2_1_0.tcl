@@ -1912,7 +1912,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			lappend node $ip_tree
 		}
 		"ps7_ttc" {
-			set ip_tree [slaveip $slave $intc "" "" "S_AXI_" ""]
+			set ip_tree [slaveip $slave $intc "" "" "S_AXI_" "cdns,ttc"]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 
