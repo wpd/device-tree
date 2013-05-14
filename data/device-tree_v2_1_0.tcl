@@ -1,9 +1,9 @@
 #
 # EDK BSP board generation for device trees supporting Microblaze and PPC
 #
-# (C) Copyright 2007-2012 Xilinx, Inc.
+# (C) Copyright 2007-2013 Xilinx, Inc.
 # Based on original code:
-# (C) Copyright 2007-2012 Michal Simek
+# (C) Copyright 2007-2013 Michal Simek
 # (C) Copyright 2007-2012 PetaLogix Qld Pty Ltd
 #
 # Michal SIMEK <monstr@monstr.eu>
@@ -507,8 +507,8 @@ proc headerc {ufile generator_version} {
 	puts $ufile "/*"
 	puts $ufile " * Device Tree Generator version: $generator_version"
 	puts $ufile " *"
-	puts $ufile " * (C) Copyright 2007-2012 Xilinx, Inc."
-	puts $ufile " * (C) Copyright 2007-2012 Michal Simek"
+	puts $ufile " * (C) Copyright 2007-2013 Xilinx, Inc."
+	puts $ufile " * (C) Copyright 2007-2013 Michal Simek"
 	puts $ufile " * (C) Copyright 2007-2012 PetaLogix Qld Pty Ltd"
 	puts $ufile " *"
 	puts $ufile " * Michal SIMEK <monstr@monstr.eu>"
