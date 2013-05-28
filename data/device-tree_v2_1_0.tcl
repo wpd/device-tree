@@ -2806,6 +2806,16 @@ proc gen_microblaze {tree hwproc_handle params} {
 	return $tree
 }
 
+proc get_first_mem_controller { memory_nodes } {
+	foreach order "ps7_ddr axi_v6_ddrx axi_7series_ddrx axi_s6_ddrx mpmc" {
+		foreach node $memory_nodes {
+			if { "[lindex $node 0]" == "$order" } {
+				return $node
+			}
+		}
+	}
+}
+
 proc gen_memories {tree hwproc_handle} {
 	global main_memory main_memory_bank
 	global main_memory_start main_memory_size
@@ -2827,6 +2837,7 @@ proc gen_memories {tree hwproc_handle} {
 	set mhs_handle [xget_hw_parent_handle $hwproc_handle]
 	set ip_handles [xget_hw_ipinst_handle $mhs_handle "*"]
 	set memory_count 0
+	set memory_nodes {}
 	foreach slave $ip_handles {
 		set name [xget_hw_name $slave]
 		set type [xget_hw_value $slave]
@@ -2836,7 +2847,15 @@ proc gen_memories {tree hwproc_handle} {
 				continue;
 			}
 		}
+		set node $type
 		switch $type {
+			"lmb_bram_if_cntlr" {
+				if { "$name" == "microblaze_0_i_bram_ctrl" } {
+					lappend node [memory $slave "" ""]
+					lappend memory_nodes $node
+					incr memory_count
+				}
+			}
 			"axi_bram_ctrl" -
 			"plb_bram_if_cntlr" -
 			"opb_bram_if_cntlr" {
@@ -2847,12 +2866,14 @@ proc gen_memories {tree hwproc_handle} {
 			"opb_sdram" -
 			"mig_7series" {
 				# Handle bankless memories.
-				lappend tree [memory $slave "" ""]
+				lappend node [memory $slave "" ""]
+				lappend memory_nodes $node
 				incr memory_count
 			}
 			"ppc440mc_ddr2" {
 				# Handle bankless memories.
-				lappend tree [memory $slave "MEM_" ""]
+				lappend node [memory $slave "MEM_" ""]
+				lappend memory_nodes $node
 				incr memory_count
 			}
 			"axi_s6_ddrx" {
@@ -2862,7 +2883,8 @@ proc gen_memories {tree hwproc_handle} {
 					if {$highaddr < $baseaddr} {
 						continue;
 					}
-					lappend tree [memory $slave [format "S%d_AXI_" $x] ""]
+					lappend node [memory $slave [format "S%d_AXI_" $x] ""]
+					lappend memory_nodes $node
 					break;
 				}
 				incr memory_count
@@ -2876,12 +2898,14 @@ proc gen_memories {tree hwproc_handle} {
 				set highaddr [expr $highaddr + 1]
 				lappend subnode [list "device_type" string "memory"]
 				lappend subnode [list "reg" hexinttuple [list $baseaddr $highaddr]]
-				lappend tree [list [format_ip_name "memory" $baseaddr $name] tree $subnode]
+				lappend node [list [format_ip_name "memory" $baseaddr $name] tree $subnode]
+				lappend memory_nodes $node
 				incr memory_count
 			}
 			"axi_v6_ddrx" -
 			"axi_7series_ddrx" {
-				lappend tree [memory $slave "S_AXI_" ""]
+				lappend node [memory $slave "S_AXI_" ""]
+				lappend memory_nodes $node
 				incr memory_count
 			}
 			"opb_cypress_usb" -
@@ -2904,7 +2928,8 @@ proc gen_memories {tree hwproc_handle} {
 				}
 				for {set x 0} {$x < $count} {incr x} {
 					if { $x == $main_memory_bank } {
-						lappend tree [memory $slave [format "MEM%d_" $x] ""]
+						lappend node [memory $slave [format "MEM%d_" $x] ""]
+						lappend memory_nodes $node
 						incr memory_count
 					}
 				}
@@ -2927,14 +2952,16 @@ proc gen_memories {tree hwproc_handle} {
 					if { $synch_mem == 2 || $synch_mem == 3 } {
 						continue;
 					}
-					lappend tree [memory $slave [format "S_AXI_MEM%d_" $x] ""]
+					lappend node [memory $slave [format "S_AXI_MEM%d_" $x] ""]
+					lappend memory_nodes $node
 					incr memory_count
 				}
 			}
 			"mpmc" {
 				set share_addresses [scan_int_parameter_value $slave "C_ALL_PIMS_SHARE_ADDRESSES"]
 				if {$share_addresses != 0} {
-					lappend tree [memory $slave "MPMC_" ""]
+					lappend node [memory $slave "MPMC_" ""]
+					lappend memory_nodes $node
 				} else {
 					set old_baseaddr [scan_int_parameter_value $slave [format "C_PIM0_BASEADDR" $x]]
 					set old_offset [scan_int_parameter_value $slave [format "C_PIM0_OFFSET" $x]]
@@ -2952,7 +2979,8 @@ proc gen_memories {tree hwproc_handle} {
 						}
 					}
 					if {$safe_addresses == 1} {
-						lappend tree [memory $slave "PIM0_" ""]
+						lappend node [memory $slave "PIM0_" ""]
+						lappend memory_nodes $node
 					}
 				}
 
@@ -2965,7 +2993,15 @@ proc gen_memories {tree hwproc_handle} {
 	}
 	if {$memory_count > 1} {
 		debug warning "Warning!: More than one memory found.  Note that most platforms don't support non-contiguous memory maps!"
+		debug warning "Warning!: Try to find out the main memory controller!"
+		set memory_node [get_first_mem_controller $memory_nodes]
+	} else {
+		set memory_node [lindex $memory_nodes 0]
 	}
+
+	# Skip type because only one memory node is selected
+	lappend tree [lindex $memory_node 1]
+
 	return $tree
 }
 
