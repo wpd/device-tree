@@ -1878,11 +1878,21 @@ proc gener_slave {node slave intc {force_type ""}} {
 		"ps7_can" -
 		"ps7_iop_bus_config" -
 		"ps7_qspi_linear" -
-		"ps7_ddrc" -
+		"ps7_ddrc" {
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			# use TCL table
+			set ip_tree [zynq_irq $ip_tree $intc $name]
+
+			lappend node $ip_tree
+		}
 		"ps7_dev_cfg" {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+
+			# FIXME: set reg size to 0x100 because XADC is generated separately
+			set baseaddr [scan_int_parameter_value $slave "C_S_AXI_BASEADDR"]
+			set ip_tree [tree_node_update $ip_tree "reg" [list "reg" hexinttuple [list $baseaddr "256" ]]]
 
 			lappend node $ip_tree
 		}
