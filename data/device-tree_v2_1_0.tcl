@@ -51,13 +51,13 @@ variable microblaze_system_timer ""
 variable serial_count 0
 variable sysace_count 0
 variable ethernet_count 0
+variable spi_count 0
 variable alias_node_list {}
 variable phy_count 0
 
 variable vdma_device_id 0
 variable dma_device_id 0
 
-variable ps7_spi_count 0
 variable ps7_i2c_count 0
 
 # FIXME it will be better not to use it
@@ -1781,6 +1781,12 @@ proc gener_slave {node slave intc {force_type ""}} {
 		"xps_spi" -
 		"axi_quad_spi" -
 		"axi_spi" {
+			variable spi_count
+			variable alias_node_list
+			set alias_node [list spi$spi_count aliasref $name $spi_count]
+			lappend alias_node_list $alias_node
+			incr spi_count
+
 			# We will handle SPI FLASH here
 			global flash_memory flash_memory_bank
 			set tree [slaveip_intr $slave $intc [interrupt_list $slave] "spi" [default_parameters $slave] "" ]
@@ -1929,13 +1935,17 @@ proc gener_slave {node slave intc {force_type ""}} {
 			lappend node $ip_tree
 		}
 		"ps7_qspi" {
+			variable spi_count
+			variable alias_node_list
+			set alias_node [list spi$spi_count aliasref $name $spi_count]
+			lappend alias_node_list $alias_node
+			incr spi_count
+
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 
-			variable ps7_spi_count
 			set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_QSPI_CLK_FREQ_HZ"]]]
-			set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
 			set ip_tree [tree_append $ip_tree [list "num-chip-select" int 1]]
 			set qspi_mode [xget_sw_parameter_value $slave "C_QSPI_MODE"]
 			if { $qspi_mode == 2} {
@@ -1944,7 +1954,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 				set is_dual 0
 			}
 			set ip_tree [tree_append $ip_tree [list "is-dual" int $is_dual]]
-			incr ps7_spi_count
 
 			# We will handle SPI FLASH here
 			global flash_memory flash_memory_bank
@@ -1999,15 +2008,19 @@ proc gener_slave {node slave intc {force_type ""}} {
 			lappend node $ip_tree
 		}
 		"ps7_spi" {
+			variable spi_count
+			variable alias_node_list
+			set alias_node [list spi$spi_count aliasref $name $spi_count]
+			lappend alias_node_list $alias_node
+			incr spi_count
+
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 
-			variable ps7_spi_count
 			set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_SPI_CLK_FREQ_HZ"]]]
-			set ip_tree [tree_append $ip_tree [list "bus-num" int $ps7_spi_count]]
 			set ip_tree [tree_append $ip_tree [list "num-chip-select" int 4]]
-			incr ps7_spi_count
+
 			# We will handle SPI FLASH here
 			global flash_memory flash_memory_bank
 
