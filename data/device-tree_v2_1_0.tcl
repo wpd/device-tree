@@ -3722,33 +3722,45 @@ proc write_value {file indent type value} {
 			puts -nonewline $file "= <0x[format %x [expr $value & 0xffffffff]]>"
 		} elseif {$type == "empty"} {
 		} elseif {$type == "inttuple"} {
-			puts -nonewline $file "= < "
+			set first true
+			puts -nonewline $file "= <"
 			foreach element $value {
-				puts -nonewline $file "[format %d $element] "
+				if {$first != true} { puts -nonewline $file " " }
+				puts -nonewline $file "[format %d $element]"
+				set first false
 			}
 			puts -nonewline $file ">"
 		} elseif {$type == "hexinttuple"} {
-			puts -nonewline $file "= < "
+			set first true
+			puts -nonewline $file "= <"
 			foreach element $value {
+				if {$first != true} { puts -nonewline $file " " }
 				# Mask down to 32-bits
-				puts -nonewline $file "0x[format %x [expr $element & 0xffffffff]] "
+				puts -nonewline $file "0x[format %x [expr $element & 0xffffffff]]"
+				set first false
 			}
 			puts -nonewline $file ">"
 		} elseif {$type == "bytesequence"} {
-			puts -nonewline $file "= \[ "
+			set first true
+			puts -nonewline $file "= \["
 			foreach element $value {
 				if {[expr $element > 255]} {
 					error {"Value $element is not a byte!"}
 				}
-				puts -nonewline $file "[format %02x $element] "
+				if {$first != true} { puts -nonewline $file " " }
+				puts -nonewline $file "[format %02x $element]"
+				set first false
 			}
 			puts -nonewline $file "\]"
 		} elseif {$type == "labelref"} {
 			puts -nonewline $file "= <&$value>"
 		} elseif {$type == "labelref-ext"} {
-			puts -nonewline $file "= < &"
+			set first true
+			puts -nonewline $file "= <&"
 			foreach element $value {
-				puts -nonewline $file "$element "
+				if {$first != true} { puts -nonewline $file " " }
+				puts -nonewline $file "$element"
+				set first false
 			}
 			puts -nonewline $file ">"
 		} elseif {$type == "aliasref"} {
