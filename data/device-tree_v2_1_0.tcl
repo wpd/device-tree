@@ -2227,9 +2227,11 @@ proc gener_slave {node slave intc {force_type ""}} {
 				lappend node $ip_tree
 			}
 		}
+		"axi_bram_ctrl" {
+			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] "S_AXI_" ""]
+		}
 		"plb_bram_if_cntlr" -
 		"opb_bram_if_cntlr" -
-		"axi_bram_ctrl" -
 		"opb_cypress_usb" -
 		"plb_ddr" -
 		"plb_ddr2" -
