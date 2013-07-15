@@ -2134,8 +2134,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 						[list "#address-cells" inttuple "2" ] \
 						[list "#size-cells" inttuple "1" ] \
 						[list "interrupt-controller" empty empty ] \
-						[list "linux,phandle" hexinttuple "0x1" ] \
-						[list "phandle" hexinttuple "0x1" ] \
 					] \
 				]
 			lappend node $tree
