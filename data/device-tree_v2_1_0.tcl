@@ -2138,7 +2138,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 #			lappend node [gen_intc $slave "" "interrupt-controller" [default_parameters $slave] "S_AXI_" "arm,gic"]
 		}
 		"ps7_pl310" {
-			set tree [list "ps7_pl310_0: ps7-pl310@f8f02000" tree \
+			set ip_tree [list "ps7_pl310_0: ps7-pl310@f8f02000" tree \
 					[list \
 						[gen_compatible_property "ps7_pl310" "ps7_pl310" "1.00.a" "arm,pl310-cache" ] \
 						[list "cache-unified" empty empty ] \
@@ -2148,18 +2148,18 @@ proc gener_slave {node slave intc {force_type ""}} {
 						[list "arm,tag-latency" inttuple [list "2" "2" "2"] ] \
 					] \
 				]
-			set tree [zynq_irq $tree $intc $name]
-			lappend node $tree
+			set ip_tree [zynq_irq $ip_tree $intc $name]
+			lappend node $ip_tree
 		}
 		"ps7_xadc" {
-			set tree [list "ps7_xadc: ps7-xadc@f8007100" tree \
+			set ip_tree [list "ps7_xadc: ps7-xadc@f8007100" tree \
 					[list \
 						[gen_compatible_property "ps7_xadc" "ps7_xadc" "1.00.a" ] \
 						[list "reg" hexinttuple [list "0xF8007100" "0x20"] ] \
 					] \
 				]
-			set tree [zynq_irq $tree $intc $name]
-			lappend node $tree
+			set ip_tree [zynq_irq $ip_tree $intc $name]
+			lappend node $ip_tree
 		}
 		"ps7_trace" -
 		"ps7_ddr" {
