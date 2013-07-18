@@ -51,14 +51,13 @@ variable microblaze_system_timer ""
 variable serial_count 0
 variable sysace_count 0
 variable ethernet_count 0
+variable i2c_count 0
 variable spi_count 0
 variable alias_node_list {}
 variable phy_count 0
 
 variable vdma_device_id 0
 variable dma_device_id 0
-
-variable ps7_i2c_count 0
 
 # FIXME it will be better not to use it
 variable ps7_cortexa9_clk 0
@@ -1816,6 +1815,12 @@ proc gener_slave {node slave intc {force_type ""}} {
 		"opb_iic" -
 		"xps_iic" -
 		"axi_iic" {
+			variable i2c_count
+			variable alias_node_list
+			set alias_node [list i2c$i2c_count aliasref $name $i2c_count]
+			lappend alias_node_list $alias_node
+			incr i2c_count
+
 			# We should handle this specially, to report two ports.
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "i2c" [default_parameters $slave]]
 		}
@@ -1946,15 +1951,19 @@ proc gener_slave {node slave intc {force_type ""}} {
 			lappend node $ip_tree
 		}
 		"ps7_i2c" {
+			variable i2c_count
+			variable alias_node_list
+			set alias_node [list i2c$i2c_count aliasref $name $i2c_count]
+			lappend alias_node_list $alias_node
+
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 			set ip_tree [zynq_clk $ip_tree $name]
 
-			variable ps7_i2c_count
 			set ip_tree [tree_append $ip_tree [list "i2c-clk" int 400000]]
-			set ip_tree [tree_append $ip_tree [list "bus-id" int $ps7_i2c_count]]
-			incr ps7_i2c_count
+			set ip_tree [tree_append $ip_tree [list "bus-id" int $i2c_count]]
+			incr i2c_count
 
 			lappend node $ip_tree
 		}
