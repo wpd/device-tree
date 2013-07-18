@@ -2614,8 +2614,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 			switch [llength $address_array] {
 				"0" {
 					# maybe just IP just with interrupt line
-					set name [xget_hw_name $slave]
-					set type [xget_hw_value $slave]
 					set tree [slaveip_basic $slave $intc [default_parameters $slave] [format_ip_name $type "0" $name] ""]
 					set tree [gen_interrupt_property $tree $slave $intc [interrupt_list $slave]]
 					lappend node $tree
