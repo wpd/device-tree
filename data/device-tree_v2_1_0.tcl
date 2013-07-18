@@ -1131,50 +1131,55 @@ proc check_console_irq {slave intc} {
 
 proc zynq_irq {ip_tree intc name } {
 	array set zynq_irq_list [ list \
-		{cpu_timerFIXME} {1 11 1} \
-		{nFIQFIXME} {1 12 8} \
-		{ps7_scutimer_0} {1 13 0x301} \
-		{ps7_scuwdt_0} {1 14 0x301} \
-		{nIRQFIXME} {1 15 8} \
-		{ps7_core_parity} {0 0 1 0 1 1} \
-		{ps7_pl310} {0 2 4} \
-		{ps7_l2cc} {0 3 4} \
-		{ps7_ocm} {0 4 4} \
-		{ps7_pmu} {0 5 4 0 6 4} \
-		{ps7_xadc} {0 7 4} \
-		{ps7_dev_cfg_0} {0 8 4} \
-		{ps7_wdt_0} {0 9 1} \
-		{ps7_ttc_0} {0 10 4 0 11 4 0 12 4} \
-		{ps7_dma_s} {0 13 4 0 14 4 0 15 4 0 16 4 0 17 4 0 40 4 0 41 4 0 42 4 0 43 4} \
-		{ps7_dma_ns} {0 13 4 0 14 4 0 15 4 0 16 4 0 17 4 0 40 4 0 41 4 0 42 4 0 43 4} \
-		{ps7_smcc} {0 18 4} \
-		{ps7_qspi_0} {0 19 4} \
-		{ps7_gpio_0} {0 20 4} \
-		{ps7_usb_0} {0 21 4} \
-		{ps7_ethernet_0} {0 22 4} \
-		{ps7_ethernet_wake0FIXME} {0 23 1} \
-		{ps7_sd_0} {0 24 4} \
-		{ps7_i2c_0} {0 25 4} \
-		{ps7_spi_0} {0 26 4} \
-		{ps7_uart_0} {0 27 4} \
-		{ps7_can_0} {0 28 4} \
-		{ps7_fpga_7_0FIXME} {0 29 4 0 34 0 0 31 4 0 32 4 0 33 4 0 34 4 0 35 4 0 36 4} \
-		{ps7_ttc_1} {0 37 4 0 38 4 0 39 4} \
-		{ps7_usb_1} {0 44 4} \
-		{ps7_ethernet_1} {0 45 4} \
-		{ps7_ethernet_wake1FIXME} {0 46 1} \
-		{ps7_sd_1} {0 47 4} \
-		{ps7_i2c_1} {0 48 4} \
-		{ps7_spi_1} {0 49 4} \
-		{ps7_uart_1} {0 50 4} \
-		{ps7_can_1} {0 51 4} \
-		{ps7_fpga_irq_15_8FIXME} {0 52 4 0 53 4 0 54 4 0 55 4 0 56 4 0 57 4 0 58 4 0 59 4} \
-		{scu_parityFIXME} {0 60 1} \
+		{cpu_timerFIXME} {{1 11 1}} \
+		{nFIQFIXME} {{1 12 8}} \
+		{ps7_scutimer_0} {{1 13 0x301}} \
+		{ps7_scuwdt_0} {{1 14 0x301}} \
+		{nIRQFIXME} {{1 15 8}} \
+		{ps7_core_parity} {{0 0 1 0 1 1}} \
+		{ps7_pl310} {{0 2 4}} \
+		{ps7_l2cc} {{0 3 4}} \
+		{ps7_ocm} {{0 4 4}} \
+		{ps7_pmu} {{0 5 4 0 6 4}} \
+		{ps7_xadc} {{0 7 4}} \
+		{ps7_dev_cfg_0} {{0 8 4}} \
+		{ps7_wdt_0} {{0 9 1}} \
+		{ps7_ttc_0} {{0 10 4 0 11 4 0 12 4} {ttc0 ttc1 ttc2}}\
+		{ps7_dma_s} {{0 13 4 0 14 4 0 15 4 0 16 4 0 17 4 0 40 4 0 41 4 0 42 4 0 43 4}} \
+		{ps7_dma_ns} {{0 13 4 0 14 4 0 15 4 0 16 4 0 17 4 0 40 4 0 41 4 0 42 4 0 43 4}} \
+		{ps7_smcc} {{0 18 4}} \
+		{ps7_qspi_0} {{0 19 4}} \
+		{ps7_gpio_0} {{0 20 4}} \
+		{ps7_usb_0} {{0 21 4}} \
+		{ps7_ethernet_0} {{0 22 4}} \
+		{ps7_ethernet_wake0FIXME} {{0 23 1}} \
+		{ps7_sd_0} {{0 24 4}} \
+		{ps7_i2c_0} {{0 25 4}} \
+		{ps7_spi_0} {{0 26 4}} \
+		{ps7_uart_0} {{0 27 4}} \
+		{ps7_can_0} {{0 28 4}} \
+		{ps7_fpga_7_0FIXME} {{0 29 4 0 34 0 0 31 4 0 32 4 0 33 4 0 34 4 0 35 4 0 36 4}} \
+		{ps7_ttc_1} {{0 37 4 0 38 4 0 39 4}} \
+		{ps7_usb_1} {{0 44 4}} \
+		{ps7_ethernet_1} {{0 45 4}} \
+		{ps7_ethernet_wake1FIXME} {{0 46 1}} \
+		{ps7_sd_1} {{0 47 4}} \
+		{ps7_i2c_1} {{0 48 4}} \
+		{ps7_spi_1} {{0 49 4}} \
+		{ps7_uart_1} {{0 50 4}} \
+		{ps7_can_1} {{0 51 4}} \
+		{ps7_fpga_irq_15_8FIXME} {{0 52 4 0 53 4 0 54 4 0 55 4 0 56 4 0 57 4 0 58 4 0 59 4}} \
+		{scu_parityFIXME} {{0 60 1}} \
 	]
 
 	if { [info exists zynq_irq_list($name)] } {
 		set irq "$zynq_irq_list($name)"
-		set ip_tree [tree_append $ip_tree [list "interrupts" inttuple "$irq"]]
+
+		set ip_tree [tree_append $ip_tree [list "interrupts" inttuple [lindex $irq 0]]]
+		if {[llength $irq] == 2 } {
+			set ip_tree [tree_append $ip_tree [list "interrupt-names" stringtuple [lindex $irq 1]]]
+		}
+
 		set intc_name [xget_hw_name $intc]
 		set ip_tree [tree_append $ip_tree [list "interrupt-parent" labelref $intc_name]]
 	}
