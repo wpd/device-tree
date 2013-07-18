@@ -55,6 +55,7 @@ variable i2c_count 0
 variable spi_count 0
 variable alias_node_list {}
 variable phy_count 0
+variable trafgen_count 0
 
 variable vdma_device_id 0
 variable dma_device_id 0
@@ -755,9 +756,9 @@ proc compound_slave {slave {baseaddrname "C_BASEADDR"}} {
 	return $tree
 }
 
-proc slaveip_intr {slave intc interrupt_port_list devicetype params {baseaddr_prefix ""} {dcr_baseaddr_prefix ""} {other_compatibles {}} } {
+proc slaveip_intr {slave intc interrupt_port_list devicetype params {baseaddr_prefix ""} {dcr_baseaddr_prefix ""} {other_compatibles {}} {irq_names {}} } {
 	set tree [slaveip $slave $intc $devicetype $params $baseaddr_prefix $other_compatibles]
-	return [gen_interrupt_property $tree $slave $intc $interrupt_port_list]
+	return [gen_interrupt_property $tree $slave $intc $interrupt_port_list $irq_names]
 }
 
 proc get_dcr_parent_name {slave face} {
@@ -1413,6 +1414,13 @@ proc gener_slave {node slave intc {force_type ""}} {
 			} elseif { $type == "axi_timebase_wdt" } {
 				set ip_tree [tree_append $ip_tree [list "clock-frequency" int [get_clock_frequency $slave "S_AXI_ACLK"]]]
 			}
+			lappend node $ip_tree
+		}
+		"axi_traffic_gen" {
+			variable trafgen_count
+			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" "" "" "" "" [list "err-out" "irq-out"] ]
+			set ip_tree [tree_append $ip_tree [list "xlnx,device-id" int $trafgen_count]]
+			incr trafgen_count
 			lappend node $ip_tree
 		}
 		"xps_timer" -
@@ -3570,6 +3578,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{axi_tft} {xps_tft_1.00.a} \
 		{xps_iic} {xps_iic_2.00.a} \
 		{axi_iic} {xps_iic_2.00.a} \
+		{axi_traffic_gen} {axi-traffic-gen} \
 		{xps_intc} {xps_intc_1.00.a} \
 		{axi_intc} {xps_intc_1.00.a} \
 		{xps_ll_temac} {xps_ll_temac_1.01.b xps_ll_temac_1.00.a} \
@@ -3693,7 +3702,7 @@ proc gen_ranges_property_list {slave rangelist} {
 	return [list "ranges" hexinttuple $ranges]
 }
 
-proc gen_interrupt_property {tree slave intc interrupt_port_list} {
+proc gen_interrupt_property {tree slave intc interrupt_port_list {irq_names {}}} {
 	set intc_name [xget_hw_name $intc]
 	set interrupt_list {}
 	foreach in $interrupt_port_list {
@@ -3711,6 +3720,9 @@ proc gen_interrupt_property {tree slave intc interrupt_port_list} {
 	if {[llength $interrupt_list] != 0} {
 		set tree [tree_append $tree [list "interrupts" inttuple $interrupt_list]]
 		set tree [tree_append $tree [list "interrupt-parent" labelref $intc_name]]
+		if {[llength $irq_names] != 0} {
+			set tree [tree_append $tree [list "interrupt-names" stringtuple $irq_names]]
+		}
 	}
 	return $tree
 }
