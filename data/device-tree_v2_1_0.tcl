@@ -401,7 +401,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 				set tree [tree_append $tree [list ranges empty empty]]
 				lappend ip_tree $tree
 			}
-			lappend toplevel [list "compatible" stringtuple [list "xlnx,zynq-zc770" "xlnx,zynq-7000"] ]
+			lappend toplevel [list "compatible" stringtuple "xlnx,zynq-7000" ]
 			if { ![info exists board_name] } {
 				lappend toplevel [list model string "Xilinx Zynq"]
 			}
