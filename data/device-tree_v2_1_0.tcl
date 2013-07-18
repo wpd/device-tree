@@ -1182,6 +1182,46 @@ proc zynq_irq {ip_tree intc name } {
 	return $ip_tree
 }
 
+proc zynq_clk {ip_tree name} {
+	array set zynq_clk_list [ list \
+		{ps7_scuwdt_0} {{"clkc 4"}} \
+		{ps7_scutimer_0} {{"clkc 4"}} \
+		{ps7_ttc_0} {{"clkc 6"}} \
+		{ps7_ttc_1} {{"clkc 6"}} \
+		{ps7_qspi_0} {{"clkc 10" "clkc 43"} {"ref_clk" "aper_clk"}} \
+		{ps7_qspi_linear_0} {{"clkc 10" "clkc 43"} { "ref_clk" "aper_clk" }} \
+		{ps7_smcc_0} {{"clkc 11" "clkc 44"} {"ref_clk" "aper_clk"}} \
+		{ps7_xadc} {{"clkc 12"}} \
+		{ps7_dev_cfg_0} {{"clkc 12" "clkc 15" "clkc 16" "clkc 17" "clkc 18"} {"ref_clk" "fclk0" "fclk1" "fclk2" "fclk3"}} \
+		{ps7_ethernet_0} {{"clkc 13" "clkc 30"} {"ref_clk" "aper_clk"}} \
+		{ps7_ethernet_1} {{"clkc 14" "clkc 31"} {"ref_clk" "aper_clk"}} \
+		{ps7_can_0} {{"clkc 19" "clkc 36"} {"ref_clk" "aper_clk"}} \
+		{ps7_can_1} {{"clkc 20" "clkc 37"} {"ref_clk" "aper_clk"}} \
+		{ps7_sd_0} {{"clkc 21" "clkc 32"} {"ref_clk" "aper_clk"}} \
+		{ps7_sd_1} {{"clkc 22" "clkc 33"} {"ref_clk" "aper_clk"}} \
+		{ps7_uart_0} {{"clkc 23" "clkc 40"} {"ref_clk" "aper_clk"}} \
+		{ps7_uart_1} {{"clkc 24" "clkc 41"} {"ref_clk" "aper_clk"}} \
+		{ps7_spi_0} {{"clkc 25" "clkc 34"} {"ref_clk" "aper_clk"}} \
+		{ps7_spi_1} {{"clkc 26" "clkc 35"} {"ref_clk" "aper_clk"}} \
+		{ps7_dma_s} {{"clkc 27"}} \
+		{ps7_usb_0} {{"clkc 28"}} \
+		{ps7_usb_1} {{"clkc 29"}} \
+		{ps7_i2c_0} {{"clkc 38"}} \
+		{ps7_i2c_1} {{"clkc 39"}} \
+		{ps7_gpio_0} {{"clkc 42"}} \
+		{ps7_wdt_0} {{"clkc 45"}} \
+	]
+
+	if { [info exists zynq_clk_list($name)] } {
+		set clk "$zynq_clk_list($name)"
+		set ip_tree [tree_append $ip_tree [list "clocks" labelreftuple [lindex $clk 0]]]
+		if { [llength $clk] == 2 } {
+			set ip_tree [tree_append $ip_tree [list "clock-names" stringtuple [lindex $clk 1]]]
+		}
+	}
+	return $ip_tree
+}
+
 proc gener_slave {node slave intc {force_type ""}} {
 	variable phy_count
 	variable mac_count
@@ -1357,6 +1397,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [tree_append $ip_tree [list "device_type" string "serial"]]
 			set ip_tree [tree_append $ip_tree [list "current-speed" int "115200"]]
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [zynq_clk $ip_tree $name]
 
 			lappend node $ip_tree
 		}
@@ -1820,6 +1861,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "arm,primecell arm,pl330"]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [zynq_clk $ip_tree $name]
 			set ip_tree [tree_append $ip_tree [list "#dma-cells" int "1"]]
 			set ip_tree [tree_append $ip_tree [list "#dma-channels" int "8"]]
 			set ip_tree [tree_append $ip_tree [list "#dma-requests" int "4"]]
@@ -1837,38 +1879,25 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set clock_tree [tree_append $clock_tree [list "#size-cells" int "0"]]
 
 			# PS_CLK node creation
-			set subclk_tree [list "ps_clk: ps_clk" tree {}]
-			set subclk_tree [tree_append $subclk_tree [list "#clock-cells" int "0"]]
-			set subclk_tree [tree_append $subclk_tree [list "compatible" stringtuple "fixed-clock"]]
-			set subclk_tree [tree_append $subclk_tree [list "clock-output-names" stringtuple "ps_clk"]]
-			set subclk_tree [tree_append $subclk_tree [list "clock-frequency" int "33333333"]]
-			set clock_tree [tree_append $clock_tree $subclk_tree]
+			set subclk_tree [list "clkc: clkc" tree {}]
+			set subclk_tree [tree_append $subclk_tree [list "#clock-cells" int "1"]]
+			set subclk_tree [tree_append $subclk_tree [list "compatible" stringtuple "xlnx,ps7-clkc"]]
+			set subclk_tree [tree_append $subclk_tree [list "ps-clk-frequency" int "33333333"]]
 
-			set subclk_tree [list "armpll: armpll" tree {}]
-			set subclk_tree [tree_append $subclk_tree [list "#clock-cells" int "0"]]
-			set subclk_tree [tree_append $subclk_tree [list "compatible" stringtuple "xlnx,zynq-pll"]]
-			set subclk_tree [tree_append $subclk_tree [list "clocks" labelref "ps_clk"]]
-			set subclk_tree [tree_append $subclk_tree [list "reg" hexinttuple [list "0x100" "0x110" "0x10c"]]]
-			set subclk_tree [tree_append $subclk_tree [list "lockbit" int "0"]]
-			set subclk_tree [tree_append $subclk_tree [list "clock-output-names" stringtuple "armpll"]]
-			set clock_tree [tree_append $clock_tree $subclk_tree]
+			set subclk_tree [tree_append $subclk_tree [list "clock-output-names" stringtuple \
+									[ list "armpll" "ddrpll" "iopll" "cpu_6or4x" \
+									"cpu_3or2x" "cpu_2x" "cpu_1x" "ddr2x" "ddr3x" \
+									"dci" "lqspi" "smc" "pcap" "gem0" "gem1" \
+									"fclk0" "fclk1" "fclk2" "fclk3" "can0" "can1" \
+									"sdio0" "sdio1" "uart0" "uart1" "spi0" "spi1" \
+									"dma" "usb0_aper" "usb1_aper" "gem0_aper" \
+									"gem1_aper" "sdio0_aper" "sdio1_aper" \
+									"spi0_aper" "spi1_aper" "can0_aper" "can1_aper" \
+									"i2c0_aper" "i2c1_aper" "uart0_aper" "uart1_aper" \
+									"gpio_aper" "lqspi_aper" "smc_aper" "swdt" \
+									"dbg_trc" "dbg_apb" \
+									]]]
 
-			set subclk_tree [list "ddrpll: ddrpll" tree {}]
-			set subclk_tree [tree_append $subclk_tree [list "#clock-cells" int "0"]]
-			set subclk_tree [tree_append $subclk_tree [list "compatible" stringtuple "xlnx,zynq-pll"]]
-			set subclk_tree [tree_append $subclk_tree [list "clocks" labelref "ps_clk"]]
-			set subclk_tree [tree_append $subclk_tree [list "reg" hexinttuple [list "0x104" "0x114" "0x10c"]]]
-			set subclk_tree [tree_append $subclk_tree [list "lockbit" int "1"]]
-			set subclk_tree [tree_append $subclk_tree [list "clock-output-names" stringtuple "ddrpll"]]
-			set clock_tree [tree_append $clock_tree $subclk_tree]
-
-			set subclk_tree [list "iopll: iopll" tree {}]
-			set subclk_tree [tree_append $subclk_tree [list "#clock-cells" int "0"]]
-			set subclk_tree [tree_append $subclk_tree [list "compatible" stringtuple "xlnx,zynq-pll"]]
-			set subclk_tree [tree_append $subclk_tree [list "clocks" labelref "ps_clk"]]
-			set subclk_tree [tree_append $subclk_tree [list "reg" hexinttuple [list "0x108" "0x118" "0x10c"]]]
-			set subclk_tree [tree_append $subclk_tree [list "lockbit" int "2"]]
-			set subclk_tree [tree_append $subclk_tree [list "clock-output-names" stringtuple "iopll"]]
 			set clock_tree [tree_append $clock_tree $subclk_tree]
 
 			set ip_tree [tree_append $ip_tree $clock_tree]
@@ -1882,6 +1911,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [zynq_clk $ip_tree $name]
 
 			lappend node $ip_tree
 		}
@@ -1889,6 +1919,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [zynq_clk $ip_tree $name]
 
 			# FIXME: set reg size to 0x100 because XADC is generated separately
 			set baseaddr [scan_int_parameter_value $slave "C_S_AXI_BASEADDR"]
@@ -1907,6 +1938,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set mask [expr {$mask & 0xffffffff}]
 			set ip_tree [tree_append $ip_tree [list "gpio-mask-high" hexint $mask]]
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [zynq_clk $ip_tree $name]
 
 			set ip_tree [tree_append $ip_tree [list "#gpio-cells" int "2"]]
 			set ip_tree [tree_append $ip_tree [list "gpio-controller" empty empty]]
@@ -1917,6 +1949,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [zynq_clk $ip_tree $name]
 
 			variable ps7_i2c_count
 			variable ps7_cortexa9_clk
@@ -1931,6 +1964,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [slaveip $slave $intc "" "" "S_AXI_" "cdns,ttc"]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [zynq_clk $ip_tree $name]
 
 			lappend node $ip_tree
 		}
@@ -1938,6 +1972,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			# use TCL table
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "arm,cortex-a9-twd-timer"]
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [zynq_clk $ip_tree $name]
 
 			lappend node $ip_tree
 		}
@@ -1951,6 +1986,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [zynq_clk $ip_tree $name]
 
 			set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_QSPI_CLK_FREQ_HZ"]]]
 			set ip_tree [tree_append $ip_tree [list "num-chip-select" int 1]]
@@ -1988,6 +2024,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [zynq_clk $ip_tree $name]
 
 			set ip_tree [tree_append $ip_tree [list "device_type" string "watchdog"]]
 			set ip_tree [tree_append $ip_tree [list "reset" int 0]]
@@ -1999,6 +2036,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [zynq_clk $ip_tree $name]
 
 			set ip_tree [tree_append $ip_tree [list "device_type" string "watchdog"]]
 
@@ -2008,6 +2046,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [zynq_clk $ip_tree $name]
 
 			set ip_tree [tree_append $ip_tree [list "dr_mode" string "host"]]
 			set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]]
@@ -2024,6 +2063,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [zynq_clk $ip_tree $name]
 
 			set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_SPI_CLK_FREQ_HZ"]]]
 			set ip_tree [tree_append $ip_tree [list "num-chip-select" int 4]]
@@ -2053,6 +2093,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			# FIXME linux sdhci requires clock-frequency even if we use common clock framework
 			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_SDIO_CLK_FREQ_HZ"]]]
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [zynq_clk $ip_tree $name]
 			lappend node $ip_tree
 		}
 		"ps7_smcc" {
@@ -2060,6 +2101,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $type]
+			set ip_tree [zynq_clk $ip_tree $name]
 
 			variable ps7_smcc_list
 			if {![string match "" $ps7_smcc_list]} {
@@ -2149,6 +2191,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 					] \
 				]
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [zynq_clk $ip_tree $name]
 			lappend node $ip_tree
 		}
 		"ps7_xadc" {
@@ -2159,6 +2202,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 					] \
 				]
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [zynq_clk $ip_tree $name]
 			lappend node $ip_tree
 		}
 		"ps7_trace" -
@@ -2174,6 +2218,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 
 			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
 			set ip_tree [zynq_irq $ip_tree $intc $name]
+			set ip_tree [zynq_clk $ip_tree $name]
 			set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 0x00 0x00 $mac_count]]]
 			incr mac_count
 
@@ -2220,6 +2265,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 				set ip_tree [tree_node_update $ip_tree "reg" [list "reg" hexinttuple [list "0xfffc0000" "262144" ]]]
 				# use TCL table
 				set ip_tree [zynq_irq $ip_tree $intc $name]
+				set ip_tree [zynq_clk $ip_tree $name]
 
 				lappend node $ip_tree
 			}
@@ -3339,6 +3385,7 @@ proc default_parameters {ip_handle} {
 			"C_S*_AXIS*" -
 			"C_PRH*" -
 			"C_FAMILY" -
+			"*CLK_FREQ_HZ" -
 			"HW_VER" {}
 			default {
 				if { [ regexp {^C_.+} $par_name ] } {
@@ -3783,6 +3830,14 @@ proc write_value {file indent type value} {
 				set first false
 			}
 			puts -nonewline $file ">"
+		} elseif {$type == "labelreftuple"} {
+			set first true
+			puts -nonewline $file "= "
+			foreach element $value {
+				if {$first != true} { puts -nonewline $file ", " }
+				puts -nonewline $file "<&$element>"
+				set first false
+			}
 		} elseif {$type == "aliasref"} {
 			puts -nonewline $file "= &$value"
 		} elseif {$type == "string"} {
