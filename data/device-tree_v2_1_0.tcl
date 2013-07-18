@@ -3790,10 +3790,17 @@ proc write_value {file indent type value} {
 		} elseif {$type == "stringtuple"} {
 			puts -nonewline $file "= "
 			set first true
+			set count 0
 			foreach element $value {
 				if {$first != true} { puts -nonewline $file ", " }
-				puts -nonewline $file "\"$element\""
 				set first false
+				incr count
+				puts -nonewline $file "\"$element\""
+				if { [string match [expr $count % 5] "0"] && [expr [llength $value] != $count] } {
+					puts $file ","
+					puts -nonewline $file "[tt [expr $indent + 1]]"
+					set first true
+				}
 			}
 		} elseif {$type == "tree"} {
 			puts $file "{"
