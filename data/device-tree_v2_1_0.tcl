@@ -2691,7 +2691,7 @@ proc gen_cortexa9 {tree hwproc_handle intc params} {
 		set proc_node [gen_params $proc_node $hw_proc $params]
 		lappend cpus_node [list [format_ip_name "cpu" $cpunumber $cpu_name] "tree" "$proc_node"]
 
-		set cpunumber [expr $cpunumber + 1]
+		incr cpunumber
 	}
 	lappend cpus_node [list \#size-cells int 0]
 	lappend cpus_node [list \#address-cells int 1]
