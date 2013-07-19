@@ -3384,6 +3384,7 @@ proc default_parameters {ip_handle} {
 			"C_PRH*" -
 			"C_FAMILY" -
 			"*CLK_FREQ_HZ" -
+			"*ENET_SLCR_*Mbps_DIV?" -
 			"HW_VER" {}
 			default {
 				if { [ regexp {^C_.+} $par_name ] } {
