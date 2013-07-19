@@ -1952,8 +1952,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [zynq_clk $ip_tree $name]
 
 			variable ps7_i2c_count
-			variable ps7_cortexa9_clk
-			set ip_tree [tree_append $ip_tree [list "input-clk" int [expr $ps7_cortexa9_clk/6]]]
 			set ip_tree [tree_append $ip_tree [list "i2c-clk" int 400000]]
 			set ip_tree [tree_append $ip_tree [list "bus-id" int $ps7_i2c_count]]
 			incr ps7_i2c_count
