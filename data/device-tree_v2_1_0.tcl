@@ -1176,7 +1176,7 @@ proc zynq_irq {ip_tree intc name } {
 	if { [info exists zynq_irq_list($name)] } {
 		set irq "$zynq_irq_list($name)"
 
-		set ip_tree [tree_append $ip_tree [list "interrupts" inttuple [lindex $irq 0]]]
+		set ip_tree [tree_append $ip_tree [list "interrupts" irqtuple3 [lindex $irq 0]]]
 		if {[llength $irq] == 2 } {
 			set ip_tree [tree_append $ip_tree [list "interrupt-names" stringtuple [lindex $irq 1]]]
 		}
@@ -3714,7 +3714,11 @@ proc gen_interrupt_property {tree slave intc interrupt_port_list {irq_names {}}}
 		}
 	}
 	if {[llength $interrupt_list] != 0} {
-		set tree [tree_append $tree [list "interrupts" inttuple $interrupt_list]]
+		if { "[xget_hw_value $intc]" == "ps7_scugic" } {
+			set tree [tree_append $tree [list "interrupts" irqtuple3 $interrupt_list]]
+		} else {
+			set tree [tree_append $tree [list "interrupts" inttuple2 $interrupt_list]]
+		}
 		set tree [tree_append $tree [list "interrupt-parent" labelref $intc_name]]
 		if {[llength $irq_names] != 0} {
 			set tree [tree_append $tree [list "interrupt-names" stringtuple $irq_names]]
@@ -3808,6 +3812,30 @@ proc write_value {file indent type value} {
 			# Mask down to 32-bits
 			puts -nonewline $file "= <0x[format %x [expr $value & 0xffffffff]]>"
 		} elseif {$type == "empty"} {
+		} elseif { [string match "irqtuple*" $type] } {
+			# decode how manu ints should be inside <>
+			regsub -all "irqtuple" $type "" number
+			if {[llength $number] == 0} {
+				set number 0
+			}
+			set first true
+			set count 0
+			puts -nonewline $file "= <"
+			foreach element $value {
+				if {$first != true} { puts -nonewline $file " " }
+				set first false
+				incr count
+				if { [string match [expr $count % $number] "0"] && [expr [format %d $element] > 15] } {
+					puts -nonewline $file "0x[format %x $element]"
+				} else {
+					puts -nonewline $file "[format %d $element]"
+				}
+				if { $number && [string match [expr $count % $number] "0"] && [expr [llength $value] != $count] } {
+					puts -nonewline $file ">, <"
+					set first true
+				}
+			}
+			puts -nonewline $file ">"
 		} elseif { [string match "inttuple*" $type] } {
 			# decode how manu ints should be inside <>
 			regsub -all "inttuple" $type "" number
