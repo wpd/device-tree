@@ -2186,7 +2186,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set tree [list "$name: $type@f8f01000" tree \
 					[list \
 						[gen_compatible_property $name $type [xget_hw_parameter_value $slave "HW_VER"] "arm,cortex-a9-gic arm,gic" ] \
-						[list "reg" hexinttuple [list "0xF8F01000" "0x1000" "0xF8F00100" "0x100"] ] \
+						[list "reg" hexinttuple2 [list "0xF8F01000" "0x1000" "0xF8F00100" "0x100"] ] \
 						[list "#interrupt-cells" inttuple "3" ] \
 						[list "#address-cells" inttuple "2" ] \
 						[list "#size-cells" inttuple "1" ] \
@@ -2203,7 +2203,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 						[gen_compatible_property "ps7_pl310" "ps7_pl310" "1.00.a" "arm,pl310-cache" ] \
 						[list "cache-unified" empty empty ] \
 						[list "cache-level" inttuple "2" ] \
-						[list "reg" hexinttuple [list "0xF8F02000" "0x1000"] ] \
+						[list "reg" hexinttuple2 [list "0xF8F02000" "0x1000"] ] \
 						[list "arm,data-latency" inttuple [list "3" "2" "2"] ] \
 						[list "arm,tag-latency" inttuple [list "2" "2" "2"] ] \
 					] \
@@ -2699,7 +2699,7 @@ proc gen_cortexa9 {tree hwproc_handle intc params} {
 	# Add PMU node
 	set ip_tree [list "pmu" tree ""]
 	set ip_tree [zynq_irq $ip_tree $intc "ps7_pmu"]
-	set ip_tree [tree_append $ip_tree [list "reg" hexinttuple [list "0xF8891000" "0x1000" "0xF8893000" "0x1000"] ] ]
+	set ip_tree [tree_append $ip_tree [list "reg" hexinttuple2 [list "0xF8891000" "0x1000" "0xF8893000" "0x1000"] ] ]
 	set ip_tree [tree_append $ip_tree [list "compatible" stringtuple "arm,cortex-a9-pmu"]]
 	lappend tree "$ip_tree"
 
@@ -3817,14 +3817,25 @@ proc write_value {file indent type value} {
 				set first false
 			}
 			puts -nonewline $file ">"
-		} elseif {$type == "hexinttuple"} {
+		} elseif { [string match "hexinttuple*" $type] } {
+			# decode how manu ints should be inside <>
+			regsub -all "hexinttuple" $type "" number
+			if {[llength $number] == 0} {
+				set number 0
+			}
+
 			set first true
+			set count 0
 			puts -nonewline $file "= <"
 			foreach element $value {
 				if {$first != true} { puts -nonewline $file " " }
-				# Mask down to 32-bits
-				puts -nonewline $file "0x[format %x [expr $element & 0xffffffff]]"
 				set first false
+				incr count
+				puts -nonewline $file "0x[format %x [expr $element & 0xffffffff]]"
+				if { $number && [string match [expr $count % $number] "0"] && [expr [llength $value] != $count] } {
+					puts -nonewline $file ">, <"
+					set first true
+				}
 			}
 			puts -nonewline $file ">"
 		} elseif {$type == "bytesequence"} {
