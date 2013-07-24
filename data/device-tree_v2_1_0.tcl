@@ -1139,8 +1139,8 @@ proc zynq_irq {ip_tree intc name } {
 		{nIRQFIXME} {{1 15 8}} \
 		{ps7_core_parity} {{0 0 1 0 1 1}} \
 		{ps7_pl310} {{0 2 4}} \
-		{ps7_l2cc} {{0 3 4}} \
-		{ps7_ocm} {{0 4 4}} \
+		{ps7_ram_0} {{0 3 4}} \
+		{ps7_reserved} {{0 4 4}} \
 		{ps7_pmu} {{0 5 4 0 6 4}} \
 		{ps7_xadc} {{0 7 4}} \
 		{ps7_dev_cfg_0} {{0 8 4}} \
