@@ -2008,7 +2008,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 			set ip_tree [zynq_clk $ip_tree $name]
 
-			set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_QSPI_CLK_FREQ_HZ"]]]
 			set ip_tree [tree_append $ip_tree [list "num-chip-select" int 1]]
 			set qspi_mode [xget_sw_parameter_value $slave "C_QSPI_MODE"]
 			if { $qspi_mode == 2} {
@@ -2085,7 +2084,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 			set ip_tree [zynq_clk $ip_tree $name]
 
-			set ip_tree [tree_append $ip_tree [list "speed-hz" int [xget_sw_parameter_value $slave "C_SPI_CLK_FREQ_HZ"]]]
 			set ip_tree [tree_append $ip_tree [list "num-chip-select" int 4]]
 
 			# We will handle SPI FLASH here
