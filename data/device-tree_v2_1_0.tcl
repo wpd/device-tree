@@ -3808,13 +3808,25 @@ proc write_value {file indent type value} {
 			# Mask down to 32-bits
 			puts -nonewline $file "= <0x[format %x [expr $value & 0xffffffff]]>"
 		} elseif {$type == "empty"} {
-		} elseif {$type == "inttuple"} {
+		} elseif { [string match "inttuple*" $type] } {
+			# decode how manu ints should be inside <>
+			regsub -all "inttuple" $type "" number
+			if {[llength $number] == 0} {
+				set number 0
+			}
+
 			set first true
+			set count 0
 			puts -nonewline $file "= <"
 			foreach element $value {
 				if {$first != true} { puts -nonewline $file " " }
-				puts -nonewline $file "[format %d $element]"
 				set first false
+				incr count
+				puts -nonewline $file "[format %d $element]"
+				if { $number && [string match [expr $count % $number] "0"] && [expr [llength $value] != $count] } {
+					puts -nonewline $file ">, <"
+					set first true
+				}
 			}
 			puts -nonewline $file ">"
 		} elseif { [string match "hexinttuple*" $type] } {
