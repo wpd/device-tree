@@ -1928,6 +1928,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set subclk_tree [tree_append $subclk_tree [list "#clock-cells" int "1"]]
 			set subclk_tree [tree_append $subclk_tree [list "compatible" stringtuple "xlnx,ps7-clkc"]]
 			set subclk_tree [tree_append $subclk_tree [list "ps-clk-frequency" int "33333333"]]
+			set subclk_tree [tree_append $subclk_tree [list "fclk-enable" hexint "0xF"]]
 
 			set subclk_tree [tree_append $subclk_tree [list "clock-output-names" stringtuple \
 									[ list "armpll" "ddrpll" "iopll" "cpu_6or4x" \
