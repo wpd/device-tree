@@ -2079,7 +2079,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			lappend alias_node_list $alias_node
 			incr spi_count
 
-			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			set ip_tree [slaveip $slave $intc "" "" "S_AXI_" ""]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 			set ip_tree [zynq_clk $ip_tree $name]
