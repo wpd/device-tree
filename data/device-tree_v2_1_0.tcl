@@ -59,6 +59,7 @@ variable trafgen_count 0
 
 variable vdma_device_id 0
 variable dma_device_id 0
+variable no_reg_id 0
 
 # FIXME it will be better not to use it
 variable ps7_cortexa9_clk 0
@@ -1573,6 +1574,14 @@ proc gener_slave {node slave intc {force_type ""}} {
 
 			lappend node $ip_tree
 		}
+		"axis_loopback_widget" {
+			# maybe just IP just with interrupt line
+			variable no_reg_id
+			set tree [slaveip_basic $slave $intc [default_parameters $slave] [format_ip_name $type "$no_reg_id" $name] ""]
+			set tree [gen_interrupt_property $tree $slave $intc [interrupt_list $slave]]
+			lappend node $tree
+			incr no_reg_id
+		}
 		"axi_dma" {
 			set axiethernetfound 0
 			variable dma_device_id
@@ -1588,6 +1597,13 @@ proc gener_slave {node slave intc {force_type ""}} {
 			# FIXME - this need to be check because axi_ethernet contains axi dma handling in it
 			if {[string compare $connected_ip_type "axi_ethernet"] == 0} {
 				set axiethernetfound 1
+			} else {
+				# Axi loopback widget can be found just in this way because they are not connected to any bus
+				variable periphery_array
+				if {[lsearch $periphery_array $connected_ip_handle] == -1} {
+					set node [gener_slave $node $connected_ip_handle $intc]
+					lappend periphery_array $connected_ip_handle
+				}
 			}
 			if {$axiethernetfound != 1} {
 				set hw_name [xget_hw_name $slave]
@@ -1600,12 +1616,26 @@ proc gener_slave {node slave intc {force_type ""}} {
 				set tx_chan [scan_int_parameter_value $slave "C_INCLUDE_MM2S"]
 				if {$tx_chan == 1} {
 					set chantree [dma_channel_config $xdma $baseaddr "MM2S" $intc $slave $dma_device_id]
+					set chantree [tree_append $chantree [list "axistream-connected" labelref $connected_ip_name]]
+					set chantree [tree_append $chantree [list "axistream-control-connected" labelref $connected_ip_name]]
 					set mytree [tree_append $mytree $chantree]
+
 				}
 
 				set rx_chan [scan_int_parameter_value $slave "C_INCLUDE_S2MM"]
 				if {$rx_chan == 1} {
+					# Find out initiator side
+					set axidma_busif_handle [xget_hw_busif_handle $slave "S_AXIS_S2MM"]
+					set axidma_name [xget_hw_value $axidma_busif_handle]
+					set axidma_ip_handle [xget_hw_connected_busifs_handle $mhs_handle $axidma_name "INITIATOR"]
+					set axidma_ip_handle_name [xget_hw_name $axidma_ip_handle]
+					set connected_ip_handle [xget_hw_parent_handle $axidma_ip_handle]
+					set connected_ip_name [xget_hw_name $connected_ip_handle]
+					set connected_ip_type [xget_hw_value $connected_ip_handle]
+
 					set chantree [dma_channel_config $xdma [expr $baseaddr + 0x30] "S2MM" $intc $slave $dma_device_id]
+					set chantree [tree_append $chantree [list "axistream-connected-slave" labelref $connected_ip_name]]
+					set chantree [tree_append $chantree [list "axistream-control-connected-slave" labelref $connected_ip_name]]
 					set mytree [tree_append $mytree $chantree]
 				}
 
