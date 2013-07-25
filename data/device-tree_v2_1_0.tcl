@@ -1574,22 +1574,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 			lappend node $ip_tree
 		}
 		"axi_dma" {
-			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave]]
-			set mhs_handle [xget_hw_parent_handle $slave]
-			# See what the axi dma is connected to.
-			set axidma_busif_handle [xget_hw_busif_handle $slave "M_AXIS_MM2S"]
-			set axidma_name [xget_hw_value $axidma_busif_handle]
-			set axidma_ip_handle [xget_hw_connected_busifs_handle $mhs_handle $axidma_name "TARGET"]
-			set axidma_ip_handle_name [xget_hw_name $axidma_ip_handle]
-			set connected_ip_handle [xget_hw_parent_handle $axidma_ip_handle]
-			set connected_ip_name [xget_hw_name $connected_ip_handle]
-			set connected_ip_type [xget_hw_value $connected_ip_handle]
-			set ip_tree [tree_append $ip_tree [list "axistream-connected" labelref $connected_ip_name]]
-			set ip_tree [tree_append $ip_tree [list "axistream-control-connected" labelref $connected_ip_name]]
-			lappend node $ip_tree
-		}
-		# FIXME - this need to be check because can break axi ethernet implementation
-		"axi_dma-merged" {
 			set axiethernetfound 0
 			variable dma_device_id
 			set xdma "axi-dma"
@@ -1601,6 +1585,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set connected_ip_handle [xget_hw_parent_handle $axidma_ip_handle]
 			set connected_ip_name [xget_hw_name $connected_ip_handle]
 			set connected_ip_type [xget_hw_value $connected_ip_handle]
+			# FIXME - this need to be check because axi_ethernet contains axi dma handling in it
 			if {[string compare $connected_ip_type "axi_ethernet"] == 0} {
 				set axiethernetfound 1
 			}
@@ -1656,15 +1641,16 @@ proc gener_slave {node slave intc {force_type ""}} {
 				}
 				set mytree [tree_append $mytree [gen_ranges_property $slave $baseaddr $highaddr $baseaddr]]
 				set mytree [tree_append $mytree [gen_reg_property $hw_name $baseaddr $highaddr]]
-
-				lappend node $mytree
 			}
 
 			if {$axiethernetfound == 1} {
-				if {[catch {lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] "" ]} {error}]} {
+				if {[catch {set mytree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] "" ]} {error}]} {
 					debug warning $error
 				}
+				set mytree [tree_append $mytree [list "axistream-connected" labelref $connected_ip_name]]
+				set mytree [tree_append $mytree [list "axistream-control-connected" labelref $connected_ip_name]]
 			}
+			lappend node $mytree
 			incr dma_device_id
 		}
 		"axi_vdma" {
