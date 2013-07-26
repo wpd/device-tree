@@ -3311,14 +3311,15 @@ proc bus_bridge {slave intc_handle baseaddr face {handle ""} {ps_ifs ""} {force_
 		lappend bus_node $led
 	}
 
-	lappend bus_node [list \#size-cells int 1]
-	lappend bus_node [list \#address-cells int 1]
-	lappend bus_node [gen_compatible_property $bus_name $bus_type $hw_ver $compatible_list]
-
-	variable bus_count
-	set baseaddr $bus_count
-	incr bus_count
-	return [list [format_ip_name $devicetype $baseaddr $bus_name] tree $bus_node]
+	if {[llength $bus_node] != 0} {
+		lappend bus_node [list \#size-cells int 1]
+		lappend bus_node [list \#address-cells int 1]
+		lappend bus_node [gen_compatible_property $bus_name $bus_type $hw_ver $compatible_list]
+		variable bus_count
+		set baseaddr $bus_count
+		incr bus_count
+		return [list [format_ip_name $devicetype $baseaddr $bus_name] tree $bus_node]
+	}
 }
 
 # Return the clock frequency attribute of the port of the given ip core.
