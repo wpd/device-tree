@@ -62,7 +62,6 @@ variable dma_device_id 0
 variable no_reg_id 0
 
 # FIXME it will be better not to use it
-variable ps7_cortexa9_clk 0
 variable ps7_cortexa9_1x_clk 0
 
 variable ps7_smcc_list {}
@@ -2678,7 +2677,6 @@ proc memory {slave baseaddr_prefix params} {
 proc gen_cortexa9 {tree hwproc_handle intc params} {
 	set out ""
 	variable cpunumber
-	variable ps7_cortexa9_clk
 	variable ps7_cortexa9_1x_clk
 	set cpus_node {}
 
@@ -2695,7 +2693,6 @@ proc gen_cortexa9 {tree hwproc_handle intc params} {
 		lappend proc_node [list "device_type" string "cpu"]
 		lappend proc_node [list "compatible" string "arm,cortex-a9"]
 
-		set ps7_cortexa9_clk [xget_sw_parameter_value $hwproc_handle "C_CPU_CLK_FREQ_HZ"]
 		set ps7_cortexa9_1x_clk [xget_sw_parameter_value $hwproc_handle "C_CPU_1X_CLK_FREQ_HZ"]
 		lappend proc_node [list "reg" hexint $cpunumber]
 		lappend proc_node [list "i-cache-size" hexint [expr 0x8000]]
