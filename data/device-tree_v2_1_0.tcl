@@ -247,9 +247,8 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 				}
 			}
 
+			set buses {}
 			set intc [get_handle_to_intc $proc_handle "Interrupt"]
-			set toplevel [gen_microblaze $toplevel $hwproc_handle [default_parameters $hwproc_handle]]
-
 
 			# Microblaze v8 has AXI and/or PLB. xget_hw_busif_handle returns
 			# a valid handle for both these bus ifs, even if they are not
@@ -261,6 +260,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 				if { [llength $tree] != 0 } {
 					set tree [tree_append $tree [list ranges empty empty]]
 					lappend ip_tree $tree
+					lappend buses $bus_name
 				}
 			}
 			set bus_name [xget_hw_busif_value $hwproc_handle "M_AXI_DP"]
@@ -269,6 +269,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 				if { [llength $tree] != 0 } {
 					set tree [tree_append $tree [list ranges empty empty]]
 					lappend ip_tree $tree
+					lappend buses $bus_name
 				}
 			}
 			set bus_name [xget_hw_busif_value $hwproc_handle "DPLB"]
@@ -278,6 +279,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 				if { [llength $tree] != 0 } {
 					set tree [tree_append $tree [list ranges empty empty]]
 					lappend ip_tree $tree
+					lappend buses $bus_name
 				}
 			}
 			set bus_name [xget_hw_busif_value $hwproc_handle "DOPB"]
@@ -287,8 +289,12 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 				if { [llength $tree] != 0 } {
 					set tree [tree_append $tree [list ranges empty empty]]
 					lappend ip_tree $tree
+					lappend buses $bus_name
 				}
 			}
+
+			set toplevel [gen_microblaze $toplevel $hwproc_handle [default_parameters $hwproc_handle] $intc $buses]
+
 			lappend toplevel [list "compatible" stringtuple [list "xlnx,microblaze"] ]
 			if { ![info exists board_name] } {
 				lappend toplevel [list model string "Xilinx MicroBlaze"]
@@ -346,6 +352,7 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 		"ppc440_virtex5" {
 			global timer
 			set timer ""
+			set buses {}
 
 			set intc [get_handle_to_intc $proc_handle "EICC440EXTIRQ"]
 			set toplevel [gen_ppc440 $toplevel $hwproc_handle $intc [default_parameters $hwproc_handle]]
@@ -393,14 +400,19 @@ proc generate_device_tree {filepath bootargs {consoleip ""}} {
 				}
 			}
 
-			set toplevel [gen_cortexa9 $toplevel $hwproc_handle $intc [default_parameters $hwproc_handle]]
+			variable ps7_cortexa9_1x_clk
+			set ps7_cortexa9_1x_clk [xget_sw_parameter_value $hwproc_handle "C_CPU_1X_CLK_FREQ_HZ"]
 
 			set bus_name [xget_hw_busif_value $hwproc_handle "M_AXI_DP"]
 			if { [string compare -nocase $bus_name ""] != 0 } {
 				set tree [bus_bridge $hwproc_handle $intc 0 "M_AXI_DP" "" $ips "ps7_pl310 ps7_xadc"]
 				set tree [tree_append $tree [list ranges empty empty]]
 				lappend ip_tree $tree
+				lappend buses $bus_name
 			}
+
+			set toplevel [gen_cortexa9 $toplevel $hwproc_handle $intc [default_parameters $hwproc_handle] $buses]
+
 			lappend toplevel [list "compatible" stringtuple "xlnx,zynq-7000" ]
 			if { ![info exists board_name] } {
 				lappend toplevel [list model string "Xilinx Zynq"]
@@ -2583,7 +2595,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 		}
 		"microblaze" {
 			debug ip "Other Microblaze CPU $name=$type"
-			lappend node [gen_microblaze $slave [default_parameters $slave]]
+			lappend node [gen_microblaze $slave [default_parameters $slave] $intc]
 		}
 		"ppc405" {
 			debug ip "Other PowerPC405 CPU $name=$type"
@@ -2674,10 +2686,9 @@ proc memory {slave baseaddr_prefix params} {
 	return [list [format_ip_name memory $baseaddr $name] tree $ip_node]
 }
 
-proc gen_cortexa9 {tree hwproc_handle intc params} {
+proc gen_cortexa9 {tree hwproc_handle intc params buses} {
 	set out ""
 	variable cpunumber
-	variable ps7_cortexa9_1x_clk
 	set cpus_node {}
 
 	set mhs_handle [xget_hw_parent_handle $hwproc_handle]
@@ -2693,12 +2704,14 @@ proc gen_cortexa9 {tree hwproc_handle intc params} {
 		lappend proc_node [list "device_type" string "cpu"]
 		lappend proc_node [list "compatible" string "arm,cortex-a9"]
 
-		set ps7_cortexa9_1x_clk [xget_sw_parameter_value $hwproc_handle "C_CPU_1X_CLK_FREQ_HZ"]
 		lappend proc_node [list "reg" hexint $cpunumber]
 		lappend proc_node [list "i-cache-size" hexint [expr 0x8000]]
 		lappend proc_node [list "i-cache-line-size" hexint 32]
 		lappend proc_node [list "d-cache-size" hexint [expr 0x8000]]
 		lappend proc_node [list "d-cache-line-size" hexint 32]
+		lappend proc_node [list "bus-handle" labelreftuple $buses]
+		lappend proc_node [list "interrupt-handle" labelref [xget_hw_name $intc]]
+
 		set proc_node [gen_params $proc_node $hw_proc $params]
 		lappend cpus_node [list [format_ip_name "cpu" $cpunumber $cpu_name] "tree" "$proc_node"]
 
@@ -2841,7 +2854,7 @@ proc gen_ppc440 {tree hwproc_handle intc params} {
 	return $tree
 }
 
-proc gen_microblaze {tree hwproc_handle params} {
+proc gen_microblaze {tree hwproc_handle params intc {buses ""}} {
 	set out ""
 	variable cpunumber
 
@@ -2884,6 +2897,10 @@ proc gen_microblaze {tree hwproc_handle params} {
 		lappend proc_node [list d-cache-size hexint $dcache_size]
 		lappend proc_node [list d-cache-line-size hexint $dcache_line_size]
 	}
+	if {[llength $buses] != 0} {
+		lappend proc_node [list "bus-handle" labelreftuple $buses]
+	}
+	lappend proc_node [list "interrupt-handle" labelref [xget_hw_name $intc]]
 
 	#-----------------------------
 	# generating additional parameters
