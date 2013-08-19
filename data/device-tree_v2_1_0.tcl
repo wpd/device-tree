@@ -2719,7 +2719,6 @@ proc gen_cortexa9 {tree hwproc_handle intc params buses} {
 	}
 	lappend cpus_node [list \#size-cells int 0]
 	lappend cpus_node [list \#address-cells int 1]
-	lappend cpus_node [list \#cpus hexint "$cpunumber" ]
 	lappend tree [list cpus tree "$cpus_node"]
 
 	# Add PMU node
