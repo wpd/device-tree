@@ -3608,7 +3608,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{axi_tft} {xps_tft_1.00.a} \
 		{xps_iic} {xps_iic_2.00.a} \
 		{axi_iic} {xps_iic_2.00.a} \
-		{axi_traffic_gen} {axi-traffic-gen} \
+		{axi_traffic_gen} {axi_traffic_gen} \
 		{xps_intc} {xps_intc_1.00.a} \
 		{axi_intc} {xps_intc_1.00.a} \
 		{xps_ll_temac} {xps_ll_temac_1.01.b xps_ll_temac_1.00.a} \
@@ -3634,7 +3634,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{xps_usb2_device} {xps_usb2_device_4.00.a} \
 		{axi_usb2_device} {xps_usb2_device_4.00.a} \
 		{axi_pcie} {axi_pcie_1.05.a} \
-		{ps7_ddrc} {ps7-ddrc} \
+		{ps7_ddrc} {ps7_ddrc} \
 	]
 
 	if {$hw_ver != ""} {
