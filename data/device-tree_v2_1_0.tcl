@@ -2211,6 +2211,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 			regsub -all "_" $type "-" type
 
 			# Add interrupt distributor because it is not detected
+			# num_cpus, num_interrupts are here just for qemu purpose
 			set tree [list "$name: $type@f8f01000" tree \
 					[list \
 						[gen_compatible_property $name $type [xget_hw_parameter_value $slave "HW_VER"] "arm,cortex-a9-gic arm,gic" ] \
@@ -2219,6 +2220,8 @@ proc gener_slave {node slave intc {force_type ""}} {
 						[list "#address-cells" inttuple "2" ] \
 						[list "#size-cells" inttuple "1" ] \
 						[list "interrupt-controller" empty empty ] \
+						[list "num_cpus" inttuple "2"] \
+						[list "num_interrupts" inttuple "96" ] \
 					] \
 				]
 			lappend node $tree
