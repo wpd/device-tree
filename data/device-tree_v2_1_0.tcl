@@ -3635,6 +3635,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{axi_usb2_device} {xps_usb2_device_4.00.a} \
 		{axi_pcie} {axi_pcie_1.05.a} \
 		{ps7_ddrc} {ps7_ddrc} \
+		{ps7_can} {ps7_can} \
 	]
 
 	if {$hw_ver != ""} {
