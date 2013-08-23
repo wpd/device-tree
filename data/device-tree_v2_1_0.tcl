@@ -2401,7 +2401,7 @@ proc gener_slave {node slave intc {force_type ""}} {
 				}
 
 				set baseaddr_prefix [format "S_AXI_MEM%d_" $x]
-				if { $synch_mem == 2 || $synch_mem == 3 } {
+				if { $synch_mem == 2 || $synch_mem == 3 || $synch_mem == 5} {
 					set tree [slaveip_intr $slave $intc [interrupt_list $slave] "flash" [default_parameters $slave] $baseaddr_prefix "" "cfi-flash"]
 				} else {
 					set tree [slaveip_intr $slave $intc [interrupt_list $slave] "memory" [default_parameters $slave] $baseaddr_prefix "" ""]
