@@ -1539,8 +1539,6 @@ proc gener_slave {node slave intc {force_type ""}} {
 		}
 		"axi_ethernet_buffer" -
 		"axi_ethernet" {
-			set name [xget_hw_name $slave]
-			set type [xget_hw_value $slave]
 			set baseaddr [scan_int_parameter_value $slave "C_BASEADDR"]
 			set highaddr [expr $baseaddr + 0x3ffff]
 
