@@ -1603,13 +1603,14 @@ proc gener_slave {node slave intc {force_type ""}} {
 			set connected_ip_handle [xget_hw_parent_handle $axidma_ip_handle]
 			set connected_ip_name [xget_hw_name $connected_ip_handle]
 			set connected_ip_type [xget_hw_value $connected_ip_handle]
+
 			# FIXME - this need to be check because axi_ethernet contains axi dma handling in it
 			if {[string compare $connected_ip_type "axi_ethernet"] == 0} {
 				set axiethernetfound 1
 			} else {
 				# Axi loopback widget can be found just in this way because they are not connected to any bus
 				variable periphery_array
-				if {[lsearch $periphery_array $connected_ip_handle] == -1} {
+				if {[lsearch $periphery_array $connected_ip_handle] == -1 && $connected_ip_name != $name } {
 					set node [gener_slave $node $connected_ip_handle $intc]
 					lappend periphery_array $connected_ip_handle
 				}
