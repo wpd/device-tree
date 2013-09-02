@@ -2486,7 +2486,15 @@ proc gener_slave {node slave intc {force_type ""}} {
 			lappend node $tree
 		}
 		"axi_pcie" {
-			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] ]
+			# IPI ip stopped to use C_ prefix for baseaddr - that's why this detection
+			set param_handle [xget_hw_parameter_handle $slave "C_BASEADDR"]
+			if {$param_handle == ""} {
+				set baseaddr [scan_int_parameter_value $slave "BASEADDR"]
+				set highaddr [scan_int_parameter_value $slave "HIGHADDR"]
+				set ip_tree [slaveip_explicit_baseaddr $slave $intc "" [default_parameters $slave] $baseaddr $highaddr ""]
+			} else {
+				set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave] ]
+			}
 			set ip_tree [tree_append $ip_tree [list \#address-cells int 3]]
 			set ip_tree [tree_append $ip_tree [list \#size-cells int 2]]
 			# 64-bit high address.
