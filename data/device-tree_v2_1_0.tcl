@@ -1568,7 +1568,14 @@ proc gener_slave {node slave intc {force_type ""}} {
 			# See what the axi ethernet is connected to.
 			set axiethernet_busif_handle [xget_hw_busif_handle $slave "AXI_STR_RXD"]
 			set axiethernet_name [xget_hw_value $axiethernet_busif_handle]
-			set axiethernet_ip_handle [xget_hw_connected_busifs_handle $mhs_handle $axiethernet_name "TARGET"]
+			if { [llength $axiethernet_name] != 0 } {
+				set axiethernet_ip_handle [xget_hw_connected_busifs_handle $mhs_handle $axiethernet_name "TARGET"]
+			} else {
+				# Incorrect system.xml where there is no name for STR_RXD but there is name AXI_STR_TXD
+				set axiethernet_busif_handle [xget_hw_busif_handle $slave "AXI_STR_TXD"]
+				set axiethernet_name [xget_hw_value $axiethernet_busif_handle]
+				set axiethernet_ip_handle [xget_hw_connected_busifs_handle $mhs_handle $axiethernet_name "INITIATOR"]
+			}
 			set axiethernet_ip_handle_name [xget_hw_name $axiethernet_ip_handle]
 			set connected_ip_handle [xget_hw_parent_handle $axiethernet_ip_handle]
 			set connected_ip_name [xget_hw_name $connected_ip_handle]
