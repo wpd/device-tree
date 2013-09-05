@@ -1224,7 +1224,7 @@ proc zynq_clk {ip_tree name} {
 	return $ip_tree
 }
 
-proc gener_slave {node slave intc {force_type ""}} {
+proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 	variable phy_count
 	variable mac_count
 
@@ -1893,6 +1893,19 @@ proc gener_slave {node slave intc {force_type ""}} {
 				set tree [tree_append $tree [list [format_ip_name $type $flash_memory_bank "primary_flash"] tree $subnode]]
 			}
 			lappend node $tree
+		}
+		"xps_mailbox" -
+		"mailbox" {
+			foreach i "S0_AXI S1_AXI" {
+				set ip_busif_handle [xget_hw_busif_handle $slave $i]
+				set ip_bus_name [xget_hw_value $ip_busif_handle]
+				set bus_name [xget_hw_value $busif_handle]
+				if { $ip_bus_name == $bus_name } {
+					debug ip "global bus: $bus_name/$busif_handle"
+					debug ip "local bus: $ip_bus_name/$ip_busif_handle"
+					lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "mailbox" [default_parameters $slave] "$i\_" ]
+				}
+			}
 		}
 		"xps_usb_host" {
 			lappend node [slaveip_intr $slave $intc [interrupt_list $slave] "usb" [default_parameters $slave] "SPLB_" "" [list "usb-ehci"]]
@@ -3327,7 +3340,7 @@ proc bus_bridge {slave intc_handle baseaddr face {handle ""} {ps_ifs ""} {force_
 		}
 		# If we haven't already generated this ip
 		if {[lsearch $periphery_array $ip] == -1} {
-			set bus_node [gener_slave $bus_node $ip $intc_handle]
+			set bus_node [gener_slave $bus_node $ip $intc_handle "" $busif_handle]
 			lappend periphery_array $ip
 		}
 	}
