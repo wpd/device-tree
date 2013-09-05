@@ -1205,7 +1205,7 @@ proc zynq_clk {ip_tree name} {
 		{ps7_uart_1} {{"clkc 24" "clkc 41"} {"ref_clk" "aper_clk"}} \
 		{ps7_spi_0} {{"clkc 25" "clkc 34"} {"ref_clk" "aper_clk"}} \
 		{ps7_spi_1} {{"clkc 26" "clkc 35"} {"ref_clk" "aper_clk"}} \
-		{ps7_dma_s} {{"clkc 27"}} \
+		{ps7_dma_s} {{"clkc 27"} {"apb_pclk"}} \
 		{ps7_usb_0} {{"clkc 28"}} \
 		{ps7_usb_1} {{"clkc 29"}} \
 		{ps7_i2c_0} {{"clkc 38"}} \
