@@ -1143,8 +1143,8 @@ proc zynq_irq {ip_tree intc name } {
 		{ps7_dev_cfg_0} {{0 8 4}} \
 		{ps7_wdt_0} {{0 9 1}} \
 		{ps7_ttc_0} {{0 10 4 0 11 4 0 12 4} {ttc0 ttc1 ttc2}}\
-		{ps7_dma_s} {{0 13 4 0 14 4 0 15 4 0 16 4 0 17 4 0 40 4 0 41 4 0 42 4 0 43 4}} \
-		{ps7_dma_ns} {{0 13 4 0 14 4 0 15 4 0 16 4 0 17 4 0 40 4 0 41 4 0 42 4 0 43 4}} \
+		{ps7_dma_s} {{0 13 4 0 14 4 0 15 4 0 16 4 0 17 4 0 40 4 0 41 4 0 42 4 0 43 4} {abort dma0 dma1 dma2 dma3 dma4 dma5 dma6 dma7}} \
+		{ps7_dma_ns} {{0 13 4 0 14 4 0 15 4 0 16 4 0 17 4 0 40 4 0 41 4 0 42 4 0 43 4} {abort dma0 dma1 dma2 dma3 dma4 dma5 dma6 dma7}} \
 		{ps7_smcc} {{0 18 4}} \
 		{ps7_qspi_0} {{0 19 4}} \
 		{ps7_gpio_0} {{0 20 4}} \
