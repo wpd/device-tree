@@ -3312,6 +3312,18 @@ proc bus_bridge {slave intc_handle baseaddr face {handle ""} {ps_ifs ""} {force_
 
 	# Populate with all the slaves.
 	foreach ip $sorted_ip {
+		# make sure the sorted_ip list does not content force ip list
+		# otherwise, same duplication of dts node will appeared.
+		set found_force_ip 0
+		foreach force_typ_ip $force_ips {
+			if { [xget_hw_value $ip] == $force_typ_ip } {
+				set found_force_ip 1
+				break
+			}
+		}
+		if { $found_force_ip == 1 } {
+			continue
+		}
 		# If we haven't already generated this ip
 		if {[lsearch $periphery_array $ip] == -1} {
 			set bus_node [gener_slave $bus_node $ip $intc_handle]
