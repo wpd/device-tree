@@ -1599,6 +1599,8 @@ proc gener_slave {node slave intc {force_type ""}} {
 			# FIXME - this need to be check because axi_ethernet contains axi dma handling in it
 			if {[string compare $connected_ip_type "axi_ethernet"] == 0} {
 				set axiethernetfound 1
+			} elseif {[string compare $connected_ip_type "axi_ethernet_buffer"] == 0} {
+				set axiethernetfound 1
 			} else {
 				# Axi loopback widget can be found just in this way because they are not connected to any bus
 				variable periphery_array
