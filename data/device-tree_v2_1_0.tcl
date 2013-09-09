@@ -1157,7 +1157,7 @@ proc zynq_irq {ip_tree intc name } {
 		{ps7_uart_0} {{0 27 4}} \
 		{ps7_can_0} {{0 28 4}} \
 		{ps7_fpga_7_0FIXME} {{0 29 4 0 34 0 0 31 4 0 32 4 0 33 4 0 34 4 0 35 4 0 36 4}} \
-		{ps7_ttc_1} {{0 37 4 0 38 4 0 39 4}} \
+		{ps7_ttc_1} {{0 37 4 0 38 4 0 39 4} {ttc0 ttc1 ttc2}} \
 		{ps7_usb_1} {{0 44 4}} \
 		{ps7_ethernet_1} {{0 45 4}} \
 		{ps7_ethernet_wake1FIXME} {{0 46 1}} \
