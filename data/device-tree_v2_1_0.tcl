@@ -1751,10 +1751,14 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 			set chan {}
 			lappend chan [list compatible stringtuple [list "xlnx,axi-cdma-channel"]]
 			set tmp [scan_int_parameter_value $slave "C_INCLUDE_DRE"]
-			lappend chan [list "xlnx,include-dre" hexint $tmp]
+			if {$tmp == 1} {
+				lappend chan [list "xlnx,include-dre" empty empty]
+			}
 
 			set tmp [scan_int_parameter_value $slave "C_USE_DATAMOVER_LITE"]
-			lappend chan [list "xlnx,lite-mode" hexint $tmp]
+			if {$tmp == 1} {
+				lappend chan [list "xlnx,lite-mode" empty empty]
+			}
 
 			set tmp [scan_int_parameter_value $slave "C_M_AXI_DATA_WIDTH"]
 			lappend chan [list "xlnx,datawidth" hexint $tmp]
@@ -1774,7 +1778,9 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 			set mytree [tree_append $mytree [list compatible stringtuple [list "xlnx,axi-cdma"]]]
 
 			set tmp [scan_int_parameter_value $slave "C_INCLUDE_SG"]
-			set mytree [tree_append $mytree [list "xlnx,include-sg" hexint $tmp]]
+			if {$tmp == 1} {
+				set mytree [tree_append $mytree [list "xlnx,include-sg" empty empty]]
+			}
 
 			set mytree [tree_append $mytree [gen_ranges_property $slave $baseaddr $highaddr $baseaddr]]
 			set mytree [tree_append $mytree [gen_reg_property $hw_name $baseaddr $highaddr]]
