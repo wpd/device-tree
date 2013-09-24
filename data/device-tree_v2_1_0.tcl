@@ -59,6 +59,7 @@ variable trafgen_count 0
 
 variable vdma_device_id 0
 variable dma_device_id 0
+variable cdma_device_id 0
 variable no_reg_id 0
 
 # FIXME it will be better not to use it
@@ -1737,6 +1738,7 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 			incr vdma_device_id
 		}
 		"axi_cdma" {
+			variable cdma_device_id
 			set hw_name [xget_hw_name $slave]
 
 			set baseaddr [scan_int_parameter_value $slave "C_BASEADDR"]
@@ -1760,6 +1762,7 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 			set tmp [scan_int_parameter_value $slave "C_M_AXI_MAX_BURST_LEN"]
 			lappend chan [list "xlnx,max-burst-len" hexint $tmp]
 
+			lappend chan [list "xlnx,device-id" hexint $cdma_device_id]
 
 			set chantree [list $channame tree $chan]
 			set chantree [gen_interrupt_property $chantree $slave $intc [list "cdma_introut"]]
@@ -1777,6 +1780,7 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 			set mytree [tree_append $mytree [gen_reg_property $hw_name $baseaddr $highaddr]]
 
 			lappend node $mytree
+			incr cdma_device_id
 		}
 		"axi_tft" -
 		"xps_tft" {
