@@ -3671,6 +3671,7 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{axi_pcie} {axi_pcie_1.05.a} \
 		{ps7_ddrc} {ps7_ddrc} \
 		{ps7_can} {ps7_can} \
+		{axi_perf_mon} {axi_perf_monitor} \
 	]
 
 	if {$hw_ver != ""} {
