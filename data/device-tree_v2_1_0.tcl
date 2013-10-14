@@ -1665,7 +1665,7 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 						}
 						set mytree [tree_append $mytree [list "xlnx,sg-include-stscntrl-strm" hexint $stsctrl]]
 					}
-					set mytree [tree_append $mytree [list "xlnx,include-sg" hexint $sgdmamode1]]
+					set mytree [tree_append $mytree [list "xlnx,include-sg" empty empty]]
 				} else {
 					set stsctrl [xget_hw_parameter_handle $slave "C_SG_INCLUDE_STSCNTRL_STRM"]
 					if {$stsctrl != ""} {
@@ -1674,7 +1674,6 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 						set stsctrl 0
 					}
 					set mytree [tree_append $mytree [list "xlnx,sg-include-stscntrl-strm" hexint $stsctrl]]
-					set mytree [tree_append $mytree [list "xlnx,include-sg" hexint 0]]
 				}
 				set mytree [tree_append $mytree [gen_ranges_property $slave $baseaddr $highaddr $baseaddr]]
 				set mytree [tree_append $mytree [gen_reg_property $hw_name $baseaddr $highaddr]]
