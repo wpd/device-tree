@@ -2108,7 +2108,7 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 			lappend node $ip_tree
 		}
 		"ps7_usb" {
-			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			set ip_tree [slaveip $slave $intc "" "" "S_AXI_" ""]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 			set ip_tree [zynq_clk $ip_tree $name]
@@ -2116,6 +2116,15 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 			set ip_tree [tree_append $ip_tree [list "dr_mode" string "host"]]
 			set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]]
 
+			set reset_handle [xget_hw_parameter_handle $slave "C_USB_RESET"]
+			if { $reset_handle } {
+				set value [xget_hw_value $reset_handle]
+				regsub -all "MIO" $value "" value
+				# Hardcode ps7_gpio_0 because it is hardcoded name for ps gpio
+				if { $value != "-1" &&  [llength $value] != 0 } {
+					set ip_tree [tree_append $ip_tree [list "usb-reset" labelref-ext "ps7_gpio_0 $value 0"]]
+				}
+			}
 			lappend node $ip_tree
 		}
 		"ps7_spi" {
