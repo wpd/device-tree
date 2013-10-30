@@ -853,8 +853,32 @@ proc slaveip_dcr {slave intc devicetype params {baseaddr_prefix ""} {other_compa
 }
 
 proc slaveip {slave intc devicetype params {baseaddr_prefix ""} {other_compatibles {}} } {
-	set baseaddr [scan_int_parameter_value $slave [format "C_%sBASEADDR" $baseaddr_prefix]]
-	set highaddr [scan_int_parameter_value $slave [format "C_%sHIGHADDR" $baseaddr_prefix]]
+	set baseaddr_handle [xget_hw_parameter_handle $slave [format "C_%sBASEADDR" $baseaddr_prefix]]
+	set highaddr_handle [xget_hw_parameter_handle $slave [format "C_%sHIGHADDR" $baseaddr_prefix]]
+	if { $baseaddr_handle != "" && $highaddr_handle != "" } {
+		set baseaddr [scan_int_parameter_value $slave [format "C_%sBASEADDR" $baseaddr_prefix]]
+		set highaddr [scan_int_parameter_value $slave [format "C_%sHIGHADDR" $baseaddr_prefix]]
+	} else {
+		set baseaddr 0
+		set highaddr 0
+		set ip_params [xget_hw_parameter_handle $slave "*"]
+		set address_array {}
+		puts [xget_hw_name $slave]
+		foreach par_name $ip_params {
+			# check all
+			set addrtype [xget_hw_subproperty_value $par_name "ADDRESS"]
+			if {[string compare -nocase $addrtype "BASE"] == 0} {
+				set base [xget_hw_name $par_name]
+				set high [xget_hw_subproperty_value $par_name "PAIR"]
+				set baseaddr [scan_int_parameter_value $slave $base]
+				set highaddr [scan_int_parameter_value $slave $high]
+				if { "${baseaddr}" < "${highaddr}" } {
+					break
+				}
+			}
+		}
+	}
+
 	set tree [slaveip_explicit_baseaddr $slave $intc $devicetype $params $baseaddr $highaddr $other_compatibles]
 	set dcr_busif_handle [xget_hw_busif_handle $slave "SDCR"]
 	if {[llength $dcr_busif_handle] != 0} {
