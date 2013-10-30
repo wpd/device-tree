@@ -1919,7 +1919,12 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 				if { $type == "xps_spi" } {
 					set sys_clk [get_clock_frequency $slave "SPLB_Clk"]
 				} else {
-					set sys_clk [get_clock_frequency $slave "S_AXI_ACLK"]
+					set sys_clk_handle [xget_hw_port_handle $slave "S_AXI4_ACLK"]
+					if {[llength $sys_clk_handle] != 0} {
+						set sys_clk [get_clock_frequency $slave "S_AXI4_ACLK"]
+					} else {
+						set sys_clk [get_clock_frequency $slave "S_AXI_ACLK"]
+					}
 				}
 				set sck_ratio [scan_int_parameter_value $slave "C_SCK_RATIO"]
 				set sck [expr { $sys_clk / $sck_ratio }]
