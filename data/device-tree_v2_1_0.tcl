@@ -2192,7 +2192,7 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 			lappend node $ip_tree
 		}
 		"ps7_sdio" {
-			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "generic-sdhci arasan,sdhci"]
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" "generic-sdhci arasan,sdhci-8.9a"]
 			# FIXME linux sdhci requires clock-frequency even if we use common clock framework
 			set ip_tree [tree_append $ip_tree [list "clock-frequency" int [xget_sw_parameter_value $slave "C_SDIO_CLK_FREQ_HZ"]]]
 			set ip_tree [zynq_irq $ip_tree $intc $name]
