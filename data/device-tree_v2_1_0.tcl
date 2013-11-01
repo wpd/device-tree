@@ -1920,9 +1920,11 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 					set sys_clk [get_clock_frequency $slave "SPLB_Clk"]
 				} else {
 					set sys_clk_handle [xget_hw_port_handle $slave "S_AXI4_ACLK"]
+					set sys_clk ""
 					if {[llength $sys_clk_handle] != 0} {
 						set sys_clk [get_clock_frequency $slave "S_AXI4_ACLK"]
-					} else {
+					}
+					if {[llength $sys_clk] == 0} {
 						set sys_clk [get_clock_frequency $slave "S_AXI_ACLK"]
 					}
 				}
