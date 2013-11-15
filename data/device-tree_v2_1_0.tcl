@@ -2151,7 +2151,7 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 				set value [xget_hw_value $reset_handle]
 				regsub -all "MIO" $value "" value
 				# Hardcode ps7_gpio_0 because it is hardcoded name for ps gpio
-				if { $value != "-1" &&  [llength $value] != 0 } {
+				if { $value != "-1" &&  [llength $value] != 0 && [string is integer $value] } {
 					set ip_tree [tree_append $ip_tree [list "usb-reset" labelref-ext "ps7_gpio_0 $value 0"]]
 				}
 			}
