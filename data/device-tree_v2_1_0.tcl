@@ -2059,13 +2059,15 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 			set alias_node [list i2c$i2c_count aliasref $name $i2c_count]
 			lappend alias_node_list $alias_node
 
-			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave "C_I2C_RESET"] "S_AXI_" ""]
 			# use TCL table
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 			set ip_tree [zynq_clk $ip_tree $name]
 
 			set ip_tree [tree_append $ip_tree [list "i2c-clk" int 400000]]
 			set ip_tree [tree_append $ip_tree [list "bus-id" int $i2c_count]]
+			set ip_tree [ps7_reset_handle $ip_tree $slave "C_I2C_RESET" "i2c-reset"]
+
 			incr i2c_count
 
 			lappend node $ip_tree
@@ -2336,7 +2338,7 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 			lappend alias_node_list $alias_node
 			incr ethernet_count
 
-			set ip_tree [slaveip $slave $intc "" [default_parameters $slave] "S_AXI_" ""]
+			set ip_tree [slaveip $slave $intc "" [default_parameters $slave "C_ENET_RESET"] "S_AXI_" ""]
 			set ip_tree [zynq_irq $ip_tree $intc $name]
 			set ip_tree [zynq_clk $ip_tree $name]
 			set ip_tree [tree_append $ip_tree [list "local-mac-address" bytesequence [list 0x00 0x0a 0x35 0x00 0x00 $mac_count]]]
@@ -2373,6 +2375,7 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 				set ip_tree [tree_append $ip_tree [list "phy-mode" string "rgmii-id"]]
 			}
 
+			set ip_tree [ps7_reset_handle $ip_tree $slave "C_ENET_RESET" "enet-reset"]
 			lappend node $ip_tree
 		}
 		"axi_fifo_mm_s" {
