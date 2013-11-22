@@ -1249,6 +1249,20 @@ proc zynq_clk {ip_tree name} {
 	return $ip_tree
 }
 
+proc ps7_reset_handle {ip_tree slave param_name name} {
+	set reset_handle [xget_hw_parameter_handle $slave $param_name]
+	if { $reset_handle } {
+		set value [xget_hw_value $reset_handle]
+		regsub -all "MIO" $value "" value
+		# Hardcode ps7_gpio_0 because it is hardcoded name for ps gpio
+		if { $value != "-1" &&  [llength $value] != 0 && [string is integer $value] } {
+			set ip_tree [tree_append $ip_tree [list "$name" labelref-ext "ps7_gpio_0 $value 0"]]
+		}
+	}
+
+	return $ip_tree
+}
+
 proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 	variable phy_count
 	variable mac_count
@@ -2146,15 +2160,8 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 			set ip_tree [tree_append $ip_tree [list "dr_mode" string "host"]]
 			set ip_tree [tree_append $ip_tree [list "phy_type" string "ulpi"]]
 
-			set reset_handle [xget_hw_parameter_handle $slave "C_USB_RESET"]
-			if { $reset_handle } {
-				set value [xget_hw_value $reset_handle]
-				regsub -all "MIO" $value "" value
-				# Hardcode ps7_gpio_0 because it is hardcoded name for ps gpio
-				if { $value != "-1" &&  [llength $value] != 0 && [string is integer $value] } {
-					set ip_tree [tree_append $ip_tree [list "usb-reset" labelref-ext "ps7_gpio_0 $value 0"]]
-				}
-			}
+			set ip_tree [ps7_reset_handle $ip_tree $slave "C_USB_RESET" "usb-reset"]
+
 			lappend node $ip_tree
 		}
 		"ps7_spi" {
