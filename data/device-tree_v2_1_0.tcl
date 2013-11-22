@@ -3492,42 +3492,41 @@ proc axipcie_ranges {ip_handle num_ranges_name axi_base_name_template pcie_base_
 # should be reported in the device tree for generic IP. This list
 # includes all the parameter names, except those that are handled
 # specially, such as the instance name, baseaddr, etc.
-proc default_parameters {ip_handle} {
+proc default_parameters {ip_handle {dont_generate ""}} {
 	set par_handles [xget_hw_parameter_handle $ip_handle "*"]
 	set params {}
 	foreach par $par_handles {
 		set par_name [xget_hw_name $par]
-		# Ignore some parameters that are always handled specially
-		switch -glob $par_name {
-			"INSTANCE" -
-			"*BASEADDR" -
-			"*HIGHADDR" -
-			"C_SPLB*" -
-			"C_OPB*" -
-			"C_DPLB*" -
-			"C_IPLB*" -
-			"C_PLB*" -
-			"C_M_AXI*" -
-			"C_S_AXI_ADDR_WIDTH" -
-			"C_S_AXI_DATA_WIDTH" -
-			"C_S_AXI_ACLK_FREQ_HZ" -
-			"C_S_AXI_LITE*" -
-			"C_S_AXI_PROTOCOL" -
-			"C_INTERCONNECT_?_AXI*" -
-			"C_S_AXI_ACLK_PERIOD_PS" -
-			"C_M*_AXIS*" -
-			"C_S*_AXIS*" -
-			"C_PRH*" -
-			"C_FAMILY" -
-			"*CLK_FREQ_HZ" -
-			"*ENET_SLCR_*Mbps_DIV?" -
-			"HW_VER" {}
+		switch -glob $par_name \
+			$dont_generate - \
+			"INSTANCE" - \
+			"*BASEADDR" - \
+			"*HIGHADDR" - \
+			"C_SPLB*" - \
+			"C_OPB*" - \
+			"C_DPLB*" - \
+			"C_IPLB*" - \
+			"C_PLB*" - \
+			"C_M_AXI*" - \
+			"C_S_AXI_ADDR_WIDTH" - \
+			"C_S_AXI_DATA_WIDTH" - \
+			"C_S_AXI_ACLK_FREQ_HZ" - \
+			"C_S_AXI_LITE*" - \
+			"C_S_AXI_PROTOCOL" - \
+			"C_INTERCONNECT_?_AXI*" - \
+			"C_S_AXI_ACLK_PERIOD_PS" - \
+			"C_M*_AXIS*" - \
+			"C_S*_AXIS*" - \
+			"C_PRH*" - \
+			"C_FAMILY" - \
+			"*CLK_FREQ_HZ" - \
+			"*ENET_SLCR_*Mbps_DIV?" - \
+			"HW_VER" { } \
 			default {
 				if { [ regexp {^C_.+} $par_name ] } {
 					lappend params $par_name
 				}
 			}
-		}
 	}
 	return $params
 }
