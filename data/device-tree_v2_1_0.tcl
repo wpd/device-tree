@@ -2388,10 +2388,15 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 			set ip_tree [slaveip_intr $slave $intc [interrupt_list $slave] "" [default_parameters $slave]]
 			lappend node $ip_tree
 		}
+		"ps7_ocmc" -
 		"ps7_ram" {
 			if {"$name" == "ps7_ram_0"} {
-				set ip_tree [slaveip $slave $intc "" "" "S_AXI_" "xlnx,ps7-ocm"]
-				set ip_tree [tree_node_update $ip_tree "reg" [list "reg" hexinttuple [list "0xfffc0000" "262144" ]]]
+				set ip_tree [list "ps7_ocmc_0: ps7-ocmc@f800c000" tree \
+					[list \
+						[gen_compatible_property "ps7-ocmc" "ps7-ocmc" "1.00.a" "xlnx,zynq-ocm-1.0" ] \
+						[list "reg" hexinttuple [list "0xf800c000" "0x1000"] ] \
+					] \
+				]
 				# use TCL table
 				set ip_tree [zynq_irq $ip_tree $intc $name]
 				set ip_tree [zynq_clk $ip_tree $name]
