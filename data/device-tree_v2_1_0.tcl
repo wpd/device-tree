@@ -1224,8 +1224,8 @@ proc zynq_clk {ip_tree name} {
 		{ps7_ethernet_1} {{"clkc 14" "clkc 31"} {"ref_clk" "aper_clk"}} \
 		{ps7_can_0} {{"clkc 19" "clkc 36"} {"ref_clk" "aper_clk"}} \
 		{ps7_can_1} {{"clkc 20" "clkc 37"} {"ref_clk" "aper_clk"}} \
-		{ps7_sd_0} {{"clkc 21" "clkc 32"} {"ref_clk" "aper_clk"}} \
-		{ps7_sd_1} {{"clkc 22" "clkc 33"} {"ref_clk" "aper_clk"}} \
+		{ps7_sd_0} {{"clkc 21" "clkc 32"} {"clk_xin" "clk_ahb"}} \
+		{ps7_sd_1} {{"clkc 22" "clkc 33"} {"clk_xin" "clk_ahb"}} \
 		{ps7_uart_0} {{"clkc 23" "clkc 40"} {"ref_clk" "aper_clk"}} \
 		{ps7_uart_1} {{"clkc 24" "clkc 41"} {"ref_clk" "aper_clk"}} \
 		{ps7_spi_0} {{"clkc 25" "clkc 34"} {"ref_clk" "aper_clk"}} \
