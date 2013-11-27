@@ -2327,6 +2327,12 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 			set ip_tree [zynq_clk $ip_tree $name]
 			lappend node $ip_tree
 		}
+		"ps7_intc_dist" -
+		"ps7_l2cachec" -
+		"ps7_coresight_comp" -
+		"ps7_globaltimer" -
+		"ps7_gpv" -
+		"ps7_scuc" -
 		"ps7_trace" -
 		"ps7_ddr" {
 			# Do nothing
