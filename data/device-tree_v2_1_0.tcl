@@ -1757,10 +1757,12 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 
 			if {$tmp != ""} {
 				set tmp [scan_int_parameter_value $slave "C_INCLUDE_SG"]
-				set mytree [tree_append $mytree [list "xlnx,include-sg" hexint $tmp]]
+				if {$tmp == 1} {
+					set mytree [tree_append $mytree [list "xlnx,include-sg" empty empty]]
+				}
 			} else {
 				# older core always has SG
-				set mytree [tree_append $mytree [list "xlnx,include-sg" hexint 1]]
+				set mytree [tree_append $mytree [list "xlnx,include-sg" empty empty]]
 			}
 
 			set tmp [scan_int_parameter_value $slave "C_NUM_FSTORES"]
@@ -4192,7 +4194,9 @@ proc dma_channel_config {xdma addr mode intc slave devid} {
 	set chan {}
 	lappend chan [list compatible stringtuple [list [format "xlnx,%s-%s-channel" $xdma $modelow]]]
 	set tmp [scan_int_parameter_value $slave [format "C_INCLUDE_%s_DRE" $mode]]
-	lappend chan [list "xlnx,include-dre" hexint $tmp]
+	if {$tmp == 1} {
+		lappend chan [list "xlnx,include-dre" empty empty]
+	}
 
 	lappend chan [list "xlnx,device-id" hexint $devid]
 	set tmp [xget_hw_parameter_handle $slave [format "C_%s_AXIS_%s_TDATA_WIDTH" [string index $mode 0] $mode]]
