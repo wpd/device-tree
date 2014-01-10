@@ -734,10 +734,16 @@ proc get_intr {ip_handle intc port_name} {
 
 proc get_intr_type {intc ip_handle port_name} {
 	set ip_name [xget_hw_name $ip_handle]
+	set ip_type [xget_hw_value $ip_handle]
 	set port_handle [xget_hw_port_handle $ip_handle "$port_name"]
 	set sensitivity [xget_hw_subproperty_value $port_handle "SENSITIVITY"];
 
 	if { "[xget_hw_value $intc]" == "ps7_scugic" } {
+		# Hack because of broken Vivado generation
+		if { [string compare -nocase $ip_type "can"] == 0 } {
+			return 1;
+		}
+
 		# Follow the openpic specification
 		if { [string compare -nocase $sensitivity "EDGE_FALLING"] == 0 } {
 			return 2;
@@ -749,6 +755,11 @@ proc get_intr_type {intc ip_handle port_name} {
 			return 8;
 		}
 	} else {
+		# Hack because of broken Vivado generation
+		if { [string compare -nocase $ip_type "can"] == 0 } {
+			return 0;
+		}
+
 		# Follow the openpic specification
 		if { [string compare -nocase $sensitivity "EDGE_FALLING"] == 0 } {
 			return 3;
@@ -2055,6 +2066,24 @@ proc gener_slave {node slave intc {force_type ""} {busif_handle ""}} {
 
 			set ip_tree [tree_append $ip_tree $clock_tree]
 
+			lappend node $ip_tree
+		}
+		"axi_can" -
+		"can" {
+			if { "$type" == "can" } {
+				set interrupts "ip2bus_intrevent"
+			} else {
+				set interrupts [interrupt_list $slave]
+			}
+			if { "$proctype" == "microblaze" } {
+				set ip_tree [slaveip_intr $slave $intc "$interrupts" "" [default_parameters $slave] "" "" "xlnx,axi-can-1.00.a"]
+				set ip_tree [tree_append $ip_tree [list "clock-names" stringtuple "ref_clk"]]
+				set ip_tree [tree_append $ip_tree [list "clocks" labelreftuple "clk_bus"]]
+			} else {
+				set ip_tree [slaveip_intr $slave $intc "$interrupts" "" [default_parameters $slave] "" "" "xlnx,axi-can-1.00.a"]
+				set ip_tree [tree_append $ip_tree [list "clock-names" stringtuple "ref_clk"]]
+				set ip_tree [tree_append $ip_tree [list "clocks" labelreftuple {"clkc 0"}]]
+			}
 			lappend node $ip_tree
 		}
 		"ps7_can" -
@@ -3777,8 +3806,6 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{axi_uartlite} {xps_uartlite_1.00.a} \
 		{xps_timebase_wdt} {xps_timebase_wdt_1.00.a} \
 		{axi_timebase_wdt} {xps_timebase_wdt_1.00.a} \
-		{xps_can} {xps_can_1.00.a} \
-		{axi_can} {xps_can_1.00.a} \
 		{xps_sysace} {xps_sysace_1.00.a} \
 		{axi_sysace} {xps_sysace_1.00.a} \
 		{xps_usb_host} {xps_usb_host_1.00.a} \
@@ -3786,7 +3813,6 @@ proc gen_compatible_property {nodename type hw_ver {other_compatibles {}} } {
 		{axi_usb2_device} {xps_usb2_device_4.00.a} \
 		{axi_pcie} {axi_pcie_1.05.a} \
 		{ps7_ddrc} {ps7_ddrc} \
-		{ps7_can} {ps7_can} \
 		{axi_perf_mon} {axi_perf_monitor} \
 	]
 
